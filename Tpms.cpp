@@ -3,7 +3,7 @@
  */
 
 #include "Tpms.h"
-#include "VehicleDash-AR-Const.h"
+#include "PD-Const.h"
 
 #if (ARDUINO >= 100)
 	#include "Arduino.h" // for Arduino 1.0

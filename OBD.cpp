@@ -1,15 +1,19 @@
 #include <Arduino.h>
+#include "PD-Const.h" 
 #include "OBD.h"
-#include <CAN.h>
+#include "CAN.h"
 #include <SD.h>
-#include "VehicleDash-AR-Const.h" 
 
 #define PIN_CAN_BOARD_LED2 8
 
 /*
   Constructor. Only copies the can pointer for internal usage.
 */  
-OBD::OBD(CANClass *can) 
+#ifdef USE_CAN2
+  OBD::OBD(MCP_CAN *can) 
+#else
+  OBD::OBD(CANClass *can) 
+#endif  
 {
   m_CAN = can;
   for (word i=0; i < MAX_UNKNOWN_PIDS; i++)
@@ -25,7 +29,12 @@ OBD::OBD(CANClass *can)
 */  
 void OBD::begin(uint32_t CAN_BitRate, uint8_t mode)
 {
-	m_CAN->begin(CAN_BitRate, mode);
+#ifdef USE_CAN2
+  m_CAN->begin(MCP_ANY, CAN_500KBPS, MCP_16MHZ);
+  m_CAN->setMode(mode);
+#else
+  m_CAN->begin(CAN_BitRate, mode);
+#endif
 }
 
 /*
@@ -33,7 +42,9 @@ void OBD::begin(uint32_t CAN_BitRate, uint8_t mode)
 */  
 void OBD::end()
 {
+#ifndef USE_CAN2
 	m_CAN->end();
+#endif 
 }
 
 void OBD::refresh(String logFileName)
@@ -95,22 +106,22 @@ void OBD::simulateReply(uint16_t id, uint16_t pid, uint16_t value)
   CAN_Frame message;
     
   // Prepare message
-  message.id = id;
-  message.valid = true;   // todo: assuming this is the right value
-  message.rtr = 0;        // Must be dominant (0) for data frames and recessive (1) for remote request frames
-  message.extended = 0;   // Must be dominant (0) for base frame format with 11-bit identifiers
-  message.fid = 0;        // todo: meaning unclear.
-  message.priority = 0;   // todo: not sure about this value. I'm assuming prio 0 is highest.
-  message.length = 8;     // eight data bytes follow
-  message.timeout = 0;    // zero will disable waiting
-  message.data[0] = 0x03; // this means there are x valid bytes with data
-  message.data[1] = 0x41; // mode 1 = show current data, mode 2 = show freeze frame
-  message.data[2] = pid;  // the requested pid
-  message.data[3] = value;
-  message.data[4] = 0x00; // unused byte
-  message.data[5] = 0x00; // unused byte
-  message.data[6] = 0x00; // unused byte
-  message.data[7] = 0x00; // unused byte    
+  message.m_id = id;
+  message.m_valid = true;   // todo: assuming this is the right value
+  message.m_rtr = 0;        // Must be dominant (0) for data frames and recessive (1) for remote request frames
+  message.m_extended = 0;   // Must be dominant (0) for base frame format with 11-bit identifiers
+  message.m_fid = 0;        // todo: meaning unclear.
+  message.m_priority = 0;   // todo: not sure about this value. I'm assuming prio 0 is highest.
+  message.m_length = 8;     // eight data bytes follow
+  message.m_timeout = 0;    // zero will disable waiting
+  message.m_data[0] = 0x03; // this means there are x valid bytes with data
+  message.m_data[1] = 0x41; // mode 1 = show current data, mode 2 = show freeze frame
+  message.m_data[2] = pid;  // the requested pid
+  message.m_data[3] = value;
+  message.m_data[4] = 0x00; // unused byte
+  message.m_data[5] = 0x00; // unused byte
+  message.m_data[6] = 0x00; // unused byte
+  message.m_data[7] = 0x00; // unused byte    
     
   m_CAN->write(message);
 }
@@ -150,25 +161,25 @@ void OBD::requestPID(uint16_t pid)
   uint8_t data[8];        // Message data
 */
  
-    CAN_Frame message;
+  CAN_Frame message;
     
 	// Prepare message
-	message.id = PID_REQUEST;
-	message.valid = true;   // todo: assuming this is the right value
-	message.rtr = 0;        // Must be dominant (0) for data frames and recessive (1) for remote request frames
-	message.extended = 0;   // Must be dominant (0) for base frame format with 11-bit identifiers
-	message.fid = 0;        // todo: meaning unclear.
-	message.priority = 0;   // todo: not sure about this value. I'm assuming prio 0 is highest.
-	message.length = 8;     // eight data bytes follow
-	message.timeout = 10;    // zero will disable waiting
-	message.data[0] = 0x02; // this means there are two valid bytes with data
-	message.data[1] = 0x01; // mode 1 = show current data, mode 2 = show freeze frame
-	message.data[2] = pid;  // the requested pid
-	message.data[3] = 0x00; // unused byte
-	message.data[4] = 0x00; // unused byte
-	message.data[5] = 0x00; // unused byte
-	message.data[6] = 0x00; // unused byte
-	message.data[7] = 0x00;	// unused byte		
+	message.m_id = PID_REQUEST;
+	message.m_valid = true;   // todo: assuming this is the right value
+	message.m_rtr = 0;        // Must be dominant (0) for data frames and recessive (1) for remote request frames
+	message.m_extended = 0;   // Must be dominant (0) for base frame format with 11-bit identifiers
+	message.m_fid = 0;        // todo: meaning unclear.
+	message.m_priority = 0;   // todo: not sure about this value. I'm assuming prio 0 is highest.
+	message.m_length = 8;     // eight data bytes follow
+	message.m_timeout = 10;    // zero will disable waiting
+	message.m_data[0] = 0x02; // this means there are two valid bytes with data
+	message.m_data[1] = 0x01; // mode 1 = show current data, mode 2 = show freeze frame
+	message.m_data[2] = pid;  // the requested pid
+	message.m_data[3] = 0x00; // unused byte
+	message.m_data[4] = 0x00; // unused byte
+	message.m_data[5] = 0x00; // unused byte
+	message.m_data[6] = 0x00; // unused byte
+	message.m_data[7] = 0x00;	// unused byte		
     
   m_CAN->write(message);
 }
@@ -204,8 +215,18 @@ void OBD::printUnhandledPIDS()
   Serial.println(" ");
 }
 
-void OBD::setCanFilters(long filter0, long filter2, long filter1, long filter3, long filter4, long filter5)
+void OBD::setCanFilters(uint32_t filter0, uint32_t filter2, uint32_t filter1, uint32_t filter3, uint32_t filter4, uint32_t filter5)
 {
+#ifdef USE_CAN2
+  m_CAN->setMask(0, false, 0x7FF00000);
+  m_CAN->setMask(1, false, 0x7FF00000);
+  m_CAN->setFilter(0, false, filter0);
+  m_CAN->setFilter(1, false, filter1);
+  m_CAN->setFilter(2, false, filter2);
+  m_CAN->setFilter(3, false, filter3);
+  m_CAN->setFilter(4, false, filter4);
+  m_CAN->setFilter(5, false, filter5);  
+#else  
   m_CAN->clearFilters();
   if (filter0 > 0) {
     Serial.println("Can filters ON");
@@ -220,6 +241,7 @@ void OBD::setCanFilters(long filter0, long filter2, long filter1, long filter3, 
   } else {
     Serial.println("Can filters OFF");    
   }
+#endif  
 }
 
 /*
@@ -228,8 +250,11 @@ MaskValue is either an 11 or 29 bit mask value to set
 ext is true if the mask is supposed to be extended (29 bit)
 zero bits for the mask means the related filter bit needs to match exactly, i.e. $7FF for the mask will accept any message ID regardless of the filter value.
 */
-void OBD::setCanRxMask(CAN_RX_Mask mask, long MaskValue, bool ext) 
+void OBD::setCanRxMask(uint8_t maskNo, uint32_t MaskValue, bool ext) 
 {
+#ifdef USE_CAN2
+  m_CAN->setMask(maskNo, ext, MaskValue);
+#else
   byte buf[4];  
   if (ext) { //fill out all 29 bits
     buf[0] = byte((MaskValue << 3) >> 24);
@@ -254,6 +279,7 @@ void OBD::setCanRxMask(CAN_RX_Mask mask, long MaskValue, bool ext)
   Serial.print(" - ");
   Serial.println(buf[3], BIN);
   m_CAN->setMask(mask, buf[0], buf[1], buf[2], buf[3]); 
+#endif  
 }
 
 /*
@@ -262,8 +288,11 @@ FilterValue = 11 or 29 bit filter to use
 ext is true if this filter should apply to extended frames or false (default) if it should apply to standard frames.
 */
 
-void OBD::setCanRxFilter(CAN_RX_Filter filter, long FilterValue, bool ext) 
+void OBD::setCanRxFilter(uint8_t filterNo, uint32_t FilterValue, bool ext) 
 {
+#ifdef USE_CAN2
+  m_CAN->setFilter(filterNo, ext, FilterValue);
+#else
   byte buf[4];
   
   if (ext) { //fill out all 29 bits
@@ -291,28 +320,33 @@ void OBD::setCanRxFilter(CAN_RX_Filter filter, long FilterValue, bool ext)
   Serial.println(buf[3], BIN);
 
   m_CAN->setFilter(filter, buf[0], buf[1], buf[2], buf[3]); 
+#endif  
 }
 
 bool OBD::readMessage(String &logString)
 {
+#ifdef USE_CAN2
+  if (m_CAN->available() == CAN_MSGAVAIL) // One or more messages available?
+#else
   if (m_CAN->available() != 0) // One or more messages available?
+#endif
   {
     // message will follow the CAN structure of ID, RTR, length, data. Allows both Extended & Standard
     CAN_Frame message = m_CAN->read(); 
-    Serial.print(message.id, HEX);
+    Serial.print(message.m_id, HEX);
     
-    if (message.id == 0x7E8) {
+    if (message.m_id == 0x7E8) {
     	processMessage(message);
         
   		char buf[150]; 
   		sprintf(buf, "PID %02X, LEN %02X, MODE %02X, DATA %02X, %02X, %02X, %02X, %02X", 
-  			message.data[2], message.data[0], message.data[1],
-  			message.data[3], message.data[4], message.data[5],
-  			message.data[6], message.data[7]);
+  			message.m_data[2], message.m_data[0], message.m_data[1],
+  			message.m_data[3], message.m_data[4], message.m_data[5],
+  			message.m_data[6], message.m_data[7]);
   		logString = buf;
-  		return true; //message.id == 0x7E8;
+  		return true; //message.m_id == 0x7E8;
   	} else {
-  	  addUnhandledPID(message.id);
+  	  addUnhandledPID(message.m_id);
   	}
   }
   return false;
@@ -320,12 +354,12 @@ bool OBD::readMessage(String &logString)
          
 bool OBD::processMessage(CAN_Frame message)
 {
-	uint16_t pid = message.id;
-	uint8_t *data = &message.data[0];
+	uint16_t pid = message.m_id;
+	uint8_t *data = &message.m_data[0];
 		
 	if (pid == PID_REPLY) {
-	  pid = message.data[2];
-	  data = &message.data[3];
+	  pid = message.m_data[2];
+	  data = &message.m_data[3];
 	}
 //	Serial.print("Process message for 0x");
 //	Serial.println(pid, HEX);

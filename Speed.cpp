@@ -2,8 +2,8 @@
    CruiseCtrl.cpp - Library for ...
  */
 
-#include "CruiseCtrl.h"
-#include "VehicleDash-AR-Const.h"
+#include "Speed.h"
+#include "PD-Const.h"
 
 #if (ARDUINO >= 100)
 	#include "Arduino.h" // for Arduino 1.0

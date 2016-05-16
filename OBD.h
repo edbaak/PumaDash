@@ -1,12 +1,11 @@
 #ifndef OBD_h
 #define OBD_h
 
-#include "VD-Const.h"
+#include "PD-Const.h"
 #include <Arduino.h>
 #include <SPI.h>
 #ifdef USE_CAN2
-  #include "MCP2515_Const.h"
-  #include "MCP2515.h"
+  #include "CAN.h"
 #else
   #include <CAN.h>
   #include <CAN_AT90CAN.h>
@@ -230,20 +229,6 @@
 // numbers, i.e. 0x7E9, 0x7EA, etc
 #define PID_REPLY			0x7E8
 
-typedef enum CAN_RX_Mask {
-  RXM0 = MCP2515_RXM0SIDH,
-  RXM1 = MCP2515_RXM1SIDH  
-} CAN_RX_Mask;
-
-typedef enum CAN_RX_Filter {
-  RXF0 = MCP2515_RXF0,
-  RXF1 = MCP2515_RXF1,  
-  RXF2 = MCP2515_RXF2,  
-  RXF3 = MCP2515_RXF3,  
-  RXF4 = MCP2515_RXF4,  
-  RXF5 = MCP2515_RXF5  
-} CAN_RX_Filter;
-
 // Max number of PID's that are communicated on the bus and that we can't process
 #define MAX_UNKNOWN_PIDS 50
 
@@ -300,12 +285,12 @@ public:
 #else
   OBD(CANClass *can);
 #endif
-virtual void begin(uint32_t CAN_BitRate, uint8_t mode);
+  virtual void begin(uint32_t CAN_BitRate, uint8_t mode);
 	virtual void end();
 
-  void setCanFilters(long filter0, long filter2 = 0x00, long filter1 = 0x00, long filter3 = 0x00, long filter4 = 0x00, long filter5 = 0x00);
-  void setCanRxMask(CAN_RX_Mask mask, long MaskValue, bool ext = false);
-  void setCanRxFilter(CAN_RX_Filter filter, long FilterValue, bool ext = false);
+  void setCanFilters(uint32_t filter0, uint32_t filter2 = 0x00, uint32_t filter1 = 0x00, uint32_t filter3 = 0x00, uint32_t filter4 = 0x00, uint32_t filter5 = 0x00);
+  void setCanRxMask(uint8_t maskNo, uint32_t MaskValue, bool ext = false);
+  void setCanRxFilter(uint8_t filterNo, uint32_t FilterValue, bool ext = false);
 
   virtual void refresh(String logFileName);
     
@@ -323,7 +308,7 @@ virtual void begin(uint32_t CAN_BitRate, uint8_t mode);
   OBDByteValue m_coolantTemp;
 		
 protected:
-	bool processMessage(CAN_Frame message);
+	  bool processMessage(CAN_Frame message);
 	
     void addUnhandledPID(uint16_t pid);
     void printUnhandledPIDS();

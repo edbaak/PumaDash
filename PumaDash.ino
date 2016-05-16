@@ -5,10 +5,10 @@
 // Ford 2.2L TDCI uses CAN 11bit (500Kb)
 // Protocol ISO 15765-4 11Bit (500Kb)
 */
-#include "VD-Const.h"
+#include "PD-Const.h"
 #include <SPI.h>
 #ifdef USE_CAN2
-  #include "MCP2515.h"
+  #include "CAN.h"
 #else
   #include <CAN.h>
   #include <CAN_AT90CAN.h>
@@ -46,7 +46,7 @@ Tpms g_Tpms;
 Direction g_DirectionControl;
 CruiseCtrl g_CruiseControl;
 #ifdef USE_CAN2
-  MCP2515 g_Can(53); // Use Pin 53 for Chip Select on a Mega
+  MCP_CAN g_Can(53); // Use Pin 53 for Chip Select on a Mega
 #else
   CAN_MCP2515 g_Can(53); // Use Pin 53 for Chip Select on a Mega
 #endif  
@@ -139,8 +139,13 @@ void initOBD()
   pinMode(PIN_MEGA_SPI_SCK, OUTPUT);
   pinMode(PIN_MEGA_SPI_CS, OUTPUT);
 
+#ifdef USE_CAN2
+//  g_Obd.begin(CAN_500KBPS, MCP_NORMAL);
+  g_Obd.begin(CAN_500KBPS, MCP_LOOPBACK);
+#else
 //  g_Obd.begin(CAN_BPS_500K, MCP2515_MODE_NORMAL);
   g_Obd.begin(CAN_BPS_500K, MCP2515_MODE_LOOPBACK);
+#endif  
 }
 
 // the setup function runs once when you press reset or power the board
@@ -160,16 +165,16 @@ void setup() {
 // the loop function runs over and over again forever
 void loop() {
   CAN_Frame message;
-  message.id = PID_REPLY;
-  message.length = 8;
-  message.data[0] = 3;
-  message.data[1] = 0x41;
-  message.data[2] = PID_RPM;
-  message.data[3] = 200;
-  message.data[4] = 0;
-  message.data[5] = 0;
-  message.data[6] = 0;
-  message.data[7] = 0;
+  message.m_id = PID_REPLY;
+  message.m_length = 8;
+  message.m_data[0] = 3;
+  message.m_data[1] = 0x41;
+  message.m_data[2] = PID_RPM;
+  message.m_data[3] = 200;
+  message.m_data[4] = 0;
+  message.m_data[5] = 0;
+  message.m_data[6] = 0;
+  message.m_data[7] = 0;
   //g_Can.write(message);
   
   static bool init_display = true;
