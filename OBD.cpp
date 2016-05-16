@@ -110,10 +110,7 @@ void OBD::simulateReply(uint16_t id, uint16_t pid, uint16_t value)
   message.m_valid = true;   // todo: assuming this is the right value
   message.m_rtr = 0;        // Must be dominant (0) for data frames and recessive (1) for remote request frames
   message.m_extended = 0;   // Must be dominant (0) for base frame format with 11-bit identifiers
-  message.m_fid = 0;        // todo: meaning unclear.
-  message.m_priority = 0;   // todo: not sure about this value. I'm assuming prio 0 is highest.
   message.m_length = 8;     // eight data bytes follow
-  message.m_timeout = 0;    // zero will disable waiting
   message.m_data[0] = 0x03; // this means there are x valid bytes with data
   message.m_data[1] = 0x41; // mode 1 = show current data, mode 2 = show freeze frame
   message.m_data[2] = pid;  // the requested pid
@@ -168,10 +165,7 @@ void OBD::requestPID(uint16_t pid)
 	message.m_valid = true;   // todo: assuming this is the right value
 	message.m_rtr = 0;        // Must be dominant (0) for data frames and recessive (1) for remote request frames
 	message.m_extended = 0;   // Must be dominant (0) for base frame format with 11-bit identifiers
-	message.m_fid = 0;        // todo: meaning unclear.
-	message.m_priority = 0;   // todo: not sure about this value. I'm assuming prio 0 is highest.
 	message.m_length = 8;     // eight data bytes follow
-	message.m_timeout = 10;    // zero will disable waiting
 	message.m_data[0] = 0x02; // this means there are two valid bytes with data
 	message.m_data[1] = 0x01; // mode 1 = show current data, mode 2 = show freeze frame
 	message.m_data[2] = pid;  // the requested pid
