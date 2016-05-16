@@ -1,11 +1,9 @@
 /*
-  mcp_can.h
+  CAN.h
   2012 Copyright (c) Seeed Technology Inc.  All right reserved.
   2014 Copyright (c) Cory J. Fowler  All Rights Reserved.
+  2016 Copyright (c) Ed Baak  All Rights Reserved.
 
-  Author:Loovee
-  Contributor: Cory J. Fowler
-  2014-1-16
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
   License as published by the Free Software Foundation; either
@@ -193,6 +191,7 @@
 #define MODE_MASK       0xE0
 #define ABORT_TX        0x10
 #define MODE_ONESHOT    0x08
+
 #define CLKOUT_ENABLE   0x04
 #define CLKOUT_DISABLE  0x00
 #define CLKOUT_PS1      0x00

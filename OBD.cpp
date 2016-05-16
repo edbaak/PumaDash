@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "PD-Const.h" 
+#include "Utils.h" 
 #include "OBD.h"
 #include "CAN.h"
 #include <SD.h>
@@ -29,6 +29,20 @@
 */  
 void OBD::begin(uint32_t CAN_BitRate, uint8_t mode)
 {
+    // Switch Pin 10-13 to INPUT mode so they are high impedance, floating. That way we can hardwire Pins 50-53 onto them, so that we can use the CAN-Board on a Mega.
+  // Connect pin 53 to 10 == CS (Chip Select)
+  // Connect Pin 52 to 13 == SCK (Clock)
+  // Connect Pin 51 to 11 == MOSI (Master Out Slave In)
+  // Connect Pin 50 to 12 == MISO (Master In Slave Out)
+  pinMode(PIN_LEGACY_SPI_CS, INPUT); // set to high impedance, we're not actually using this pin
+  pinMode(PIN_LEGACY_SPI_MOSI, INPUT); // set to high impedance, we're not actually using this pin
+  pinMode(PIN_LEGACY_SPI_MISO, INPUT); // set to high impedance, we're not actually using this pin
+  pinMode(PIN_LEGACY_SPI_SCK, INPUT); // set to high impedance, we're not actually using this pin
+  pinMode(PIN_MEGA_SPI_MISO, INPUT);
+  pinMode(PIN_MEGA_SPI_MOSI, OUTPUT);
+  pinMode(PIN_MEGA_SPI_SCK, OUTPUT);
+  pinMode(PIN_MEGA_SPI_CS, OUTPUT);
+
 #ifdef USE_CAN2
   m_CAN->begin(MCP_ANY, CAN_500KBPS, MCP_16MHZ);
   m_CAN->setMode(mode);

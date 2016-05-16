@@ -1,7 +1,13 @@
+/*
+// Land Rover Defender MY12 Puma Dashboard
+// Ford 2.2L TDCI uses CAN 11bit (500Kb)
+// Protocol ISO 15765-4 11Bit (500Kb)
+*/
+ 
 #ifndef OBD_h
 #define OBD_h
 
-#include "PD-Const.h"
+#include "Utils.h"
 #include <Arduino.h>
 #include <SPI.h>
 #ifdef USE_CAN2
