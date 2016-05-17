@@ -3,17 +3,7 @@
 */
 #include "Utils.h"
 #include <SPI.h>
-#ifdef USE_CAN2
-  #include "CAN.h"
-#else
-  #include <CAN.h>
-  #include <CAN_AT90CAN.h>
-  #include <CAN_K2X.h>
-  #include <CAN_MCP2515.h>
-  #include <CAN_SAM3X.h>
-  #include <CAN_SJA1000.h>
-  #include <sn65hvd234.h>
-#endif
+#include "CAN.h"
 #include "OBD.h"
 #include <SD.h>
 #include <Bounce2.h>
@@ -27,11 +17,7 @@
 Tpms g_Tpms; // Tpms class deals with Tire Pressure Monitoring
 Direction g_Position; // Position class deals with GPS position & pitch and roll of vehicle
 CruiseCtrl g_Speed; // Speed class implements a Cruise Control, and deals with gearbox ratios etc to calculate gear shifts
-#ifdef USE_CAN2
-  MCP_CAN g_Can(PIN_MEGA_SPI_CS); // CAN class implements the CAN messaging protocol
-#else
-  CAN_MCP2515 g_Can(PIN_MEGA_SPI_CS);
-#endif
+MCP_CAN g_Can(PIN_MEGA_SPI_CS); // CAN class implements the CAN messaging protocol
 OBD g_Obd(&g_Can); // OBS class implements the On Board Diagnostics for the Vehicle
 Diablo_Serial_4DLib Display(&DisplaySerial); // Basic display driver
 LeftDisplay g_LeftDisplay(&Display, &g_Position, &g_Tpms); // Implements all things to do with the 'Left' display
@@ -46,11 +32,12 @@ void setup() {
   
   initLogging();
 
-#ifdef USE_CAN2
-  g_Obd.begin(CAN_500KBPS, MCP_LOOPBACK);
+#ifdef LOOPBACK_MODE
+  g_Obd.begin(MCP_CAN::CAN_500KBPS, MCP_LOOPBACK);
 #else
-  g_Obd.begin(CAN_BPS_500K, MCP2515_MODE_LOOPBACK);
-#endif  
+  g_Obd.begin(MCP_CAN::CAN_500KBPS, MCP_NORMAL);
+#endif
+  g_Obd.setCanFilters(0x07E80000, 0x07E80000);
 
   // we're assuming we're connecting to the left display, but will be switching to center or right display as needed in the code.
   // in practice it doesn't really matter as there really only one display connected and all three displays use the same
@@ -62,7 +49,6 @@ void setup() {
 // the loop function runs over and over again forever
 void loop() {
   static bool init_display = true;
-  static bool filters_on = true;
   
   g_Tpms.update();
   g_Position.update();
@@ -71,18 +57,10 @@ void loop() {
 
   if (!init_display && g_LeftDisplay.touchPressed()) {
     Display.gfx_Cls();
-/*    
     g_active_display++;
     if (g_active_display > 2)
       g_active_display = 0;
-*/
-    init_display = true;  
-    if (filters_on) {
-      g_Obd.setCanFilters(0x7E8,0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF,0xFFFFFFFF);
-    } else {
-      g_Obd.setCanFilters(0x00);
-    }
-    filters_on = !filters_on;    
+    init_display = true;      
   }
 
   if (init_display) {

@@ -10,17 +10,7 @@
 #include "Utils.h"
 #include <Arduino.h>
 #include <SPI.h>
-#ifdef USE_CAN2
-  #include "CAN.h"
-#else
-  #include <CAN.h>
-  #include <CAN_AT90CAN.h>
-  #include <CAN_K2X.h>
-  #include <CAN_MCP2515.h>
-  #include <CAN_SAM3X.h>
-  #include <CAN_SJA1000.h>
-  #include <sn65hvd234.h>
-#endif
+#include "CAN.h"
 
 //#define OBD_TIMEOUT_SHORT 1000 /* ms */
 //#define OBD_TIMEOUT_LONG 15000 /* ms */
@@ -238,7 +228,7 @@
 // Max number of PID's that are communicated on the bus and that we can't process
 #define MAX_UNKNOWN_PIDS 50
 
-// The following 0x PID's are emitted by the Puma ECU and are ignored by OBDControl
+// The following 0x PID's are emitted by the Puma ECU and are ignored by OBD
 // 16E, 193, 34B, 4C0, E1, 9A, 226, 394, DF, DD, 2B8, 2DD, 1B8, 400, 405, DC, E0, 5C0, 326
 
 
@@ -286,22 +276,17 @@ private:
 class OBD
 {
 public:
-#ifdef USE_CAN2
   OBD(MCP_CAN *can);
-#else
-  OBD(CANClass *can);
-#endif
-  virtual void begin(uint32_t CAN_BitRate, uint8_t mode);
+  virtual void begin(MCP_CAN::CAN_SPEED bitRate, CAN_MODE mode);
 	virtual void end();
 
   void setCanFilters(uint32_t filter0, uint32_t filter2 = 0x00, uint32_t filter1 = 0x00, uint32_t filter3 = 0x00, uint32_t filter4 = 0x00, uint32_t filter5 = 0x00);
-  void setCanRxMask(uint8_t maskNo, uint32_t MaskValue, bool ext = false);
-  void setCanRxFilter(uint8_t filterNo, uint32_t FilterValue, bool ext = false);
 
   virtual void refresh(String logFileName);
     
 	// send query for specified PID
   virtual void requestPID(uint16_t pid);
+  virtual void simulateReply(uint16_t id, uint16_t pid, uint8_t value);
   virtual void simulateReply(uint16_t id, uint16_t pid, uint16_t value);
 
 	// Read message from CAN bus if available
@@ -320,31 +305,8 @@ protected:
     void printUnhandledPIDS();
 	
 private:
-#ifdef USE_CAN2
   MCP_CAN *m_CAN;
-#else
-  CANClass *m_CAN;
-#endif
   uint16_t m_unknownPIDS[MAX_UNKNOWN_PIDS];
-    
-/*
-	virtual uint8_t getPercentageValue(uint8_t* data) {
-		return (uint16_t)*data * 100 / 255;
-//		return (uint16_t)hex2uint8(data) * 100 / 255;
-	}
-	virtual uint16_t getLargeValue(uint8_t* data) {
-	    return (uint16_t)*data;
-//		return hex2uint16(data);
-	}
-	virtual uint8_t getSmallValue(uint8_t* data) {
-		return (uint8_t)*data;
-//		return hex2uint8(data);
-	}
-	virtual int16_t getTemperatureValue(uint8_t* data) {
-		return (int8_t)*data - 40;
-//		return (int)hex2uint8(data) - 40;
-	}
-*/
 };
 
 #endif // OBD_h

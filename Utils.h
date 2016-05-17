@@ -12,9 +12,7 @@
 
 #define VEHICLEDASH_DEBUG
 
-#define LOOPBACK_MODE true
-
-#define USE_CAN2
+#define LOOPBACK_MODE
 
 // Mega board PIN definitions
 #define uLCD_DISPLAY_RESETLINE 4

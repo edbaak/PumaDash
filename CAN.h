@@ -24,6 +24,7 @@
 
 // Constants
 
+#include "Utils.h"
 #include <Arduino.h>
 #include <SPI.h>
 #include <inttypes.h>
@@ -88,7 +89,6 @@
 #define MCP_EFLG_EWARN      (1<<0)
 #define MCP_EFLG_ERRORMASK  (0xF8)                                      /* 5 MS-Bits                    */
 
-
 /*
  *   Define MCP2515 register addresses
  */
@@ -142,7 +142,6 @@
 #define MCP_RXB1CTRL    0x70
 #define MCP_RXB1SIDH    0x71
 
-
 #define MCP_TX_INT          0x1C                                    // Enable all transmit interrup ts
 #define MCP_TX01_INT        0x0C                                    // Enable TXB0 and TXB1 interru pts
 #define MCP_RX_INT          0x03                                    // Enable receive interrupts
@@ -154,11 +153,12 @@
 /*
  *   Define SPI Instruction Set
  */
-#define MCP_WRITE           0x02
-
-#define MCP_READ            0x03
-
-#define MCP_BITMOD          0x05
+#define MCP2515_SPI_WRITE           0x02
+#define MCP2515_SPI_READ            0x03
+#define MCP2515_SPI_BITMOD          0x05
+#define MCP2515_SPI_READ_STATUS     0xA0
+#define MCP2515_SPI_RX_STATUS       0xB0
+#define MCP2515_SPI_RESET           0xC0
 
 #define MCP_LOAD_TX0        0x40
 #define MCP_LOAD_TX1        0x42
@@ -172,21 +172,9 @@
 #define MCP_READ_RX0        0x90
 #define MCP_READ_RX1        0x94
 
-#define MCP_READ_STATUS     0xA0
-
-#define MCP_RX_STATUS       0xB0
-
-#define MCP_RESET           0xC0
-
-
 /*
  *   CANCTRL Register Values
  */
-#define MCP_NORMAL      0x00
-#define MCP_SLEEP       0x20
-#define MCP_LOOPBACK    0x40
-#define MCP_LISTENONLY  0x60
-#define MODE_CONFIG     0x80
 #define MODE_POWERUP    0xE0
 #define MODE_MASK       0xE0
 #define ABORT_TX        0x10
@@ -199,7 +187,6 @@
 #define CLKOUT_PS4      0x02
 #define CLKOUT_PS8      0x03
 
-
 /*
  *   CNF1 Register Values
  */
@@ -208,14 +195,12 @@
 #define SJW3            0x80
 #define SJW4            0xC0
 
-
 /*
  *   CNF2 Register Values
  */
 #define BTLMODE         0x80
 #define SAMPLE_1X       0x00
 #define SAMPLE_3X       0x40
-
 
 /*
  *   CNF3 Register Values
@@ -224,7 +209,6 @@
 #define SOF_DISABLE     0x00
 #define WAKFIL_ENABLE   0x40
 #define WAKFIL_DISABLE  0x00
-
 
 /*
  *   CANINTF Register Bits
@@ -239,152 +223,6 @@
 #define MCP_MERRF       0x80
 
 
-/*
- *  Speed 8M
- */
-#define MCP_8MHz_1000kBPS_CFG1 (0x00)
-#define MCP_8MHz_1000kBPS_CFG2 (0x80)
-#define MCP_8MHz_1000kBPS_CFG3 (0x80)
-
-#define MCP_8MHz_500kBPS_CFG1 (0x00)
-#define MCP_8MHz_500kBPS_CFG2 (0x90)
-#define MCP_8MHz_500kBPS_CFG3 (0x82)
-
-#define MCP_8MHz_250kBPS_CFG1 (0x00)
-#define MCP_8MHz_250kBPS_CFG2 (0xB1)
-#define MCP_8MHz_250kBPS_CFG3 (0x85)
-
-#define MCP_8MHz_200kBPS_CFG1 (0x00)
-#define MCP_8MHz_200kBPS_CFG2 (0xB4)
-#define MCP_8MHz_200kBPS_CFG3 (0x86)
-
-#define MCP_8MHz_125kBPS_CFG1 (0x01)
-#define MCP_8MHz_125kBPS_CFG2 (0xB1)
-#define MCP_8MHz_125kBPS_CFG3 (0x85)
-
-#define MCP_8MHz_100kBPS_CFG1 (0x01)
-#define MCP_8MHz_100kBPS_CFG2 (0xB4)
-#define MCP_8MHz_100kBPS_CFG3 (0x86)
-
-#define MCP_8MHz_80kBPS_CFG1 (0x01)
-#define MCP_8MHz_80kBPS_CFG2 (0xBF)
-#define MCP_8MHz_80kBPS_CFG3 (0x87)
-
-#define MCP_8MHz_50kBPS_CFG1 (0x03)
-#define MCP_8MHz_50kBPS_CFG2 (0xB4)
-#define MCP_8MHz_50kBPS_CFG3 (0x86)
-
-#define MCP_8MHz_40kBPS_CFG1 (0x03)
-#define MCP_8MHz_40kBPS_CFG2 (0xBF)
-#define MCP_8MHz_40kBPS_CFG3 (0x87)
-
-#define MCP_8MHz_31k25BPS_CFG1 (0x07)
-#define MCP_8MHz_31k25BPS_CFG2 (0xA4)
-#define MCP_8MHz_31k25BPS_CFG3 (0x84)
-
-#define MCP_8MHz_20kBPS_CFG1 (0x07)
-#define MCP_8MHz_20kBPS_CFG2 (0xBF)
-#define MCP_8MHz_20kBPS_CFG3 (0x87)
-
-#define MCP_8MHz_10kBPS_CFG1 (0x0F)
-#define MCP_8MHz_10kBPS_CFG2 (0xBF)
-#define MCP_8MHz_10kBPS_CFG3 (0x87)
-
-#define MCP_8MHz_5kBPS_CFG1 (0x1F)
-#define MCP_8MHz_5kBPS_CFG2 (0xBF)
-#define MCP_8MHz_5kBPS_CFG3 (0x87)
-
-/*
- *  speed 16M
- */
-#define MCP_16MHz_1000kBPS_CFG1 (0x00)
-#define MCP_16MHz_1000kBPS_CFG2 (0xD0)
-#define MCP_16MHz_1000kBPS_CFG3 (0x82)
-
-#define MCP_16MHz_500kBPS_CFG1 (0x00)
-#define MCP_16MHz_500kBPS_CFG2 (0xF0)
-#define MCP_16MHz_500kBPS_CFG3 (0x86)
-
-#define MCP_16MHz_250kBPS_CFG1 (0x41)
-#define MCP_16MHz_250kBPS_CFG2 (0xF1)
-#define MCP_16MHz_250kBPS_CFG3 (0x85)
-
-#define MCP_16MHz_200kBPS_CFG1 (0x01)
-#define MCP_16MHz_200kBPS_CFG2 (0xFA)
-#define MCP_16MHz_200kBPS_CFG3 (0x87)
-
-#define MCP_16MHz_125kBPS_CFG1 (0x03)
-#define MCP_16MHz_125kBPS_CFG2 (0xF0)
-#define MCP_16MHz_125kBPS_CFG3 (0x86)
-
-#define MCP_16MHz_100kBPS_CFG1 (0x03)
-#define MCP_16MHz_100kBPS_CFG2 (0xFA)
-#define MCP_16MHz_100kBPS_CFG3 (0x87)
-
-#define MCP_16MHz_80kBPS_CFG1 (0x03)
-#define MCP_16MHz_80kBPS_CFG2 (0xFF)
-#define MCP_16MHz_80kBPS_CFG3 (0x87)
-
-#define MCP_16MHz_50kBPS_CFG1 (0x07)
-#define MCP_16MHz_50kBPS_CFG2 (0xFA)
-#define MCP_16MHz_50kBPS_CFG3 (0x87)
-
-#define MCP_16MHz_40kBPS_CFG1 (0x07)
-#define MCP_16MHz_40kBPS_CFG2 (0xFF)
-#define MCP_16MHz_40kBPS_CFG3 (0x87)
-
-#define MCP_16MHz_20kBPS_CFG1 (0x0F)
-#define MCP_16MHz_20kBPS_CFG2 (0xFF)
-#define MCP_16MHz_20kBPS_CFG3 (0x87)
-
-#define MCP_16MHz_10kBPS_CFG1 (0x1F)
-#define MCP_16MHz_10kBPS_CFG2 (0xFF)
-#define MCP_16MHz_10kBPS_CFG3 (0x87)
-
-#define MCP_16MHz_5kBPS_CFG1 (0x3F)
-#define MCP_16MHz_5kBPS_CFG2 (0xFF)
-#define MCP_16MHz_5kBPS_CFG3 (0x87)
-
-/*
- *  speed 20M
- */
-#define MCP_20MHz_1000kBPS_CFG1 (0x00)
-#define MCP_20MHz_1000kBPS_CFG2 (0xD9)
-#define MCP_20MHz_1000kBPS_CFG3 (0x82)
-
-#define MCP_20MHz_500kBPS_CFG1 (0x00)
-#define MCP_20MHz_500kBPS_CFG2 (0xFA)
-#define MCP_20MHz_500kBPS_CFG3 (0x87)
-
-#define MCP_20MHz_250kBPS_CFG1 (0x41)
-#define MCP_20MHz_250kBPS_CFG2 (0xFB)
-#define MCP_20MHz_250kBPS_CFG3 (0x86)
-
-#define MCP_20MHz_200kBPS_CFG1 (0x01)
-#define MCP_20MHz_200kBPS_CFG2 (0xFF)
-#define MCP_20MHz_200kBPS_CFG3 (0x87)
-
-#define MCP_20MHz_125kBPS_CFG1 (0x03)
-#define MCP_20MHz_125kBPS_CFG2 (0xFA)
-#define MCP_20MHz_125kBPS_CFG3 (0x87)
-
-#define MCP_20MHz_100kBPS_CFG1 (0x04)
-#define MCP_20MHz_100kBPS_CFG2 (0xFA)
-#define MCP_20MHz_100kBPS_CFG3 (0x87)
-
-#define MCP_20MHz_80kBPS_CFG1 (0x04)
-#define MCP_20MHz_80kBPS_CFG2 (0xFF)
-#define MCP_20MHz_80kBPS_CFG3 (0x87)
-
-#define MCP_20MHz_50kBPS_CFG1 (0x09)
-#define MCP_20MHz_50kBPS_CFG2 (0xFA)
-#define MCP_20MHz_50kBPS_CFG3 (0x87)
-
-#define MCP_20MHz_40kBPS_CFG1 (0x09)
-#define MCP_20MHz_40kBPS_CFG2 (0xFF)
-#define MCP_20MHz_40kBPS_CFG3 (0x87)
-
-
 #define MCPDEBUG        (0)
 #define MCPDEBUG_TXBUF  (0)
 #define MCP_N_TXBUFFERS (3)
@@ -392,151 +230,148 @@
 #define MCP_RXBUF_0 (MCP_RXB0SIDH)
 #define MCP_RXBUF_1 (MCP_RXB1SIDH)
 
-#define MCP2515_SELECT()   digitalWrite(MCPCS, LOW)
-#define MCP2515_UNSELECT() digitalWrite(MCPCS, HIGH)
-
-#define MCP2515_OK         (0)
-#define MCP2515_FAIL       (1)
-#define MCP_ALLTXBUSY      (2)
-
-#define CANDEBUG   1
-
-#define CANUSELOOP 0
-
-#define CANSENDTIMEOUT (200)                                            /* milliseconds                 */
-
-/*
- *   initial value of gCANAutoProcess
- */
-#define CANAUTOPROCESS (1)
-#define CANAUTOON  (1)
-#define CANAUTOOFF (0)
-
-#define CAN_STDID (0)
-#define CAN_EXTID (1)
-
-#define CANDEFAULTIDENT    (0x55CC)
-#define CANDEFAULTIDENTEXT (CAN_EXTID)
-
-#define MCP_STDEXT   0                                                  /* Standard and Extended        */
-#define MCP_STD      1                                                  /* Standard IDs ONLY            */
-#define MCP_EXT      2                                                  /* Extended IDs ONLY            */
-#define MCP_ANY      3                                                  /* Disables Masks and Filters   */
-
-#define MCP_20MHZ    0
-#define MCP_16MHZ    1
-#define MCP_8MHZ     2
-
-#define CAN_4K096BPS 0
-#define CAN_5KBPS    1
-#define CAN_10KBPS   2
-#define CAN_20KBPS   3
-#define CAN_31K25BPS 4
-#define CAN_40KBPS   5
-#define CAN_50KBPS   6
-#define CAN_80KBPS   7
-#define CAN_100KBPS  8
-#define CAN_125KBPS  9
-#define CAN_200KBPS  10
-#define CAN_250KBPS  11
-#define CAN_500KBPS  12
-#define CAN_1000KBPS 13
-
-#define CAN_OK             (0)
-#define CAN_FAILINIT       (1)
-#define CAN_FAILTX         (2)
-#define CAN_MSGAVAIL       (3)
-#define CAN_NOMSG          (4)
-#define CAN_CTRLERROR      (5)
-#define CAN_GETTXBFTIMEOUT (6)
-#define CAN_SENDMSGTIMEOUT (7)
-#define CAN_FAIL       (0xff)
-
-#define CAN_MAX_CHAR_IN_MESSAGE (8)
-
-// End of constants
+//#define CANSENDTIMEOUT (200)                                            /* milliseconds                 */
+//#define CANAUTOPROCESS (1)
+//#define CANAUTOON  (1)
+//#define CANAUTOOFF (0)
+//#define CAN_STDID (0)
+//#define CAN_EXTID (1)
+//#define CANDEFAULTIDENT    (0x55CC)
+//#define CANDEFAULTIDENTEXT (CAN_EXTID)
 
 #define MAX_CHAR_IN_MESSAGE 8
 
+// End of constants
+
+
 class CAN_Frame
 {
-public:
-  CAN_Frame();  
-  void init(uint32_t id, uint8_t ext, uint8_t len, uint8_t *buf);
-  void clear();
-  
-  uint32_t m_id;            // if (extended == CAN_RECESSIVE) { extended ID } else { standard ID }
-  uint8_t m_valid;          // To avoid passing garbage frames around
-  uint8_t m_rtr;            // Remote Transmission Request Bit (RTR)
-  uint8_t m_extended;       // Identifier Extension Bit (IDE)
-  uint8_t m_length;         // Data Length
-  uint8_t m_data[8];        // Message data
+  public:
+    CAN_Frame();
+    void init(uint32_t id, uint8_t ext, uint8_t len, uint8_t *buf);
+    void clear();
+
+    uint32_t m_id;            // if (extended == CAN_RECESSIVE) { extended ID } else { standard ID }
+    uint8_t m_valid;          // To avoid passing garbage frames around
+    uint8_t m_rtr;            // Remote Transmission Request Bit (RTR)
+    uint8_t m_extended;       // Identifier Extension Bit (IDE)
+    uint8_t m_length;         // Data Length
+    uint8_t m_data[8];        // Message data
 };
+
+typedef enum CAN_MODE {
+  MCP_NORMAL     = 0x00,
+  MCP_SLEEP      = 0x20,
+  MCP_LOOPBACK   = 0x40,
+  MCP_LISTENONLY = 0x60,
+  MCP_CONFIG     = 0x80
+} CAN_MODE;
 
 class MCP_CAN
 {
-public:
+  public:
+    typedef enum CAN_CLOCK {
+      MCP_20MHZ = 0,
+      MCP_16MHZ = 1,
+      MCP_8MHZ  = 2
+    } CAN_CLOCK;
+
+    typedef enum CAN_SPEED {
+      CAN_4K096BPS = 0,
+      CAN_5KBPS    = 1,
+      CAN_10KBPS   = 2,
+      CAN_20KBPS   = 3,
+      CAN_31K25BPS = 4,
+      CAN_40KBPS   = 5,
+      CAN_50KBPS   = 6,
+      CAN_80KBPS   = 7,
+      CAN_100KBPS  = 8,
+      CAN_125KBPS  = 9,
+      CAN_200KBPS  = 10,
+      CAN_250KBPS  = 11,
+      CAN_500KBPS  = 12,
+      CAN_1000KBPS = 13
+    } CAN_SPEED;
+
+    typedef enum ID_MODE_SET {
+      MCP_STDEXT = 0,                                                  /* Standard and Extended        */
+      MCP_STD    = 1,                                                  /* Standard IDs ONLY            */
+      MCP_EXT    = 2,                                                  /* Extended IDs ONLY            */
+      MCP_ANY    = 3                                                   /* Disables Masks and Filters   */
+    } ID_MODE_SET;
+
+    typedef enum CAN_MASK {
+      MASK0,
+      MASK1
+    } MASK;
+
+    typedef enum CAN_FILTER {
+      FILT0,
+      FILT1,
+      FILT2,
+      FILT3,
+      FILT4,
+      FILT5
+    } CAN_FILTER;
+
     MCP_CAN(uint8_t _CS);
-    uint8_t begin(uint8_t idmodeset, uint8_t speedset, uint8_t clockset);       // Initilize controller prameters
-    bool setMode(uint8_t opMode);                                        // Set operational mode
-    uint8_t checkError(void);                                             // Check for errors
-    void softReset(void);                                           // Soft Reset MCP2515
 
-    uint8_t write(CAN_Frame message);                                     // Write a message into a TX buffer
-    
+    bool begin(ID_MODE_SET idmodeset, CAN_SPEED speedset, CAN_CLOCK clockset);       // Initilize controller prameters
+    bool setMode(CAN_MODE opMode);                                        // Set operational mode
+    bool hasError();                                             // Check for errors
+    void softReset();                                           // Soft Reset MCP2515
+
+    bool write(CAN_Frame message);                                     // Write a message into a TX buffer
+
     CAN_Frame read();                                                     // Read message from a RX buffer
-    bool available(void);                                           // Check for received data
-    bool setMask(uint8_t maskNo, uint8_t ext, uint32_t ulData);               // Initilize Mask(s)
-    uint8_t setFilter(uint8_t filterNo, uint8_t ext, uint32_t ulData);               // initilize Filter(s)
+    bool available();                                           // Check for received data
+    bool setMask(CAN_MASK maskNo, uint8_t ext, uint32_t ulData);               // Initilize Mask(s)
+    bool setFilter(CAN_FILTER filterNo, uint8_t ext, uint32_t ulData);               // initilize Filter(s)
 
-private:    
+  private:
     uint8_t   MCPCS;
-    uint8_t   m_curMode;
-    
-/*
-*  mcp2515 driver function 
-*/
-private:
+    CAN_MODE  m_curMode;
 
+  private:
     uint8_t mcp2515_readRegister(const uint8_t address);                    // Read MCP2515 register
-    
+
     void mcp2515_readRegisterS(const uint8_t address,                     // Read MCP2515 successive registers
-	                       uint8_t values[], 
+                               uint8_t values[],
                                const uint8_t n);
-   
+
     void mcp2515_setRegister(const uint8_t address,                       // Set MCP2515 register
                              const uint8_t value);
 
     void mcp2515_setRegisterS(const uint8_t address,                      // Set MCP2515 successive registers
                               const uint8_t values[],
                               const uint8_t n);
-    
+
     void mcp2515_initCANBuffers(void);
-    
+
     void mcp2515_modifyRegister(const uint8_t address,                    // Set specific bit(s) of a register
                                 const uint8_t mask,
                                 const uint8_t data);
 
     uint8_t mcp2515_readStatus(void);                                     // Read MCP2515 Status
-    bool mcp2515_setCANCTRL_Mode(const uint8_t newmode);                 // Set mode
-    uint8_t mcp2515_configRate(const uint8_t canSpeed,                      // Set baudrate
-                             const uint8_t canClock);
-                             
-    uint8_t mcp2515_init(const uint8_t canIDMode,                           // Initialize Controller
-                       const uint8_t canSpeed,
-                       const uint8_t canClock);
-		       
+    bool mcp2515_setCANCTRL_Mode(CAN_MODE newmode);                 // Set mode
+    bool mcp2515_configRate(const CAN_SPEED canSpeed,                      // Set baudrate
+                            const CAN_CLOCK canClock);
+
+    bool mcp2515_init(const uint8_t canIDMode,                           // Initialize Controller
+                      const CAN_SPEED canSpeed,
+                      const CAN_CLOCK canClock);
+
     void mcp2515_write_mf( const uint8_t mcp_addr,                        // Write CAN Mask or Filter
-                               const uint8_t ext,
-                               const uint32_t id );
-			       
+                           const uint8_t ext,
+                           const uint32_t id );
+
     void mcp2515_write_id( const uint8_t mcp_addr,                        // Write CAN ID
-                               const uint8_t ext,
-                               const uint32_t id );
+                           const uint8_t ext,
+                           const uint32_t id );
 
     void mcp2515_read_id( const uint8_t mcp_addr,                         // Read CAN ID
-                                    uint8_t* ext,
-                                    uint32_t* id );
+                          uint8_t* ext,
+                          uint32_t* id );
 
     void mcp2515_write_canMsg(const uint8_t buffer_sidh_addr, CAN_Frame message);          // Write CAN message
     void mcp2515_read_canMsg(const uint8_t buffer_sidh_addr, CAN_Frame *message);            // Read CAN message
@@ -544,6 +379,4 @@ private:
 };
 
 #endif
-/*********************************************************************************************************
-  END FILE
-*********************************************************************************************************/
+

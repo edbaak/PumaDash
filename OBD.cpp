@@ -4,16 +4,10 @@
 #include "CAN.h"
 #include <SD.h>
 
-#define PIN_CAN_BOARD_LED2 8
-
 /*
   Constructor. Only copies the can pointer for internal usage.
 */  
-#ifdef USE_CAN2
-  OBD::OBD(MCP_CAN *can) 
-#else
-  OBD::OBD(CANClass *can) 
-#endif  
+OBD::OBD(MCP_CAN *can) 
 {
   m_CAN = can;
   for (word i=0; i < MAX_UNKNOWN_PIDS; i++)
@@ -27,7 +21,7 @@
 /*
   The usual 'begin' function.
 */  
-void OBD::begin(uint32_t CAN_BitRate, uint8_t mode)
+void OBD::begin(MCP_CAN::CAN_SPEED bitRate, CAN_MODE mode)
 {
     // Switch Pin 10-13 to INPUT mode so they are high impedance, floating. That way we can hardwire Pins 50-53 onto them, so that we can use the CAN-Board on a Mega.
   // Connect pin 53 to 10 == CS (Chip Select)
@@ -43,12 +37,8 @@ void OBD::begin(uint32_t CAN_BitRate, uint8_t mode)
   pinMode(PIN_MEGA_SPI_SCK, OUTPUT);
   pinMode(PIN_MEGA_SPI_CS, OUTPUT);
 
-#ifdef USE_CAN2
-  m_CAN->begin(MCP_ANY, CAN_500KBPS, MCP_16MHZ);
+  m_CAN->begin(MCP_CAN::MCP_STD, bitRate, MCP_CAN::MCP_16MHZ);
   m_CAN->setMode(mode);
-#else
-  m_CAN->begin(CAN_BitRate, mode);
-#endif
 }
 
 /*
@@ -56,9 +46,6 @@ void OBD::begin(uint32_t CAN_BitRate, uint8_t mode)
 */  
 void OBD::end()
 {
-#ifndef USE_CAN2
-	m_CAN->end();
-#endif 
 }
 
 void OBD::refresh(String logFileName)
@@ -67,7 +54,7 @@ void OBD::refresh(String logFileName)
 #ifndef LOOPBACK_MODE
     requestPID(PID_SPEED);
 #else
-    static word speed = 0;
+    static uint8_t speed = 0;
     static bool increment_speed = true;
     if (increment_speed)
       speed += 3;
@@ -76,6 +63,7 @@ void OBD::refresh(String logFileName)
     if (speed >= 115 || speed == 0)
       increment_speed = !increment_speed;
     simulateReply(PID_REPLY, PID_SPEED, speed);
+    simulateReply(PID_REPLY+1, 0x1F, (uint8_t)50);   // Generate noise that should be filtered out
 #endif    
   }
   
@@ -83,24 +71,23 @@ void OBD::refresh(String logFileName)
 #ifndef LOOPBACK_MODE
     requestPID(PID_RPM);
 #else
-    static word rpm = 0;
+    static uint16_t rpm = 0;
     static bool increment_rpm = true;
     if (increment_rpm)
       rpm += 300;
     else
       rpm -= 300;  
-    if (rpm >= 6000 || rpm == 0)
+    if (rpm >= 24000 || rpm == 0)
       increment_rpm = !increment_rpm;
     simulateReply(PID_REPLY, PID_RPM, rpm);  
 #endif
   }
-
-  simulateReply(PID_REPLY+1, 0x1F, 0xFEFE);  
   
+  if (m_coolantTemp.needsUpdate()) {
 #ifndef LOOPBACK_MODE
-  if (m_coolantTemp.needsUpdate())
     requestPID(PID_COOLANT_TEMP);
 #endif
+  }
   
   static bool ledD8_toggle = false;
   String logString;
@@ -113,6 +100,28 @@ void OBD::refresh(String logFileName)
     if (logFileName != "")
       writeToSDFile(logFileName, logString);
   }  
+}
+
+void OBD::simulateReply(uint16_t id, uint16_t pid, uint8_t value)
+{
+  CAN_Frame message;
+    
+  // Prepare message
+  message.m_id = id;
+  message.m_valid = true;   // todo: assuming this is the right value
+  message.m_rtr = 0;        // Must be dominant (0) for data frames and recessive (1) for remote request frames
+  message.m_extended = 0;   // Must be dominant (0) for base frame format with 11-bit identifiers
+  message.m_length = 8;     // eight data bytes follow
+  message.m_data[0] = 0x03; // this means there are x valid bytes with data
+  message.m_data[1] = 0x41; // mode 1 = show current data, mode 2 = show freeze frame
+  message.m_data[2] = pid;  // the requested pid
+  message.m_data[3] = value;
+  message.m_data[4] = 0x00; // unused byte
+  message.m_data[5] = 0x00; // unused byte
+  message.m_data[6] = 0x00; // unused byte
+  message.m_data[7] = 0x00; // unused byte    
+    
+  m_CAN->write(message);
 }
 
 void OBD::simulateReply(uint16_t id, uint16_t pid, uint16_t value)
@@ -128,8 +137,8 @@ void OBD::simulateReply(uint16_t id, uint16_t pid, uint16_t value)
   message.m_data[0] = 0x03; // this means there are x valid bytes with data
   message.m_data[1] = 0x41; // mode 1 = show current data, mode 2 = show freeze frame
   message.m_data[2] = pid;  // the requested pid
-  message.m_data[3] = value;
-  message.m_data[4] = 0x00; // unused byte
+  message.m_data[3] = value >> 8;
+  message.m_data[4] = value && 0x00FF;
   message.m_data[5] = 0x00; // unused byte
   message.m_data[6] = 0x00; // unused byte
   message.m_data[7] = 0x00; // unused byte    
@@ -225,119 +234,25 @@ void OBD::printUnhandledPIDS()
 
 void OBD::setCanFilters(uint32_t filter0, uint32_t filter2, uint32_t filter1, uint32_t filter3, uint32_t filter4, uint32_t filter5)
 {
-#ifdef USE_CAN2
-  m_CAN->setMask(0, false, 0x7FF00000);
-  m_CAN->setMask(1, false, 0x7FF00000);
-  m_CAN->setFilter(0, false, filter0);
-  m_CAN->setFilter(1, false, filter1);
-  m_CAN->setFilter(2, false, filter2);
-  m_CAN->setFilter(3, false, filter3);
-  m_CAN->setFilter(4, false, filter4);
-  m_CAN->setFilter(5, false, filter5);  
-#else  
-  m_CAN->clearFilters();
-  if (filter0 > 0) {
-    Serial.println("Can filters ON");
-    setCanRxMask(RXM0, 0x7FF); 
-    setCanRxFilter(RXF0, filter0);
-    setCanRxFilter(RXF1, filter1);
-    setCanRxMask(RXM1, 0x7FF);
-    setCanRxFilter(RXF2, filter2);
-    setCanRxFilter(RXF3, filter3);
-    setCanRxFilter(RXF4, filter4);
-    setCanRxFilter(RXF5, filter5);      
-  } else {
-    Serial.println("Can filters OFF");    
-  }
-#endif  
-}
-
-/*
-mask = either RXM0 or RXM1
-MaskValue is either an 11 or 29 bit mask value to set
-ext is true if the mask is supposed to be extended (29 bit)
-zero bits for the mask means the related filter bit needs to match exactly, i.e. $7FF for the mask will accept any message ID regardless of the filter value.
-*/
-void OBD::setCanRxMask(uint8_t maskNo, uint32_t MaskValue, bool ext) 
-{
-#ifdef USE_CAN2
-  m_CAN->setMask(maskNo, ext, MaskValue);
-#else
-  byte buf[4];  
-  if (ext) { //fill out all 29 bits
-    buf[0] = byte((MaskValue << 3) >> 24);
-    buf[1] = byte((MaskValue << 11) >> 24) & B11100000;
-    buf[1] |= byte((MaskValue << 14) >> 30);
-    buf[2] = byte((MaskValue << 16)>>24);
-    buf[3] = byte((MaskValue << 24)>>24);
-  }
-  else { //make sure to set mask as 11 bit standard mask
-    buf[0] = byte((MaskValue << 21)>>24);
-    buf[1] = byte((MaskValue << 29) >> 24) & B11100000;
-    buf[2] = 0;
-    buf[3] = 0;
-  }
-
-  Serial.print("MASK: ");
-  Serial.print(buf[0], BIN);
-  Serial.print(" - ");
-  Serial.print(buf[1], BIN);
-  Serial.print(" - ");
-  Serial.print(buf[2], BIN);
-  Serial.print(" - ");
-  Serial.println(buf[3], BIN);
-  m_CAN->setMask(mask, buf[0], buf[1], buf[2], buf[3]); 
-#endif  
-}
-
-/*
-filter = RXF0, RXF1, RXF2, RXF3, RXF4, RXF5 (pick one)
-FilterValue = 11 or 29 bit filter to use
-ext is true if this filter should apply to extended frames or false (default) if it should apply to standard frames.
-*/
-
-void OBD::setCanRxFilter(uint8_t filterNo, uint32_t FilterValue, bool ext) 
-{
-#ifdef USE_CAN2
-  m_CAN->setFilter(filterNo, ext, FilterValue);
-#else
-  byte buf[4];
-  
-  if (ext) { //fill out all 29 bits
-    buf[0] = byte((FilterValue << 3) >> 24);
-    buf[1] = byte((FilterValue << 11) >> 24) & B11100000;
-    buf[1] |= byte((FilterValue << 14) >> 30);
-    buf[1] |= B00001000; //set EXIDE
-    buf[2] = byte((FilterValue << 16)>>24);
-    buf[3] = byte((FilterValue << 24)>>24);
-  }
-  else { //make sure to set mask as 11 bit standard mask
-    buf[0] = byte((FilterValue << 21)>>24);
-    buf[1] = byte((FilterValue << 29) >> 24) & B11100000;
-    buf[2] = 0;
-    buf[3] = 0;
-  }
-
-  Serial.print("FILT: ");
-  Serial.print(buf[0], BIN);
-  Serial.print(" - ");
-  Serial.print(buf[1], BIN);
-  Serial.print(" - ");
-  Serial.print(buf[2], BIN);
-  Serial.print(" - ");
-  Serial.println(buf[3], BIN);
-
-  m_CAN->setFilter(filter, buf[0], buf[1], buf[2], buf[3]); 
-#endif  
+  if (filter0 > 0)
+    m_CAN->setMask(MCP_CAN::MASK0, false, 0x07FF0000);
+  else
+    m_CAN->setMask(MCP_CAN::MASK0, false, 0);
+  if (filter2 > 0)    
+    m_CAN->setMask(MCP_CAN::MASK1, false, 0x07FF0000);
+  else
+    m_CAN->setMask(MCP_CAN::MASK1, false, 0);
+  m_CAN->setFilter(MCP_CAN::FILT0, false, filter0);
+  m_CAN->setFilter(MCP_CAN::FILT1, false, filter1);
+  m_CAN->setFilter(MCP_CAN::FILT2, false, filter2);
+  m_CAN->setFilter(MCP_CAN::FILT3, false, filter3);
+  m_CAN->setFilter(MCP_CAN::FILT4, false, filter4);
+  m_CAN->setFilter(MCP_CAN::FILT5, false, filter5);  
 }
 
 bool OBD::readMessage(String &logString)
 {
-#ifdef USE_CAN2
-  if (m_CAN->available() == CAN_MSGAVAIL) // One or more messages available?
-#else
-  if (m_CAN->available() != 0) // One or more messages available?
-#endif
+  if (m_CAN->available()) // One or more messages available?
   {
     // message will follow the CAN structure of ID, RTR, length, data. Allows both Extended & Standard
     CAN_Frame message = m_CAN->read(); 
@@ -347,12 +262,12 @@ bool OBD::readMessage(String &logString)
     	processMessage(message);
         
   		char buf[150]; 
-  		sprintf(buf, "PID %02X, LEN %02X, MODE %02X, DATA %02X, %02X, %02X, %02X, %02X", 
+  		sprintf(buf, " ,PID %02X, LEN %02X, MODE %02X, DATA %02X, %02X, %02X, %02X, %02X", 
   			message.m_data[2], message.m_data[0], message.m_data[1],
   			message.m_data[3], message.m_data[4], message.m_data[5],
   			message.m_data[6], message.m_data[7]);
   		logString = buf;
-  		return true; //message.m_id == 0x7E8;
+  		return true;
   	} else {
   	  addUnhandledPID(message.m_id);
   	}

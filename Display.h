@@ -7,6 +7,7 @@
 	#include "WProgram.h" // for Arduino 23
 #endif
 
+#include "Utils.h"
 #include <Diablo_Const4D.h>
 #include <Diablo_Serial_4DLib.h>
 #include <string.h>
@@ -21,7 +22,7 @@ public:
   BaseDisplay(Diablo_Serial_4DLib *Display);
 
   virtual void redrawLabels() {};
-  virtual byte displayOrientation() {};
+  virtual byte displayOrientation() { return 0; };
   
   void reset();
   virtual void init();

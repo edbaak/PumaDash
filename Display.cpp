@@ -389,7 +389,7 @@ void CenterDisplay::init()
 
 void CenterDisplay::update()
 {                
-  static unsigned int last_update = 0;
+//  static unsigned int last_update = 0;
 //  if (updateNeeded(last_update, 500))
     updateSpeed(m_obd->m_speed.value());
   updateRpm(m_obd->m_rpm.value());    
