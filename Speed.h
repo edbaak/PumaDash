@@ -1,4 +1,23 @@
 /*
+  2016 Copyright (c) Ed Baak  All Rights Reserved.
+
+  This code is free software; you can redistribute it and/or
+  modify it under the terms of the GNU General Public License 
+  as published by the Free Software Foundation; either
+  version 3 of the License, or (at your option) any later version.
+
+  This code is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+  General Public License for more details.
+
+  You should have received a copy of the GNU General Public License 
+  along with this code; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-
+  1301  USA
+*/
+
+/*
 // Gearbox ratios
 // MT82, 6 speed gearbox
 // First: 5.443:1
@@ -55,19 +74,19 @@ void update();
   float actualSpeed;
 
 // these two values determine min and max values for the actual accelerator position of the pedal, and can be used to calibrate the pedal
-  int maxAcceleratorPosition = 100;
-  int minAcceleratorPosition = 0;
+  int maxAcceleratorPosition;
+  int minAcceleratorPosition;
 
 // this is the simulated accelerator pedal
   int cruiseAcceleratorPosition;
 
 // this is the speed the vehicle had when engagePressed was pressed
-  float cruiseSpeed = 0.0;
-  float minAllowedSpeed = 5.0;
-  float maxAllowedSpeed = 100.0;
+  float cruiseSpeed;
+  float minAllowedSpeed;
+  float maxAllowedSpeed;
 
   bool cruiseControlOn = false;
-  
+
   // Inputs
   Bounce brakePressed;
   Bounce clutchPressed;

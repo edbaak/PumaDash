@@ -1,3 +1,22 @@
+/*
+  2016 Copyright (c) Ed Baak  All Rights Reserved.
+
+  This code is free software; you can redistribute it and/or
+  modify it under the terms of the GNU General Public License 
+  as published by the Free Software Foundation; either
+  version 3 of the License, or (at your option) any later version.
+
+  This code is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+  General Public License for more details.
+
+  You should have received a copy of the GNU General Public License 
+  along with this code; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-
+  1301  USA
+*/
+
 #include <Arduino.h>
 #include "Utils.h" 
 #include "OBD.h"
@@ -7,7 +26,7 @@
 /*
   Constructor. Only copies the can pointer for internal usage.
 */  
-OBD::OBD(MCP_CAN *can) 
+PumaOBD::PumaOBD(PumaCAN *can) 
 {
   m_CAN = can;
   for (word i=0; i < MAX_UNKNOWN_PIDS; i++)
@@ -21,7 +40,7 @@ OBD::OBD(MCP_CAN *can)
 /*
   The usual 'begin' function.
 */  
-void OBD::begin(MCP_CAN::CAN_SPEED bitRate, CAN_MODE mode)
+void PumaOBD::begin(PumaCAN::CAN_SPEED bitRate, PumaCAN::CAN_MODE mode)
 {
     // Switch Pin 10-13 to INPUT mode so they are high impedance, floating. That way we can hardwire Pins 50-53 onto them, so that we can use the CAN-Board on a Mega.
   // Connect pin 53 to 10 == CS (Chip Select)
@@ -37,18 +56,18 @@ void OBD::begin(MCP_CAN::CAN_SPEED bitRate, CAN_MODE mode)
   pinMode(PIN_MEGA_SPI_SCK, OUTPUT);
   pinMode(PIN_MEGA_SPI_CS, OUTPUT);
 
-  m_CAN->begin(MCP_CAN::MCP_STD, bitRate, MCP_CAN::MCP_16MHZ);
+  m_CAN->begin(PumaCAN::MCP_STD, bitRate, PumaCAN::MCP_16MHZ);
   m_CAN->setMode(mode);
 }
 
 /*
   end closes the CAN connection.
 */  
-void OBD::end()
+void PumaOBD::end()
 {
 }
 
-void OBD::refresh(String logFileName)
+void PumaOBD::update()
 {
   if (m_speed.needsUpdate()) {
 #ifndef LOOPBACK_MODE
@@ -62,8 +81,8 @@ void OBD::refresh(String logFileName)
       speed -= 3;  
     if (speed >= 115 || speed == 0)
       increment_speed = !increment_speed;
-    simulateReply(PID_REPLY, PID_SPEED, speed);
-    simulateReply(PID_REPLY+1, 0x1F, (uint8_t)50);   // Generate noise that should be filtered out
+    simulateByteReply(PID_REPLY, PID_SPEED, speed);
+    simulateByteReply(PID_REPLY+1, 0x1F, (uint8_t)50);   // Generate noise that should be filtered out
 #endif    
   }
   
@@ -79,7 +98,7 @@ void OBD::refresh(String logFileName)
       rpm -= 300;  
     if (rpm >= 24000 || rpm == 0)
       increment_rpm = !increment_rpm;
-    simulateReply(PID_REPLY, PID_RPM, rpm);  
+    simulateWordReply(PID_REPLY, PID_RPM, rpm);  
 #endif
   }
   
@@ -97,67 +116,42 @@ void OBD::refresh(String logFileName)
     else digitalWrite(PIN_CAN_BOARD_LED2, LOW);
     Serial.println(logString);
     
-    if (logFileName != "")
-      writeToSDFile(logFileName, logString);
+    logData(logString);
   }  
 }
 
-void OBD::simulateReply(uint16_t id, uint16_t pid, uint8_t value)
+void PumaOBD::simulateByteReply(uint16_t id, uint16_t pid, uint8_t value)
 {
+  uint8_t data[8];
+  data[0] = 0x03; // 3 valid bytes with data following
+  data[1] = 0x41; // mode 1 = show current data, mode 2 = show freeze frame
+  data[2] = pid;  // the simulated pid
+  data[3] = value;
+  data[4] = 0x00; // unused byte
+  data[5] = 0x00; // unused byte
+  data[6] = 0x00; // unused byte
+  data[7] = 0x00; // unused byte    
+
   CAN_Frame message;
-    
-  // Prepare message
-  message.m_id = id;
-  message.m_valid = true;   // todo: assuming this is the right value
-  message.m_rtr = 0;        // Must be dominant (0) for data frames and recessive (1) for remote request frames
-  message.m_extended = 0;   // Must be dominant (0) for base frame format with 11-bit identifiers
-  message.m_length = 8;     // eight data bytes follow
-  message.m_data[0] = 0x03; // this means there are x valid bytes with data
-  message.m_data[1] = 0x41; // mode 1 = show current data, mode 2 = show freeze frame
-  message.m_data[2] = pid;  // the requested pid
-  message.m_data[3] = value;
-  message.m_data[4] = 0x00; // unused byte
-  message.m_data[5] = 0x00; // unused byte
-  message.m_data[6] = 0x00; // unused byte
-  message.m_data[7] = 0x00; // unused byte    
-    
+  message.init(id, 8, &data[0]);
   m_CAN->write(message);
 }
 
-void OBD::simulateReply(uint16_t id, uint16_t pid, uint16_t value)
+void PumaOBD::simulateWordReply(uint16_t id, uint16_t pid, uint16_t value)
 {
-  CAN_Frame message;
-    
-  // Prepare message
-  message.m_id = id;
-  message.m_valid = true;   // todo: assuming this is the right value
-  message.m_rtr = 0;        // Must be dominant (0) for data frames and recessive (1) for remote request frames
-  message.m_extended = 0;   // Must be dominant (0) for base frame format with 11-bit identifiers
-  message.m_length = 8;     // eight data bytes follow
-  message.m_data[0] = 0x03; // this means there are x valid bytes with data
-  message.m_data[1] = 0x41; // mode 1 = show current data, mode 2 = show freeze frame
-  message.m_data[2] = pid;  // the requested pid
-  message.m_data[3] = value >> 8;
-  message.m_data[4] = value && 0x00FF;
-  message.m_data[5] = 0x00; // unused byte
-  message.m_data[6] = 0x00; // unused byte
-  message.m_data[7] = 0x00; // unused byte    
-    
-  m_CAN->write(message);
-}
+  uint8_t data[8];
+  data[0] = 0x03; // 4 valid bytes with data following
+  data[1] = 0x41; // mode 1 = show current data, mode 2 = show freeze frame
+  data[2] = pid;  // the simulated pid
+  data[3] = value >> 8;
+  data[4] = value && 0x00FF;
+  data[5] = 0x00; // unused byte
+  data[6] = 0x00; // unused byte
+  data[7] = 0x00; // unused byte    
 
-// Simple helper function to write a string to a logging file
-void OBD::writeToSDFile(String fileName, String s)
-{
-  File dataFile = SD.open(fileName, FILE_WRITE);
-  if (dataFile) {
-    dataFile.print(millis());
-    dataFile.print(" ");
-    dataFile.println(s);
-    dataFile.close();   //close file
-  } else {
-    Serial.println("Error opening SD file for logging");
-  }
+  CAN_Frame message;
+  message.init(id, 8, &data[0]);    
+  m_CAN->write(message);
 }
 
 /*
@@ -167,17 +161,13 @@ void OBD::writeToSDFile(String fileName, String s)
   
   The staleness of data is dealt with separately.
 */  
-void OBD::requestPID(uint16_t pid)
+void PumaOBD::requestPID(uint16_t pid)
 {
 /*
   uint32_t id      : 29;  // if (extended == CAN_RECESSIVE) { extended ID } else { standard ID }
-  uint8_t valid    : 1;   // To avoid passing garbage frames around
   uint8_t rtr      : 1;   // Remote Transmission Request Bit (RTR)
   uint8_t extended : 1;   // Identifier Extension Bit (IDE)
-  uint32_t fid;           // family ID
-  uint8_t priority : 4;   // Priority but only important for TX frames and then only for special uses.
   uint8_t length   : 4;   // Data Length
-  uint16_t timeout;       // milliseconds, zero will disable waiting
   uint8_t data[8];        // Message data
 */
  
@@ -185,7 +175,6 @@ void OBD::requestPID(uint16_t pid)
     
 	// Prepare message
 	message.m_id = PID_REQUEST;
-	message.m_valid = true;   // todo: assuming this is the right value
 	message.m_rtr = 0;        // Must be dominant (0) for data frames and recessive (1) for remote request frames
 	message.m_extended = 0;   // Must be dominant (0) for base frame format with 11-bit identifiers
 	message.m_length = 8;     // eight data bytes follow
@@ -201,7 +190,7 @@ void OBD::requestPID(uint16_t pid)
   m_CAN->write(message);
 }
 
-void OBD::addUnhandledPID(uint16_t pid)
+void PumaOBD::addUnhandledPID(uint16_t pid)
 {
   for (word i=0; i < MAX_UNKNOWN_PIDS; i++) {
     // If we have reached the end of the list, we apparently don't know the PID yet, so we add it. 
@@ -217,7 +206,7 @@ void OBD::addUnhandledPID(uint16_t pid)
   }  	
 }
 
-void OBD::printUnhandledPIDS()
+void PumaOBD::printUnhandledPIDS()
 {
   Serial.print("UNHANDLED PIDS: ");
   for (word i=0; i < MAX_UNKNOWN_PIDS; i++) {
@@ -232,25 +221,25 @@ void OBD::printUnhandledPIDS()
   Serial.println(" ");
 }
 
-void OBD::setCanFilters(uint32_t filter0, uint32_t filter2, uint32_t filter1, uint32_t filter3, uint32_t filter4, uint32_t filter5)
+void PumaOBD::setCanFilters(uint32_t filter0, uint32_t filter2, uint32_t filter1, uint32_t filter3, uint32_t filter4, uint32_t filter5)
 {
   if (filter0 > 0)
-    m_CAN->setMask(MCP_CAN::MASK0, false, 0x07FF0000);
+    m_CAN->setMask(PumaCAN::MASK0, false, 0x07FF0000);
   else
-    m_CAN->setMask(MCP_CAN::MASK0, false, 0);
+    m_CAN->setMask(PumaCAN::MASK0, false, 0);
   if (filter2 > 0)    
-    m_CAN->setMask(MCP_CAN::MASK1, false, 0x07FF0000);
+    m_CAN->setMask(PumaCAN::MASK1, false, 0x07FF0000);
   else
-    m_CAN->setMask(MCP_CAN::MASK1, false, 0);
-  m_CAN->setFilter(MCP_CAN::FILT0, false, filter0);
-  m_CAN->setFilter(MCP_CAN::FILT1, false, filter1);
-  m_CAN->setFilter(MCP_CAN::FILT2, false, filter2);
-  m_CAN->setFilter(MCP_CAN::FILT3, false, filter3);
-  m_CAN->setFilter(MCP_CAN::FILT4, false, filter4);
-  m_CAN->setFilter(MCP_CAN::FILT5, false, filter5);  
+    m_CAN->setMask(PumaCAN::MASK1, false, 0);
+  m_CAN->setFilter(PumaCAN::FILT0, false, filter0);
+  m_CAN->setFilter(PumaCAN::FILT1, false, filter1);
+  m_CAN->setFilter(PumaCAN::FILT2, false, filter2);
+  m_CAN->setFilter(PumaCAN::FILT3, false, filter3);
+  m_CAN->setFilter(PumaCAN::FILT4, false, filter4);
+  m_CAN->setFilter(PumaCAN::FILT5, false, filter5);  
 }
 
-bool OBD::readMessage(String &logString)
+bool PumaOBD::readMessage(String &logString)
 {
   if (m_CAN->available()) // One or more messages available?
   {
@@ -275,7 +264,7 @@ bool OBD::readMessage(String &logString)
   return false;
 }
          
-bool OBD::processMessage(CAN_Frame message)
+bool PumaOBD::processMessage(CAN_Frame message)
 {
 	uint16_t pid = message.m_id;
 	uint8_t *data = &message.m_data[0];

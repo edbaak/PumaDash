@@ -1,7 +1,26 @@
+/*
+  2016 Copyright (c) Ed Baak  All Rights Reserved.
+
+  This code is free software; you can redistribute it and/or
+  modify it under the terms of the GNU General Public License 
+  as published by the Free Software Foundation; either
+  version 3 of the License, or (at your option) any later version.
+
+  This code is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+  General Public License for more details.
+
+  You should have received a copy of the GNU General Public License 
+  along with this code; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-
+  1301  USA
+*/
+
 #include "Utils.h"
 #include <SD.h>
 
-String g_logFileName;
+String g_logFileName = "";
 
 void uniqueLogFileName()
 {
@@ -44,7 +63,6 @@ void uniqueLogFileName()
 
 void initLogging()
 {
-  Serial.println("Initializing SD card");
   // Init pins for the two leds on the CAN board
   pinMode(PIN_CAN_BOARD_LED1, OUTPUT);
   pinMode(PIN_CAN_BOARD_LED2, OUTPUT);
@@ -56,11 +74,29 @@ void initLogging()
 
   // see if the card is present and can be initialized:
   if (!SD.begin(PIN_CAN_BOARD_SD_chipSelect)) {
-    Serial.println("SD Card failed, or not present");
+    Serial.println("SD Card failed, or not present: Logging disabled");
   } else {
     uniqueLogFileName();
     Serial.print("Logging to ");
     Serial.println(g_logFileName);
   }
 }
+
+// Simple helper function to write a string to a logging file
+void logData(String s)
+{
+  if (g_logFileName == "")
+    return;
+    
+  File dataFile = SD.open(g_logFileName, FILE_WRITE);
+  if (dataFile) {
+    dataFile.print(millis());
+    dataFile.print(" ");
+    dataFile.println(s);
+    dataFile.close();   //close file
+  } else {
+    Serial.println("Error opening SD file for logging");
+  }
+}
+
 

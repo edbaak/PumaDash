@@ -1,3 +1,22 @@
+/*
+  2016 Copyright (c) Ed Baak  All Rights Reserved.
+
+  This code is free software; you can redistribute it and/or
+  modify it under the terms of the GNU General Public License 
+  as published by the Free Software Foundation; either
+  version 3 of the License, or (at your option) any later version.
+
+  This code is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+  General Public License for more details.
+
+  You should have received a copy of the GNU General Public License 
+  along with this code; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-
+  1301  USA
+*/
+
 #ifndef Displays_h
 #define Displays_h
  
@@ -34,8 +53,8 @@ public:
 
 protected:
   Diablo_Serial_4DLib *Display_;
-  word display_max_width = 0;
-  word display_max_height = 0;
+  word display_max_width;
+  word display_max_height;
   int top_separator_line;
   int mid_separator_line;
   int bottom_separator_line;
@@ -44,10 +63,10 @@ protected:
   int mid_screen;   
 };
 
-class LeftDisplay : public BaseDisplay
+class Screen0 : public BaseDisplay
 {
 public:
-  LeftDisplay(Diablo_Serial_4DLib *Display, Direction *directionControl, Tpms *tpms);
+  Screen0(Diablo_Serial_4DLib *Display, Direction *directionControl, Tpms *tpms);
   void update();
   void redrawLabels(); 
   virtual byte displayOrientation();
@@ -63,10 +82,10 @@ private:
   Tpms *m_Tpms;  
 };
 
-class CenterDisplay : public BaseDisplay
+class Screen1 : public BaseDisplay
 {
 public:
-  CenterDisplay(Diablo_Serial_4DLib *Display, OBD *obd);
+  Screen1(Diablo_Serial_4DLib *Display, PumaOBD *obd);
   void update();
   void redrawLabels(); 
   virtual byte displayOrientation();
@@ -77,7 +96,7 @@ protected:
   void updateRpm(word rpm);
       
 private:
-  OBD *m_obd;
+  PumaOBD *m_obd;
   word y_mid;
   word x_mid;
   word left_vertical;
@@ -89,10 +108,10 @@ private:
   word label3_y_offset;
 };
 
-class RightDisplay : public BaseDisplay
+class Screen2 : public BaseDisplay
 {
 public:
-  RightDisplay(Diablo_Serial_4DLib *Display, CruiseCtrl *control);
+  Screen2(Diablo_Serial_4DLib *Display, CruiseCtrl *control);
   void update();
   void redrawLabels(); 
   virtual byte displayOrientation();

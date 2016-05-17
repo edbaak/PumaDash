@@ -1,6 +1,21 @@
 /*
-   Displays.cpp - Library for ...
- */
+  2016 Copyright (c) Ed Baak  All Rights Reserved.
+
+  This code is free software; you can redistribute it and/or
+  modify it under the terms of the GNU General Public License 
+  as published by the Free Software Foundation; either
+  version 3 of the License, or (at your option) any later version.
+
+  This code is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+  General Public License for more details.
+
+  You should have received a copy of the GNU General Public License 
+  along with this code; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-
+  1301  USA
+*/
 
 #include "Utils.h"
 #include "Display.h"
@@ -14,6 +29,8 @@
 BaseDisplay::BaseDisplay(Diablo_Serial_4DLib *Display)
 {
   Display_ = Display;
+  display_max_width = 0;
+  display_max_height = 0;
 
   // Set D4 on Arduino to Output (4D Arduino Adaptor V2 - Display Reset)
   pinMode(uLCD_DISPLAY_RESETLINE, OUTPUT);
@@ -113,18 +130,18 @@ void BaseDisplay::updateStatusBar()
 //                                              LEFT DISPLAY
 // ******************************************************************************************************
 
-LeftDisplay::LeftDisplay(Diablo_Serial_4DLib *Display, Direction *directionControl, Tpms *tpms) : BaseDisplay(Display)
+Screen0::Screen0(Diablo_Serial_4DLib *Display, Direction *directionControl, Tpms *tpms) : BaseDisplay(Display)
 {
   m_DirectionControl = directionControl;
   m_Tpms = tpms;
 }
 
-byte LeftDisplay::displayOrientation() 
+byte Screen0::displayOrientation() 
 {
   return PORTRAIT; 
 }
 
-void LeftDisplay::update()
+void Screen0::update()
 {              
   updateCompass(m_DirectionControl->compass());
   updatePitch(10, 8, 7, m_DirectionControl->pitch());
@@ -142,7 +159,7 @@ void LeftDisplay::update()
   updateStatusBar();
 }
 
-void LeftDisplay::redrawLabels()
+void Screen0::redrawLabels()
 {
   Display_->txt_FGcolour(WHITE);
   Display_->gfx_MoveTo(120, top_separator_line + 3);
@@ -158,7 +175,7 @@ void LeftDisplay::redrawLabels()
   Display_->gfx_Line(start_x, top_separator_line, end_x, top_separator_line, WHITE);
 }
 
-void LeftDisplay::updatePitch(byte x, byte y, byte interleave, int angle)
+void Screen0::updatePitch(byte x, byte y, byte interleave, int angle)
 {  
   static unsigned int last_update = 0;
   unsigned int tmp = millis();
@@ -213,7 +230,7 @@ void LeftDisplay::updatePitch(byte x, byte y, byte interleave, int angle)
   Display_->gfx_TriangleFilled(x_, y_, x_ + 20, y_ - 5, x_ + 20, y_ + 5, color); 
 }
 
-void LeftDisplay::updateRoll(byte x, byte y, byte interleave, int angle)
+void Screen0::updateRoll(byte x, byte y, byte interleave, int angle)
 {
   static unsigned int last_update = 0;
   unsigned int tmp = millis();
@@ -266,7 +283,7 @@ void LeftDisplay::updateRoll(byte x, byte y, byte interleave, int angle)
   Display_->gfx_TriangleFilled(x_, y_, x_ - 5, y_ - 20, x_ + 5, y_ - 20, color); 
 }
 
-void LeftDisplay::updateCompass(word heading)
+void Screen0::updateCompass(word heading)
 {  
   static long int old_heading = -1;
   static unsigned int last_update = 0;
@@ -311,7 +328,7 @@ void LeftDisplay::updateCompass(word heading)
   }
 }
 
-void LeftDisplay::updateTPMSvalue(byte tireLocation)
+void Screen0::updateTPMSvalue(byte tireLocation)
 {
   #define TPMS_X1_OFFSET 55
   #define TPMS_Y1_OFFSET 75
@@ -365,12 +382,12 @@ void LeftDisplay::updateTPMSvalue(byte tireLocation)
 //                                              CENTER DISPLAY
 // ******************************************************************************************************
 
-CenterDisplay::CenterDisplay(Diablo_Serial_4DLib *Display, OBD *obd) : BaseDisplay(Display)
+Screen1::Screen1(Diablo_Serial_4DLib *Display, PumaOBD *obd) : BaseDisplay(Display)
 {
   m_obd = obd;
 }
 
-void CenterDisplay::init()
+void Screen1::init()
 {
   BaseDisplay::init();
   
@@ -387,7 +404,7 @@ void CenterDisplay::init()
 
 #define rpm_radius 130
 
-void CenterDisplay::update()
+void Screen1::update()
 {                
 //  static unsigned int last_update = 0;
 //  if (updateNeeded(last_update, 500))
@@ -396,12 +413,12 @@ void CenterDisplay::update()
   updateStatusBar();
 }
 
-byte CenterDisplay::displayOrientation() 
+byte Screen1::displayOrientation() 
 {
   return LANDSCAPE; 
 }
 
-void CenterDisplay::redrawLabels()
+void Screen1::redrawLabels()
 {
   Display_->txt_FGcolour(WHITE);
   Display_->gfx_LinePattern(0);
@@ -528,7 +545,7 @@ void CenterDisplay::redrawLabels()
 */
 }
 
-void CenterDisplay::updateSpeed(word speed)
+void Screen1::updateSpeed(word speed)
 {
   word color = GREEN;
   if (speed > 110)
@@ -563,7 +580,7 @@ void CenterDisplay::updateSpeed(word speed)
   Display_->print(speed);  
 }
 
-void CenterDisplay::updateRpm(word rpm)
+void Screen1::updateRpm(word rpm)
 {
   word color = GREEN;
   if (rpm >= 4000)
@@ -612,17 +629,17 @@ void CenterDisplay::updateRpm(word rpm)
 //                                             RIGHT DISPLAY
 // ******************************************************************************************************
 
-RightDisplay::RightDisplay(Diablo_Serial_4DLib *Display, CruiseCtrl *control) : BaseDisplay(Display)
+Screen2::Screen2(Diablo_Serial_4DLib *Display, CruiseCtrl *control) : BaseDisplay(Display)
 {
   m_CruiseControl = control;
 }
 
-byte RightDisplay::displayOrientation() 
+byte Screen2::displayOrientation() 
 {
   return PORTRAIT; 
 }
 
-void RightDisplay::update()
+void Screen2::update()
 {                
   static unsigned int last_update = 0;
   if (updateNeeded(last_update, 3000)) {
@@ -632,7 +649,7 @@ void RightDisplay::update()
   updateStatusBar();
 }
 
-void RightDisplay::redrawLabels()
+void Screen2::redrawLabels()
 {
   Display_->txt_FGcolour(WHITE);
   
@@ -651,7 +668,7 @@ void RightDisplay::redrawLabels()
   Display_->print("On-Board Diagnostics");
 }
 
-void RightDisplay::updateCruiseControl()
+void Screen2::updateCruiseControl()
 {  
   static unsigned int last_update = 0;
   unsigned int tmp = millis();
@@ -675,7 +692,7 @@ void RightDisplay::updateCruiseControl()
   }  
 }
 
-void RightDisplay::updateOBD2Status()
+void Screen2::updateOBD2Status()
 {
   static unsigned int last_update = 0;
   unsigned int tmp = millis();

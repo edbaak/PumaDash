@@ -1,4 +1,23 @@
 /*
+  2016 Copyright (c) Ed Baak  All Rights Reserved.
+
+  This code is free software; you can redistribute it and/or
+  modify it under the terms of the GNU General Public License 
+  as published by the Free Software Foundation; either
+  version 3 of the License, or (at your option) any later version.
+
+  This code is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+  General Public License for more details.
+
+  You should have received a copy of the GNU General Public License 
+  along with this code; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-
+  1301  USA
+*/
+
+/*
 // Land Rover Defender MY12 Puma Dashboard
 // Ford 2.2L TDCI uses CAN 11bit (500Kb)
 // Protocol ISO 15765-4 11Bit (500Kb)
@@ -273,26 +292,22 @@ private:
   word m_value;
 };
        
-class OBD
+class PumaOBD
 {
 public:
-  OBD(MCP_CAN *can);
-  virtual void begin(MCP_CAN::CAN_SPEED bitRate, CAN_MODE mode);
+  PumaOBD(PumaCAN *can);
+  virtual void begin(PumaCAN::CAN_SPEED bitRate, PumaCAN::CAN_MODE mode);
 	virtual void end();
 
-  void setCanFilters(uint32_t filter0, uint32_t filter2 = 0x00, uint32_t filter1 = 0x00, uint32_t filter3 = 0x00, uint32_t filter4 = 0x00, uint32_t filter5 = 0x00);
-
-  virtual void refresh(String logFileName);
+  virtual void update();
     
-	// send query for specified PID
   virtual void requestPID(uint16_t pid);
-  virtual void simulateReply(uint16_t id, uint16_t pid, uint8_t value);
-  virtual void simulateReply(uint16_t id, uint16_t pid, uint16_t value);
+  virtual void simulateByteReply(uint16_t id, uint16_t pid, uint8_t value);
+  virtual void simulateWordReply(uint16_t id, uint16_t pid, uint16_t value);
 
 	// Read message from CAN bus if available
 	bool readMessage(String &logString);
-
-  void writeToSDFile(String fileName, String s);
+  void setCanFilters(uint32_t filter0, uint32_t filter2 = 0x00, uint32_t filter1 = 0x00, uint32_t filter3 = 0x00, uint32_t filter4 = 0x00, uint32_t filter5 = 0x00);
   		
   OBDByteValue m_speed;
   OBDWordValue m_rpm;
@@ -305,7 +320,7 @@ protected:
     void printUnhandledPIDS();
 	
 private:
-  MCP_CAN *m_CAN;
+  PumaCAN *m_CAN;
   uint16_t m_unknownPIDS[MAX_UNKNOWN_PIDS];
 };
 

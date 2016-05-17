@@ -1,6 +1,22 @@
 /*
-  Copyright (c) 2016 by Ed Baak
+  2016 Copyright (c) Ed Baak  All Rights Reserved.
+
+  This code is free software; you can redistribute it and/or
+  modify it under the terms of the GNU General Public License 
+  as published by the Free Software Foundation; either
+  version 3 of the License, or (at your option) any later version.
+
+  This code is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+  General Public License for more details.
+
+  You should have received a copy of the GNU General Public License 
+  along with this code; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-
+  1301  USA
 */
+
 #include "Utils.h"
 #include <SPI.h>
 #include "CAN.h"
@@ -10,6 +26,9 @@
 #include "Tpms.h"
 #include "Position.h"
 #include "Speed.h"
+#undef DEC
+#undef HEX
+#undef BIN
 #include <Diablo_Const4D.h>
 #include <Diablo_Serial_4DLib.h>
 #include "Display.h"
@@ -17,14 +36,14 @@
 Tpms g_Tpms; // Tpms class deals with Tire Pressure Monitoring
 Direction g_Position; // Position class deals with GPS position & pitch and roll of vehicle
 CruiseCtrl g_Speed; // Speed class implements a Cruise Control, and deals with gearbox ratios etc to calculate gear shifts
-MCP_CAN g_Can(PIN_MEGA_SPI_CS); // CAN class implements the CAN messaging protocol
-OBD g_Obd(&g_Can); // OBS class implements the On Board Diagnostics for the Vehicle
+PumaCAN g_Can(PIN_MEGA_SPI_CS); // CAN class implements the CAN messaging protocol
+PumaOBD g_Obd(&g_Can); // OBS class implements the On Board Diagnostics for the Vehicle
 Diablo_Serial_4DLib Display(&DisplaySerial); // Basic display driver
-LeftDisplay g_LeftDisplay(&Display, &g_Position, &g_Tpms); // Implements all things to do with the 'Left' display
-CenterDisplay g_CenterDisplay(&Display, &g_Obd); // Implements all things to do with the 'Center' display
-RightDisplay g_RightDisplay(&Display, &g_Speed); // Implements all things to do with the 'Right' display
+Screen0 g_screen0(&Display, &g_Position, &g_Tpms); // Implements all things to do with the 'Left' display
+Screen1 g_screen1(&Display, &g_Obd); // Implements all things to do with the 'Center' display
+Screen2 g_screen2(&Display, &g_Speed); // Implements all things to do with the 'Right' display
 
-byte g_active_display = 1; // Define the default display. We can change this by tapping the touchscreen
+byte g_active_screen = 1; // Define the default screen. We can change this by tapping the touchscreen
 
 // the setup function runs once when you press reset or power the board
 void setup() {  
@@ -33,58 +52,55 @@ void setup() {
   initLogging();
 
 #ifdef LOOPBACK_MODE
-  g_Obd.begin(MCP_CAN::CAN_500KBPS, MCP_LOOPBACK);
+  g_Obd.begin(PumaCAN::CAN_500KBPS, PumaCAN::MCP_LOOPBACK);
 #else
-  g_Obd.begin(MCP_CAN::CAN_500KBPS, MCP_NORMAL);
+  g_Obd.begin(PumaCAN::CAN_500KBPS, PumaCAN::MCP_NORMAL);
 #endif
   g_Obd.setCanFilters(0x07E80000, 0x07E80000);
 
-  // we're assuming we're connecting to the left display, but will be switching to center or right display as needed in the code.
-  // in practice it doesn't really matter as there really only one display connected and all three displays use the same
-  // connection to communicate with the display. In other words, what changes is *what* information we present on the 
-  // display, and not *how* we communicate with the display.
-  g_LeftDisplay.reset();
+  // Reset the display. It doesn't really matter which screen we used: it's all the 
+  // same physical display.
+  g_screen0.reset();
 }
 
 // the loop function runs over and over again forever
+bool g_init_display = true;
 void loop() {
-  static bool init_display = true;
-  
   g_Tpms.update();
   g_Position.update();
-  g_Obd.refresh(g_logFileName);
+  g_Obd.update();
   g_Speed.update();
 
-  if (!init_display && g_LeftDisplay.touchPressed()) {
+  if (!g_init_display && g_screen0.touchPressed()) {
     Display.gfx_Cls();
-    g_active_display++;
-    if (g_active_display > 2)
-      g_active_display = 0;
-    init_display = true;      
+    g_active_screen++;
+    if (g_active_screen > 2)
+      g_active_screen = 0;
+    g_init_display = true;      
   }
 
-  if (init_display) {
-    init_display = false;
-    switch (g_active_display) {
+  if (g_init_display) {
+    g_init_display = false;
+    switch (g_active_screen) {
       case 0: 
-        g_LeftDisplay.init();
-        g_LeftDisplay.redrawLabels(); 
+        g_screen0.init();
+        g_screen0.redrawLabels(); 
         break;
       case 1: 
-        g_CenterDisplay.init();
-        g_CenterDisplay.redrawLabels(); 
+        g_screen1.init();
+        g_screen1.redrawLabels(); 
         break;
       case 2: 
-        g_RightDisplay.init();
-        g_RightDisplay.redrawLabels(); 
+        g_screen2.init();
+        g_screen2.redrawLabels(); 
         break;
     }
   }
 
-  switch (g_active_display) {
-    case 0: g_LeftDisplay.update(); break;
-    case 1: g_CenterDisplay.update(); break;
-    case 2: g_RightDisplay.update(); break;
+  switch (g_active_screen) {
+    case 0: g_screen0.update(); break;
+    case 1: g_screen1.update(); break;
+    case 2: g_screen2.update(); break;
   }
 }
 

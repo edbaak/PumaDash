@@ -1,8 +1,6 @@
 /*
-  CAN.h
   2012 Copyright (c) Seeed Technology Inc.  All right reserved.
   2014 Copyright (c) Cory J. Fowler  All Rights Reserved.
-  2016 Copyright (c) Ed Baak  All Rights Reserved.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -19,6 +17,28 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-
   1301  USA
 */
+/*
+  2016 Copyright (c) Ed Baak  All Rights Reserved.
+
+  This code is free software; you can redistribute it and/or
+  modify it under the terms of the GNU General Public License 
+  as published by the Free Software Foundation; either
+  version 3 of the License, or (at your option) any later version.
+
+  In cases where the GPL 3 is conflicting the the LGPL mentioned above, 
+  LGPL needs to be followed.
+
+  This code is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+  General Public License for more details.
+
+  You should have received a copy of the GNU General Public License 
+  along with this code; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-
+  1301  USA
+*/
+
 #ifndef _MCP2515_H_
 #define _MCP2515_H_
 
@@ -37,8 +57,7 @@
 #define uint8_t byte
 #endif
 
-// if print debug information
-#define DEBUG_MODE 1
+//#define CAN_DEBUG 1                                                   /* print debug information */
 
 /*
  *   Begin mt
@@ -248,26 +267,17 @@ class CAN_Frame
 {
   public:
     CAN_Frame();
-    void init(uint32_t id, uint8_t ext, uint8_t len, uint8_t *buf);
+    void init(uint32_t id, uint8_t len, uint8_t *buf);
     void clear();
 
     uint32_t m_id;            // if (extended == CAN_RECESSIVE) { extended ID } else { standard ID }
-    uint8_t m_valid;          // To avoid passing garbage frames around
     uint8_t m_rtr;            // Remote Transmission Request Bit (RTR)
     uint8_t m_extended;       // Identifier Extension Bit (IDE)
     uint8_t m_length;         // Data Length
     uint8_t m_data[8];        // Message data
 };
 
-typedef enum CAN_MODE {
-  MCP_NORMAL     = 0x00,
-  MCP_SLEEP      = 0x20,
-  MCP_LOOPBACK   = 0x40,
-  MCP_LISTENONLY = 0x60,
-  MCP_CONFIG     = 0x80
-} CAN_MODE;
-
-class MCP_CAN
+class PumaCAN
 {
   public:
     typedef enum CAN_CLOCK {
@@ -314,7 +324,15 @@ class MCP_CAN
       FILT5
     } CAN_FILTER;
 
-    MCP_CAN(uint8_t _CS);
+    typedef enum CAN_MODE {
+      MCP_NORMAL     = 0x00,
+      MCP_SLEEP      = 0x20,
+      MCP_LOOPBACK   = 0x40,
+      MCP_LISTENONLY = 0x60,
+      MCP_CONFIG     = 0x80
+    } CAN_MODE;
+    
+    PumaCAN(uint8_t _CS);
 
     bool begin(ID_MODE_SET idmodeset, CAN_SPEED speedset, CAN_CLOCK clockset);       // Initilize controller prameters
     bool setMode(CAN_MODE opMode);                                        // Set operational mode
