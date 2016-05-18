@@ -2,7 +2,7 @@
   2016 Copyright (c) Ed Baak  All Rights Reserved.
 
   This code is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License 
+  modify it under the terms of the GNU General Public License
   as published by the Free Software Foundation; either
   version 3 of the License, or (at your option) any later version.
 
@@ -11,7 +11,7 @@
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
 
-  You should have received a copy of the GNU General Public License 
+  You should have received a copy of the GNU General Public License
   along with this code; if not, write to the Free Software
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-
   1301  USA
@@ -22,7 +22,7 @@
 // Ford 2.2L TDCI uses CAN 11bit (500Kb)
 // Protocol ISO 15765-4 11Bit (500Kb)
 */
- 
+
 #ifndef OBD_h
 #define OBD_h
 
@@ -198,7 +198,7 @@
 // Currently NOT supported
 
 // ***************************************************************
-// Mode 06h = Test results, other component/system monitoring (Test results, oxygen sensor 
+// Mode 06h = Test results, other component/system monitoring (Test results, oxygen sensor
 // monitoring for CAN only)
 // ***************************************************************
 
@@ -232,96 +232,188 @@
 
 
 // ***************************************************************
-// The following PID values are more interesting for internal usage, and not expected to 
+// The following PID values are more interesting for internal usage, and not expected to
 // be used in apps directly
 // ***************************************************************
 
 // To request the value of a specific PID, a PID_REQUEST is done to the CAN bus
 #define PID_REQUEST         0x7DF
 
-// When an ECU responds to a PID_REQUEST it will reply with a PID_REPLY code. 
-// A 0x7E8 will come from the main ECU in the system. Other ECU's will have higher 
+// When an ECU responds to a PID_REQUEST it will reply with a PID_REPLY code.
+// A 0x7E8 will come from the main ECU in the system. Other ECU's will have higher
 // numbers, i.e. 0x7E9, 0x7EA, etc
 #define PID_REPLY			0x7E8
 
-// Max number of PID's that are communicated on the bus and that we can't process
-#define MAX_UNKNOWN_PIDS 50
 
 // The following 0x PID's are emitted by the Puma ECU and are ignored by OBD
 // 16E, 193, 34B, 4C0, E1, 9A, 226, 394, DF, DD, 2B8, 2DD, 1B8, 400, 405, DC, E0, 5C0, 326
+// To discover new unknown PIDS, enable RECORD_UNKNOWN_PIDS
+//#define RECORD_UNKNOWN_PIDS
+#ifdef RECORD_UNKNOWN_PIDS
+#define MAX_UNKNOWN_PIDS 50 // Max number of PID's that are communicated on the bus and that we can't process
+#endif
 
+typedef enum OBD_DATA_CONVERSION {
+  PLAIN_BYTE_CONVERSION,
+  TEMPERATURE_INT_CONVERSION,
+  PLAIN_WORD_CONVERSION,
+  DIV4_WORD_CONVERSION
+} OBD_DATA_CONVERSION;
 
 class OBDDataValue
 {
-public:
-  OBDDataValue();
-  void init(uint8_t pid, uint16_t updateInterval);
-  uint8_t pid();
-  void resetUpdateTimer();
-  bool needsUpdate();
-  void updateRequested();
-  
-protected:
-  unsigned long m_lastUpdate;
-  unsigned long m_updateRequested;
-  uint16_t m_updateInterval;
-  uint8_t m_pid;  
+  public:
+    OBDDataValue();
+    OBDDataValue(uint8_t pid, String label, uint16_t updateInterval, OBD_DATA_CONVERSION conversion);
+    virtual ~OBDDataValue();
+
+    uint8_t pid();
+    void resetUpdateTimer();
+    bool needsUpdate();
+    void updateRequested();
+    String label();
+    virtual uint8_t dataBytes() {
+      return 0;
+    }
+    virtual void setValue(uint8_t *data) {};
+    virtual byte byteValue() {
+      return 0;
+    };
+    virtual word wordValue() {
+      return 0;
+    };
+#ifdef LOOPBACK_MODE
+    virtual uint8_t simulateByte() {
+      return 0;
+    };
+    virtual uint16_t simulateWord() {
+      return 0;
+    };
+    virtual int8_t simulateInt() {
+      return 0;
+    };
+#endif
+
+  protected:
+    friend class PumaOBD;
+    OBDDataValue *m_next;
+    unsigned long m_lastUpdate;
+    unsigned long m_updateRequested;
+    uint16_t m_updateInterval;
+    uint8_t m_pid;
+    String m_label;
+    uint32_t m_simulator;
+    OBD_DATA_CONVERSION m_conversion;
 };
 
 class OBDByteValue : public OBDDataValue
 {
-public:
-  OBDByteValue();
-  String toString();
-  virtual void setValue(byte newValue);
-  byte value();
-  
-private:
-  byte m_value;
+  public:
+    OBDByteValue(uint8_t pid, String label, uint16_t updateInterval, OBD_DATA_CONVERSION conversion, byte min = 0, byte max = 0, byte step = 0);
+    String toString();
+    virtual void setValue(byte newValue);
+    virtual void setValue(uint8_t *data);
+    virtual byte byteValue();
+    virtual uint8_t dataBytes() {
+      return 1;
+    }
+#ifdef LOOPBACK_MODE
+    virtual uint8_t simulateByte();
+#endif
+
+  private:
+    byte m_value;
+#ifdef LOOPBACK_MODE
+    byte m_simValue;
+    bool m_simIncrease;
+    byte m_simMinValue;
+    byte m_simMaxValue;
+    byte m_simStepValue;
+#endif
 };
-       
+
+class OBDIntValue : public OBDDataValue
+{
+  public:
+    OBDIntValue(uint8_t pid, String label, uint16_t updateInterval, OBD_DATA_CONVERSION conversion, int min = 0, int max = 0, int step = 0);
+    String toString();
+    virtual void setValue(int newValue);
+    virtual void setValue(uint8_t *data);
+    virtual int intValue();
+    virtual uint8_t dataBytes() {
+      return 1;
+    }
+#ifdef LOOPBACK_MODE
+    virtual int8_t simulateInt();
+#endif
+
+  private:
+    int m_value;
+#ifdef LOOPBACK_MODE
+    int m_simValue;
+    bool m_simIncrease;
+    int m_simMinValue;
+    int m_simMaxValue;
+    int m_simStepValue;
+#endif
+};
+
 class OBDWordValue : public OBDDataValue
 {
-public:
-  OBDWordValue();
-  String toString();
-  virtual void setValue(word newValue);
-  word value();
-  
-private:
-  word m_value;
+  public:
+    OBDWordValue(uint8_t pid, String label, uint16_t updateInterval, OBD_DATA_CONVERSION conversion, word min = 0, word max = 0, word step = 0);
+    String toString();
+    virtual void setValue(word newValue);
+    virtual void setValue(uint8_t *data);
+    virtual word wordValue();
+    virtual uint8_t dataBytes() {
+      return 2;
+    }
+#ifdef LOOPBACK_MODE
+    virtual uint16_t simulateWord();
+#endif
+
+  private:
+    word m_value;
+#ifdef LOOPBACK_MODE
+    word m_simValue;
+    word m_simIncrease;
+    word m_simMinValue;
+    word m_simMaxValue;
+    word m_simStepValue;
+#endif
 };
-       
+
 class PumaOBD
 {
-public:
-  PumaOBD(PumaCAN *can);
-  virtual void begin(PumaCAN::CAN_SPEED bitRate, PumaCAN::CAN_MODE mode);
-	virtual void end();
+  public:
+    PumaOBD();
+    void setup();
+    void update();
 
-  virtual void update();
-    
-  virtual void requestPID(uint16_t pid);
-  virtual void simulateByteReply(uint16_t id, uint16_t pid, uint8_t value);
-  virtual void simulateWordReply(uint16_t id, uint16_t pid, uint16_t value);
+    void addDataObject(OBDDataValue *obj);
+    OBDDataValue *dataObject(uint8_t PID);
 
-	// Read message from CAN bus if available
-	bool readMessage(String &logString);
-  void setCanFilters(uint32_t filter0, uint32_t filter2 = 0x00, uint32_t filter1 = 0x00, uint32_t filter3 = 0x00, uint32_t filter4 = 0x00, uint32_t filter5 = 0x00);
-  		
-  OBDByteValue m_speed;
-  OBDWordValue m_rpm;
-  OBDByteValue m_coolantTemp;
-		
-protected:
-	  bool processMessage(CAN_Frame message);
-	
+  protected:
+    bool readMessage();
+    bool processMessage(CAN_Frame message);
+    void requestPID(uint16_t pid);
+
+    OBDDataValue m_invalidPID; // This object is used to return a valid pointer in case we don't support the PID
+    OBDDataValue *m_first;
+    OBDDataValue *m_last;
+    OBDDataValue *m_current;
+    OBDDataValue *iterateDataObject(bool needsUpdate);
+
+  private:
+    PumaCAN m_CAN;
+
+  private:
+#ifdef RECORD_UNKNOWN_PIDS
     void addUnhandledPID(uint16_t pid);
     void printUnhandledPIDS();
-	
-private:
-  PumaCAN *m_CAN;
-  uint16_t m_unknownPIDS[MAX_UNKNOWN_PIDS];
+    uint16_t m_unknownPIDS[MAX_UNKNOWN_PIDS];
+#endif
 };
 
 #endif // OBD_h

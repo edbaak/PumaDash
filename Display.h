@@ -35,16 +35,19 @@
 #include "Speed.h"
 #include "OBD.h"
 
-class BaseDisplay
+class PumaDisplay;
+
+class BaseScreen
 {
 public:
-  BaseDisplay(Diablo_Serial_4DLib *Display);
-
+  BaseScreen();
+  
+  virtual void setup(PumaDisplay *disp); 
   virtual void redrawLabels() {};
   virtual byte displayOrientation() { return 0; };
-  
-  void reset();
+  virtual void update() {};
   virtual void init();
+  
   word maxWidth();
   word maxHeight();  
   bool updateNeeded(unsigned int &lastUpdate, word updateInterval);
@@ -52,7 +55,7 @@ public:
   bool touchPressed();
 
 protected:
-  Diablo_Serial_4DLib *Display_;
+  PumaDisplay *Display_;
   word display_max_width;
   word display_max_height;
   int top_separator_line;
@@ -63,10 +66,10 @@ protected:
   int mid_screen;   
 };
 
-class Screen0 : public BaseDisplay
+class Screen0 : public BaseScreen
 {
 public:
-  Screen0(Diablo_Serial_4DLib *Display, Direction *directionControl, Tpms *tpms);
+  Screen0();
   void update();
   void redrawLabels(); 
   virtual byte displayOrientation();
@@ -76,16 +79,12 @@ protected:
   void updateRoll(byte x, byte y, byte interleave, int angle);
   void updateCompass(word heading);
   void updateTPMSvalue(byte tireLocation);
-  
-private:
-  Direction *m_DirectionControl;
-  Tpms *m_Tpms;  
 };
 
-class Screen1 : public BaseDisplay
+class Screen1 : public BaseScreen
 {
 public:
-  Screen1(Diablo_Serial_4DLib *Display, PumaOBD *obd);
+  Screen1();
   void update();
   void redrawLabels(); 
   virtual byte displayOrientation();
@@ -96,7 +95,6 @@ protected:
   void updateRpm(word rpm);
       
 private:
-  PumaOBD *m_obd;
   word y_mid;
   word x_mid;
   word left_vertical;
@@ -108,10 +106,10 @@ private:
   word label3_y_offset;
 };
 
-class Screen2 : public BaseDisplay
+class Screen2 : public BaseScreen
 {
 public:
-  Screen2(Diablo_Serial_4DLib *Display, CruiseCtrl *control);
+  Screen2();
   void update();
   void redrawLabels(); 
   virtual byte displayOrientation();
@@ -119,9 +117,34 @@ public:
 protected:  
   void updateCruiseControl();
   void updateOBD2Status();
+};
+
+class PumaDisplay : public Diablo_Serial_4DLib
+{
+  public:
+    PumaDisplay(Stream * virtualPort, Direction *pos, Tpms *tpms, CruiseCtrl *speed, PumaOBD *obd);
+    void update();
+    void reset();
+    void setup();
+    BaseScreen *activeScreen();
+    
+  protected:
+    bool g_init_display;
+    byte g_active_screen; // The screen currently shown on the display
+
+    friend class Screen0;
+    Screen0 m_screen0;    // Visual elements of the 'Left' display
+    
+    friend class Screen1;
+    Screen1 m_screen1;    // Visual elements of the 'Center' display
+
+    friend class Screen2;
+    Screen2 m_screen2;    // Visual elements of the 'Right' display
   
-private:
-  CruiseCtrl *m_CruiseControl;
+    Direction *m_position;
+    Tpms *m_tpms;
+    CruiseCtrl *m_speed;
+    PumaOBD *m_obd;   
 };
 
 #endif

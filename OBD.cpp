@@ -2,7 +2,7 @@
   2016 Copyright (c) Ed Baak  All Rights Reserved.
 
   This code is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License 
+  modify it under the terms of the GNU General Public License
   as published by the Free Software Foundation; either
   version 3 of the License, or (at your option) any later version.
 
@@ -11,38 +11,146 @@
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
 
-  You should have received a copy of the GNU General Public License 
+  You should have received a copy of the GNU General Public License
   along with this code; if not, write to the Free Software
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-
   1301  USA
 */
 
 #include <Arduino.h>
-#include "Utils.h" 
+#include "Utils.h"
 #include "OBD.h"
 #include "CAN.h"
 #include <SD.h>
 
-/*
-  Constructor. Only copies the can pointer for internal usage.
-*/  
-PumaOBD::PumaOBD(PumaCAN *can) 
-{
-  m_CAN = can;
-  for (word i=0; i < MAX_UNKNOWN_PIDS; i++)
-    m_unknownPIDS[i] = 0;
+#ifdef LOOPBACK_MODE
+#define LOOPBACK_OR_NORMAL PumaCAN::MCP_LOOPBACK
+#else
+#define LOOPBACK_OR_NORMAL PumaCAN::MCP_NORMAL
+#endif
 
-  m_speed.init(PID_SPEED, 250);
-  m_rpm.init(PID_RPM, 100);
-  m_coolantTemp.init(PID_COOLANT_TEMP, 5000);  
+PumaOBD::PumaOBD()
+{
+  m_first = 0;
+  m_last = 0;
+  m_current = 0;
+
+  addDataObject(new OBDWordValue(PID_RPM, "Rpm", 50, DIV4_WORD_CONVERSION, 0, 6000, 300));
+  addDataObject(new OBDByteValue(PID_SPEED, "Speed", 250, PLAIN_BYTE_CONVERSION, 0, 115, 3));
+  addDataObject(new OBDIntValue(PID_COOLANT_TEMP, "Coolant Temperature", 5000, TEMPERATURE_INT_CONVERSION, 25, 100, 8));
+//  addDataObject(new OBDByteValue(PID_BAROMETRIC_PRESSURE, "Barometric Pressure", 90000, 
+//  addDataObject(new OBDIntValue(PID_INTAKE_AIR_TEMP, "Intake Air Temperature", 60000, BYTE_MINUS40
+//  addDataObject(new OBDIntValue(PID_AMBIENT_AIR_TEMP, "Ambient Air Temperature", 60000, BYTE_MINUS40
+//  addDataObject(new OBDFloatValue(PID_CONTROL_MODULE_VOLTAGE, "Battery Voltage", 40000, WORD_DIV1000 // V
+//  addDataObject(new OBDFloatValue(PID_ENGINE_FUEL_RATE, "Fuel Rate", 30000, WORD_DIV20 // L/h
+//  addDataObject(new OBDByteValue(PID_FUEL_LEVEL, "Fuel Level", 30000, BYTE_PERCENTAGE (word * 100 / 255)
+//  addDataObject(new OBDIntValue(PID_ENGINE_OIL_TEMP, "Engine Oil Temperature", 10000, BYTE_MINUS40
+//  addDataObject(new OBDByteValue(PID_CALCULATED_ENGINE_LOAD, "Engine Load", 1000, BYTE_PERCENTAGE (word * 100 / 255)
+//  addDataObject(new OBDByteValue(PID_ABSOLUTE_ENGINE_LOAD, "Abs Engine Load", 1000, BYTE_PERCENTAGE (word * 100 / 255)
+//  addDataObject(new OBDIntValue(PID_ENGINE_TORQUE_DEMANDED, "Torque Demanded", 1000, INT_MINUS125 // %
+//  addDataObject(new OBDIntValue(PID_ENGINE_TORQUE_PERCENTAGE, "Torque Percentage", 1000, INT_MINUS125 // %
+
+//  addDataObject(new OBDWordValue(PID_EVAP_SYS_VAPOR_PRESSURE, SHIFT_RIGHT_2 // kPa
+//  addDataObject(new OBDByteValue(PID_FUEL_PRESSURE, TIMES_3 // kPa
+//  addDataObject(new OBDByteValue(PID_THROTTLE_POSITION, BYTE_PERCENTAGE (word * 100 / 255)
+//  addDataObject(new OBDByteValue(PID_COMMANDED_EGR, BYTE_PERCENTAGE (word * 100 / 255)
+//  addDataObject(new OBDByteValue(PID_COMMANDED_EVAPORATIVE_PURGE, BYTE_PERCENTAGE (word * 100 / 255)
+//  addDataObject(new OBDByteValue(PID_RELATIVE_THROTTLE_POS, BYTE_PERCENTAGE (word * 100 / 255)
+//  addDataObject(new OBDByteValue(PID_ABSOLUTE_THROTTLE_POS_B, BYTE_PERCENTAGE (word * 100 / 255)
+//  addDataObject(new OBDByteValue(PID_ABSOLUTE_THROTTLE_POS_C, BYTE_PERCENTAGE (word * 100 / 255)
+//  addDataObject(new OBDByteValue(PID_ACC_PEDAL_POS_D, BYTE_PERCENTAGE (word * 100 / 255)
+//  addDataObject(new OBDByteValue(PID_ACC_PEDAL_POS_E, BYTE_PERCENTAGE (word * 100 / 255)
+//  addDataObject(new OBDByteValue(PID_ACC_PEDAL_POS_F, BYTE_PERCENTAGE (word * 100 / 255)
+//  addDataObject(new OBDByteValue(PID_COMMANDED_THROTTLE_ACTUATOR, BYTE_PERCENTAGE (word * 100 / 255)
+//  addDataObject(new OBDByteValue(PID_ETHANOL_FUEL, BYTE_PERCENTAGE (word * 100 / 255)
+//  addDataObject(new OBDByteValue(PID_HYBRID_BATT_REMAINING_LIFE, BYTE_PERCENTAGE (word * 100 / 255)
+//  addDataObject(new OBDWordValue(PID_MAF_AIR_FLOW_RATE, WORD_DIV100 // grams/sec
+//  addDataObject(new OBDIntValue(PID_TIMING_ADVANCE, BYTE_DIV2_MINUS64
+//  addDataObject(new OBDWordValue(PID_DISTANCE_SINCE_DTC_CLEARED, PLAIN_WORD_CONVERSION: // km
+//  addDataObject(new OBDWordValue(PID_DISTANCE_WITH_MIL_ON, PLAIN_WORD_CONVERSION: // km
+//  addDataObject(new OBDWordValue(PID_RUN_TIME_WITH_MIL_ON, PLAIN_WORD_CONVERSION: // minute
+//  addDataObject(new OBDWordValue(PID_TIME_SINCE_DTC_CLEARED, PLAIN_WORD_CONVERSION: // minute
+//  addDataObject(new OBDWordValue(PID_RUNTIME_SINCE_ENG_START, PLAIN_WORD_CONVERSION: // second
+//  addDataObject(new OBDWordValue(PID_FUEL_RAIL_PRESSURE, PLAIN_WORD_CONVERSION: // kPa
+//  addDataObject(new OBDWordValue(PID_ENGINE_REF_TORQUE, PLAIN_WORD_CONVERSION: // Nm
+//  addDataObject(new OBDIntValue(PID_SHORT_TERM_FUEL_TRIM_1, INT_MINUS128_TIMES100_DIV128
+//  addDataObject(new OBDIntValue(PID_LONG_TERM_FUEL_TRIM_1, INT_MINUS128_TIMES100_DIV128
+//  addDataObject(new OBDIntValue(PID_SHORT_TERM_FUEL_TRIM_2, INT_MINUS128_TIMES100_DIV128
+//  addDataObject(new OBDIntValue(PID_LONG_TERM_FUEL_TRIM_2, INT_MINUS128_TIMES100_DIV128
+//  addDataObject(new OBDIntValue(PID_EGR_ERROR, INT_MINUS128_TIMES100_DIV128
+//  addDataObject(new OBDLongValue(PID_FUEL_INJECTION_TIMING, LONG_MINUS26880_DIV128
+//  addDataObject(new OBDLongValue(PID_CATALYST_TEMP_B1S1, LONG_DIV10_MINUS40
+//  addDataObject(new OBDLongValue(PID_CATALYST_TEMP_B2S1, LONG_DIV10_MINUS40
+//  addDataObject(new OBDLongValue(PID_CATALYST_TEMP_B1S2, LONG_DIV10_MINUS40
+//  addDataObject(new OBDLongValue(PID_CATALYST_TEMP_B2S2, LONG_DIV10_MINUS40
+//  addDataObject(new OBDLongValue(PID_AIR_FUEL_EQUIV_RATIO, LONG_TIMES200_DIV65536: // 0~200
+
+#ifdef RECORD_UNKNOWN_PIDS
+  for (word i = 0; i < MAX_UNKNOWN_PIDS; i++)
+    m_unknownPIDS[i] = 0;
+#endif
 }
 
-/*
-  The usual 'begin' function.
-*/  
-void PumaOBD::begin(PumaCAN::CAN_SPEED bitRate, PumaCAN::CAN_MODE mode)
+void PumaOBD::addDataObject(OBDDataValue *object)
 {
-    // Switch Pin 10-13 to INPUT mode so they are high impedance, floating. That way we can hardwire Pins 50-53 onto them, so that we can use the CAN-Board on a Mega.
+  if (m_first == 0)
+    m_first = object;
+  else
+    m_last->m_next = object;
+  m_last = object;
+}
+
+OBDDataValue *PumaOBD::dataObject(uint8_t PID)
+{
+  // We start searching possibly somewhere in the middle of the list, at the current object with which we've had the last interaction
+  OBDDataValue *tmp = m_current;
+  while (tmp) {
+    if (tmp->pid() == PID)
+      return tmp;
+    tmp = tmp->m_next;
+  }
+
+  // If we haven't found the PID, start at the beginning of the list until we reach the current object.
+  if (m_current != m_first) {
+    tmp = m_first;
+    while (tmp && tmp != m_current) {
+      if (tmp->pid() == PID)
+        return tmp;
+      tmp = tmp->m_next;
+    }
+  }
+  return &m_invalidPID;
+}
+
+// DANGER: This function can return a NULL pointer!
+OBDDataValue *PumaOBD::iterateDataObject(bool needsUpdate)
+{
+  OBDDataValue *tmp = m_current;
+  if (tmp) {
+    tmp = tmp->m_next;
+    while (tmp && tmp != m_current) {
+      if (!needsUpdate || tmp->needsUpdate())
+        return tmp;
+      tmp = tmp->m_next;
+    }
+  }
+
+  // If we haven't found the PID, start at the beginning of the list until we reach the current object.
+  if (m_current != m_first) {
+    tmp = m_first;
+    while (tmp && tmp != m_current) {
+      if (!needsUpdate || tmp->needsUpdate())
+        return tmp;
+      tmp = tmp->m_next;
+    }
+  }
+
+  return 0;
+}
+
+void PumaOBD::setup()
+{
+  // Switch Pin 10-13 to INPUT mode so they are high impedance, floating. That way we can hardwire Pins 50-53 onto them, so that we can use the CAN-Board on a Mega.
   // Connect pin 53 to 10 == CS (Chip Select)
   // Connect Pin 52 to 13 == SCK (Clock)
   // Connect Pin 51 to 11 == MOSI (Master Out Slave In)
@@ -56,342 +164,181 @@ void PumaOBD::begin(PumaCAN::CAN_SPEED bitRate, PumaCAN::CAN_MODE mode)
   pinMode(PIN_MEGA_SPI_SCK, OUTPUT);
   pinMode(PIN_MEGA_SPI_CS, OUTPUT);
 
-  m_CAN->begin(PumaCAN::MCP_STD, bitRate, PumaCAN::MCP_16MHZ);
-  m_CAN->setMode(mode);
-}
-
-/*
-  end closes the CAN connection.
-*/  
-void PumaOBD::end()
-{
+  m_CAN.begin(PIN_MEGA_SPI_CS, PumaCAN::MCP_STD, PumaCAN::CAN_500KBPS, PumaCAN::MCP_16MHZ);
+  m_CAN.setMode(LOOPBACK_OR_NORMAL);
+  m_CAN.setMask(PumaCAN::MASK0, false, 0x07FF0000);
+  m_CAN.setMask(PumaCAN::MASK1, false, 0x07FF0000);
+  m_CAN.setFilter(PumaCAN::FILT0, false, 0x07E80000);
+  m_CAN.setFilter(PumaCAN::FILT2, false, 0x07E80000);
 }
 
 void PumaOBD::update()
 {
-  if (m_speed.needsUpdate()) {
+  // First we process messages in the RX buffer, so that we clear it and don't ask for updates that we just received
+  byte i = 0; // add a safety net against infinite loop
+  while (readMessage() && i++ < 10) {}  // Read and process OBD messages
+
+  // Now check if there is any data that needs an update.
+  // We only ask for MAX 2 elements at a time, because the MCP2515 can only handle to bits of data.
+  // To ensure that every data element gets a chance we rotate through the list in a round robin fashion
+  i = 0;
+  while (i < 2) {
+    OBDDataValue *tmp = iterateDataObject(true);
+    if (tmp) {
+      if (i == 0) m_current = tmp;
+      i++;
+
+      CAN_Frame message;
+      message.m_length = 8;     // eight data bytes follow
 #ifndef LOOPBACK_MODE
-    requestPID(PID_SPEED);
+      // Ask for a sensor value from the OBD bus, but don't wait for a reply, i.e. some time in the future the ECU is hopefully
+      // going to respond and give a reply. This way, we don't have to go into blocking loops waiting for ECU responses and can
+      // keep the system running as fast as possible. The staleness of data is dealt with separately (by updateRequired()).
+      message.m_id = PID_REQUEST;
+      message.m_data[0] = 0x02; // two valid bytes with data following
+      message.m_data[1] = 0x01; // mode 1 = show current data, mode 2 = show freeze frame
+      message.m_data[2] = tmp->pid();  // the requested pid
+      m_CAN.write(message);
 #else
-    static uint8_t speed = 0;
-    static bool increment_speed = true;
-    if (increment_speed)
-      speed += 3;
-    else
-      speed -= 3;  
-    if (speed >= 115 || speed == 0)
-      increment_speed = !increment_speed;
-    simulateByteReply(PID_REPLY, PID_SPEED, speed);
-    simulateByteReply(PID_REPLY+1, 0x1F, (uint8_t)50);   // Generate noise that should be filtered out
-#endif    
-  }
-  
-  if (m_rpm.needsUpdate()) {  
-#ifndef LOOPBACK_MODE
-    requestPID(PID_RPM);
-#else
-    static uint16_t rpm = 0;
-    static bool increment_rpm = true;
-    if (increment_rpm)
-      rpm += 300;
-    else
-      rpm -= 300;  
-    if (rpm >= 24000 || rpm == 0)
-      increment_rpm = !increment_rpm;
-    simulateWordReply(PID_REPLY, PID_RPM, rpm);  
+      // Simulate a sensor value and push it onto the OBD bus
+      uint8_t dl = tmp->dataBytes();
+      message.m_id = PID_REPLY;
+      message.m_data[0] = dl + 2; // extra byte for mode and pid before actual data starts
+      message.m_data[1] = 0x41; // mode 1 = show current data, mode 2 = show freeze frame
+      message.m_data[2] = tmp->pid(); // The pid to which the simulated data applies
+      if (dl > 0) {
+        if (dl == 1) {
+          uint8_t value = tmp->simulateByte();
+          message.m_data[3] = value;
+        } if (dl == 2) {
+          uint16_t value = tmp->simulateWord();
+          message.m_data[3] = value >> 8;
+          message.m_data[4] = value && 0x00FF;
+        } else if (dl == 3) {
+          /*
+                    int8_t value = tmp->simulateInt();
+                    message.m_data[3] = value >> 16;
+                    message.m_data[4] = value >> 8 && 0x0000FF;
+                    message.m_data[5] = value && 0x0000FF;
+          */
+        }
+      }
+      m_CAN.write(message);
 #endif
-  }
-  
-  if (m_coolantTemp.needsUpdate()) {
-#ifndef LOOPBACK_MODE
-    requestPID(PID_COOLANT_TEMP);
-#endif
-  }
-  
-  static bool ledD8_toggle = false;
-  String logString;
-  while (readMessage(logString)) {
-    ledD8_toggle = !ledD8_toggle;
-    if (ledD8_toggle) digitalWrite(PIN_CAN_BOARD_LED2, HIGH); 
-    else digitalWrite(PIN_CAN_BOARD_LED2, LOW);
-    Serial.println(logString);
-    
-    logData(logString);
-  }  
-}
-
-void PumaOBD::simulateByteReply(uint16_t id, uint16_t pid, uint8_t value)
-{
-  uint8_t data[8];
-  data[0] = 0x03; // 3 valid bytes with data following
-  data[1] = 0x41; // mode 1 = show current data, mode 2 = show freeze frame
-  data[2] = pid;  // the simulated pid
-  data[3] = value;
-  data[4] = 0x00; // unused byte
-  data[5] = 0x00; // unused byte
-  data[6] = 0x00; // unused byte
-  data[7] = 0x00; // unused byte    
-
-  CAN_Frame message;
-  message.init(id, 8, &data[0]);
-  m_CAN->write(message);
-}
-
-void PumaOBD::simulateWordReply(uint16_t id, uint16_t pid, uint16_t value)
-{
-  uint8_t data[8];
-  data[0] = 0x03; // 4 valid bytes with data following
-  data[1] = 0x41; // mode 1 = show current data, mode 2 = show freeze frame
-  data[2] = pid;  // the simulated pid
-  data[3] = value >> 8;
-  data[4] = value && 0x00FF;
-  data[5] = 0x00; // unused byte
-  data[6] = 0x00; // unused byte
-  data[7] = 0x00; // unused byte    
-
-  CAN_Frame message;
-  message.init(id, 8, &data[0]);    
-  m_CAN->write(message);
-}
-
-/*
-  requestPID requests the ECU for a specific pid, but it's not waiting for a reply, i.e. some time in the future the ECU is hopefully 
-  going to respond and give a reply. This way, we don't have to go into blocking loops waiting for ECU responses and can keep the 
-  system running as fast as possible.
-  
-  The staleness of data is dealt with separately.
-*/  
-void PumaOBD::requestPID(uint16_t pid)
-{
-/*
-  uint32_t id      : 29;  // if (extended == CAN_RECESSIVE) { extended ID } else { standard ID }
-  uint8_t rtr      : 1;   // Remote Transmission Request Bit (RTR)
-  uint8_t extended : 1;   // Identifier Extension Bit (IDE)
-  uint8_t length   : 4;   // Data Length
-  uint8_t data[8];        // Message data
-*/
- 
-  CAN_Frame message;
-    
-	// Prepare message
-	message.m_id = PID_REQUEST;
-	message.m_rtr = 0;        // Must be dominant (0) for data frames and recessive (1) for remote request frames
-	message.m_extended = 0;   // Must be dominant (0) for base frame format with 11-bit identifiers
-	message.m_length = 8;     // eight data bytes follow
-	message.m_data[0] = 0x02; // this means there are two valid bytes with data
-	message.m_data[1] = 0x01; // mode 1 = show current data, mode 2 = show freeze frame
-	message.m_data[2] = pid;  // the requested pid
-	message.m_data[3] = 0x00; // unused byte
-	message.m_data[4] = 0x00; // unused byte
-	message.m_data[5] = 0x00; // unused byte
-	message.m_data[6] = 0x00; // unused byte
-	message.m_data[7] = 0x00;	// unused byte		
-    
-  m_CAN->write(message);
-}
-
-void PumaOBD::addUnhandledPID(uint16_t pid)
-{
-  for (word i=0; i < MAX_UNKNOWN_PIDS; i++) {
-    // If we have reached the end of the list, we apparently don't know the PID yet, so we add it. 
-  	if (m_unknownPIDS[i] == 0) {
-  		m_unknownPIDS[i] = pid;
-  		printUnhandledPIDS();
-  		return;
     }
-    
-    // Do we know the PID already?
-    if (m_unknownPIDS[i] == pid)
-    	return;
-  }  	
+  }
 }
 
-void PumaOBD::printUnhandledPIDS()
+bool PumaOBD::readMessage()
 {
-  Serial.print("UNHANDLED PIDS: ");
-  for (word i=0; i < MAX_UNKNOWN_PIDS; i++) {
-  	if (m_unknownPIDS[i] == 0) {
-        Serial.println(" ");
-  		return;
-  	}
-  		
-    Serial.print(m_unknownPIDS[i], HEX);
-    Serial.print(", ");
-  }	
-  Serial.println(" ");
-}
-
-void PumaOBD::setCanFilters(uint32_t filter0, uint32_t filter2, uint32_t filter1, uint32_t filter3, uint32_t filter4, uint32_t filter5)
-{
-  if (filter0 > 0)
-    m_CAN->setMask(PumaCAN::MASK0, false, 0x07FF0000);
-  else
-    m_CAN->setMask(PumaCAN::MASK0, false, 0);
-  if (filter2 > 0)    
-    m_CAN->setMask(PumaCAN::MASK1, false, 0x07FF0000);
-  else
-    m_CAN->setMask(PumaCAN::MASK1, false, 0);
-  m_CAN->setFilter(PumaCAN::FILT0, false, filter0);
-  m_CAN->setFilter(PumaCAN::FILT1, false, filter1);
-  m_CAN->setFilter(PumaCAN::FILT2, false, filter2);
-  m_CAN->setFilter(PumaCAN::FILT3, false, filter3);
-  m_CAN->setFilter(PumaCAN::FILT4, false, filter4);
-  m_CAN->setFilter(PumaCAN::FILT5, false, filter5);  
-}
-
-bool PumaOBD::readMessage(String &logString)
-{
-  if (m_CAN->available()) // One or more messages available?
-  {
+  if (m_CAN.available()) { // One or more messages available?
     // message will follow the CAN structure of ID, RTR, length, data. Allows both Extended & Standard
-    CAN_Frame message = m_CAN->read(); 
-    Serial.print(message.m_id, HEX);
-    
+    CAN_Frame message = m_CAN.read();
+
     if (message.m_id == 0x7E8) {
-    	processMessage(message);
-        
-  		char buf[150]; 
-  		sprintf(buf, " ,PID %02X, LEN %02X, MODE %02X, DATA %02X, %02X, %02X, %02X, %02X", 
-  			message.m_data[2], message.m_data[0], message.m_data[1],
-  			message.m_data[3], message.m_data[4], message.m_data[5],
-  			message.m_data[6], message.m_data[7]);
-  		logString = buf;
-  		return true;
-  	} else {
-  	  addUnhandledPID(message.m_id);
-  	}
+      processMessage(message);
+
+      char buf[150];
+      sprintf(buf, "PID %02X, LEN %02X, MODE %02X, DATA %02X, %02X, %02X, %02X, %02X",
+              message.m_data[2], message.m_data[0], message.m_data[1],
+              message.m_data[3], message.m_data[4], message.m_data[5],
+              message.m_data[6], message.m_data[7]);
+
+      logData(buf);
+
+      Serial.print(message.m_id, HEX);
+      Serial.print(", ");
+      Serial.println(buf);
+    } else {
+#ifdef RECORD_UNKNOWN_PIDS
+      addUnhandledPID(message.m_id);
+#endif
+    }
+    return true;
   }
   return false;
 }
-         
+
 bool PumaOBD::processMessage(CAN_Frame message)
 {
-	uint16_t pid = message.m_id;
-	uint8_t *data = &message.m_data[0];
-		
-	if (pid == PID_REPLY) {
-	  pid = message.m_data[2];
-	  data = &message.m_data[3];
-	}
-//	Serial.print("Process message for 0x");
-//	Serial.println(pid, HEX);
-		
-	switch (pid) {
-		case PID_SPEED: 
-		{
-		  m_speed.setValue((uint8_t)*data);
-		  return true;
-		}
-		case PID_RPM: 
-		{
-			uint16_t tmp = *data * 256;
-			data++;
-			tmp += *data;
-			m_rpm.setValue(tmp / 4);
-//			m_rpm.setValue(uint16_t(*data) / 4);
-			return true;
-		}	
-		case PID_COOLANT_TEMP: 
-		{
-			m_coolantTemp.setValue((int8_t)*data - 40);
-			return true;
-		}
-	}
-/*
-	case PID_BAROMETRIC_PRESSURE:
-		OBDByteValue.setValue(data);
-		return true;
-	case PID_EVAP_SYS_VAPOR_PRESSURE: // kPa
-		result = getLargeValue(data) >> 2;
-		break;
-	case PID_FUEL_PRESSURE: // kPa
-		result = getSmallValue(data) * 3;
-		break;
-	case PID_INTAKE_AIR_TEMP:
-	case PID_AMBIENT_AIR_TEMP:
-	case PID_ENGINE_OIL_TEMP:
-		result = getTemperatureValue(data);
-		break;
-	case PID_THROTTLE_POSITION:
-	case PID_COMMANDED_EGR:
-	case PID_COMMANDED_EVAPORATIVE_PURGE:
-	case PID_FUEL_LEVEL:
-	case PID_RELATIVE_THROTTLE_POS:
-	case PID_ABSOLUTE_THROTTLE_POS_B:
-	case PID_ABSOLUTE_THROTTLE_POS_C:
-	case PID_ACC_PEDAL_POS_D:
-	case PID_ACC_PEDAL_POS_E:
-	case PID_ACC_PEDAL_POS_F:
-	case PID_COMMANDED_THROTTLE_ACTUATOR:
-	case PID_CALCULATED_ENGINE_LOAD:
-	case PID_ABSOLUTE_ENGINE_LOAD:
-	case PID_ETHANOL_FUEL:
-	case PID_HYBRID_BATT_REMAINING_LIFE:
-		result = getPercentageValue(data);
-		break;
-	case PID_MAF_AIR_FLOW_RATE: // grams/sec
-		result = getLargeValue(data) / 100;
-		break;
-	case PID_TIMING_ADVANCE:
-		result = (int)(getSmallValue(data) / 2) - 64;
-		break;
-	case PID_DISTANCE_SINCE_DTC_CLEARED: // km
-	case PID_DISTANCE_WITH_MIL_ON: // km
-	case PID_RUN_TIME_WITH_MIL_ON: // minute
-	case PID_TIME_SINCE_DTC_CLEARED: // minute
-	case PID_RUNTIME_SINCE_ENG_START: // second
-	case PID_FUEL_RAIL_PRESSURE: // kPa
-	case PID_ENGINE_REF_TORQUE: // Nm
-		result = getLargeValue(data);
-		break;
-	case PID_CONTROL_MODULE_VOLTAGE: // V
-		result = getLargeValue(data) / 1000;
-		break;
-	case PID_ENGINE_FUEL_RATE: // L/h
-		result = getLargeValue(data) / 20;
-		break;
-	case PID_ENGINE_TORQUE_DEMANDED: // %
-	case PID_ENGINE_TORQUE_PERCENTAGE: // %
-		result = (int)getSmallValue(data) - 125;
-		break;
-	case PID_SHORT_TERM_FUEL_TRIM_1:
-	case PID_LONG_TERM_FUEL_TRIM_1:
-	case PID_SHORT_TERM_FUEL_TRIM_2:
-	case PID_LONG_TERM_FUEL_TRIM_2:
-	case PID_EGR_ERROR:
-		result = ((int)getSmallValue(data) - 128) * 100 / 128;
-		break;
-	case PID_FUEL_INJECTION_TIMING:
-		result = ((int32_t)getLargeValue(data) - 26880) / 128;
-		break;
-	case PID_CATALYST_TEMP_B1S1:
-	case PID_CATALYST_TEMP_B2S1:
-	case PID_CATALYST_TEMP_B1S2:
-	case PID_CATALYST_TEMP_B2S2:
-		result = getLargeValue(data) / 10 - 40;
-		break;
-	case PID_AIR_FUEL_EQUIV_RATIO: // 0~200
-		result = (long)getLargeValue(data) * 200 / 65536;
-		break;
-	default:
-		result = getSmallValue(data);
-	}
-*/
-	return false;
+  uint16_t pid = message.m_id;
+  uint8_t *data = &message.m_data[0];
+
+  if (pid == PID_REPLY) {
+    pid = message.m_data[2];
+    data = &message.m_data[3];
+
+    OBDDataValue *object = dataObject(pid);
+    if (object != &m_invalidPID) {
+      object->setValue(data);
+      return true;
+    }
+  }
+
+  return false;
 }
+
+#ifdef RECORD_UNKNOWN_PIDS
+void PumaOBD::addUnhandledPID(uint16_t pid)
+{
+  for (word i = 0; i < MAX_UNKNOWN_PIDS; i++) {
+    // If we have reached the end of the list, we apparently don't know the PID yet, so we add it.
+    if (m_unknownPIDS[i] == 0) {
+      m_unknownPIDS[i] = pid;
+      printUnhandledPIDS();
+      return;
+    }
+
+    // Do we know the PID already?
+    if (m_unknownPIDS[i] == pid)
+      return;
+  }
+}
+#endif
+
+#ifdef RECORD_UNKNOWN_PIDS
+void PumaOBD::printUnhandledPIDS()
+{
+  Serial.print("UNHANDLED PIDS: ");
+  for (word i = 0; i < MAX_UNKNOWN_PIDS; i++) {
+    if (m_unknownPIDS[i] == 0) {
+      Serial.println(" ");
+      return;
+    }
+
+    Serial.print(m_unknownPIDS[i], HEX);
+    Serial.print(", ");
+  }
+  Serial.println(" ");
+}
+#endif
+
+//*************************************************************************************
 
 OBDDataValue::OBDDataValue()
 {
-	m_updateInterval = 1000;
-	m_lastUpdate = 0;
-	m_updateRequested = 0;
-	m_pid = PID_RPM; // this is the wrong PID, but if we forget to call init, we at least will be using a valid PID
+  m_pid = 0;
+  m_updateInterval = 0;
+  m_lastUpdate = 0;
+  m_updateRequested = 0;
+  m_label = "UNDEF";
+  m_conversion = PLAIN_BYTE_CONVERSION;
+  m_next = 0;
 }
 
-void OBDDataValue::init(uint8_t pid, uint16_t updateInterval)
+OBDDataValue::OBDDataValue(uint8_t pid, String label, uint16_t updateInterval, OBD_DATA_CONVERSION conversion)
 {
   m_pid = pid;
   m_updateInterval = updateInterval;
+  m_lastUpdate = 0;
+  m_updateRequested = 0;
+  m_label = label;
+  m_conversion = conversion;
+  m_next = 0;
+}
+
+OBDDataValue::~OBDDataValue()
+{
 }
 
 uint8_t OBDDataValue::pid()
@@ -405,13 +352,13 @@ bool OBDDataValue::needsUpdate()
 
   if (m_updateRequested + m_updateInterval > cur_time)
     return false;
-    
+
   if (m_lastUpdate + m_updateInterval < cur_time) {
     updateRequested();
     return true;
   }
-  
-  return false;    
+
+  return false;
 }
 
 void OBDDataValue::updateRequested()
@@ -424,50 +371,192 @@ void OBDDataValue::resetUpdateTimer()
   m_updateRequested = 0;
   m_lastUpdate = millis();
 }
-  
-OBDByteValue::OBDByteValue() : OBDDataValue()
+
+String OBDDataValue::label()
+{
+  return m_label;
+}
+
+OBDByteValue::OBDByteValue(uint8_t pid, String label, uint16_t updateInterval, OBD_DATA_CONVERSION conversion, byte min, byte max, byte step) :
+  OBDDataValue(pid, label, updateInterval, conversion)
 {
   m_value = 0;
+#ifdef LOOPBACK_MODE
+  m_simValue = 0;
+  m_simIncrease = true;
+  m_simMinValue = min;
+  m_simMaxValue = max;
+  m_simStepValue = step;
+#endif
 }
 
 String OBDByteValue::toString()
 {
-	char buf[50];
-	sprintf(buf, "%d", m_value);
-	return buf;
+  char buf[50];
+  sprintf(buf, "%d", m_value);
+  return buf;
 }
 
 void OBDByteValue::setValue(byte newValue)
 {
-	resetUpdateTimer();
-	m_value = newValue;
+  resetUpdateTimer();
+  m_value = newValue;
 }
 
-byte OBDByteValue::value()
+void OBDByteValue::setValue(uint8_t *data)
 {
-	return m_value;
+  uint8_t tmp = (uint8_t) * data;
+  switch (m_conversion) {
+    case PLAIN_BYTE_CONVERSION:
+      setValue(tmp);
+      break;
+    default:
+      // TODO: give an error message
+      break;
+  }
 }
-  
-OBDWordValue::OBDWordValue() : OBDDataValue()
+
+byte OBDByteValue::byteValue()
+{
+  return m_value;
+}
+
+#ifdef LOOPBACK_MODE
+uint8_t OBDByteValue::simulateByte()
+{
+  if (m_simIncrease) {
+    m_simValue += m_simStepValue;
+    if (m_simValue >= m_simMaxValue) m_simIncrease = false;
+  } else {
+    m_simValue -= m_simStepValue;
+    if (m_simValue <= m_simMinValue) m_simIncrease = true;
+  }
+  return m_simValue;
+}
+#endif
+
+OBDIntValue::OBDIntValue(uint8_t pid, String label, uint16_t updateInterval, OBD_DATA_CONVERSION conversion, int min, int max, int step) :
+  OBDDataValue(pid, label, updateInterval, conversion)
 {
   m_value = 0;
+#ifdef LOOPBACK_MODE
+  m_simValue = 0;
+  m_simIncrease = true;
+  m_simMinValue = min;
+  m_simMaxValue = max;
+  m_simStepValue = step;
+#endif
+}
+
+String OBDIntValue::toString()
+{
+  char buf[50];
+  sprintf(buf, "%d", m_value);
+  return buf;
+}
+
+void OBDIntValue::setValue(int newValue)
+{
+  resetUpdateTimer();
+  m_value = newValue;
+}
+
+void OBDIntValue::setValue(uint8_t *data)
+{
+  int8_t tmp = (int8_t) * data;
+  switch (m_conversion) {
+    case TEMPERATURE_INT_CONVERSION:
+      setValue(tmp - 40);
+      break;
+    default:
+      // TODO: give an error message
+      break;
+  }
+}
+
+int OBDIntValue::intValue()
+{
+  return m_value;
+}
+
+#ifdef LOOPBACK_MODE
+int8_t OBDIntValue::simulateInt()
+{
+  if (m_simIncrease) {
+    m_simValue += m_simStepValue;
+    if (m_simValue >= m_simMaxValue) m_simIncrease = false;
+  } else {
+    m_simValue -= m_simStepValue;
+    if (m_simValue <= m_simMinValue) m_simIncrease = true;
+  }
+  return m_simValue;
+}
+#endif
+
+
+OBDWordValue::OBDWordValue(uint8_t pid, String label, uint16_t updateInterval, OBD_DATA_CONVERSION conversion, word min, word max, word step) :
+  OBDDataValue(pid, label, updateInterval, conversion)
+{
+  m_value = 0;
+#ifdef LOOPBACK_MODE
+  m_simValue = 0;
+  m_simIncrease = true;
+  m_simMinValue = min;
+  m_simMaxValue = max;
+  m_simStepValue = step;
+#endif
 }
 
 String OBDWordValue::toString()
 {
-	char buf[50];
-	sprintf(buf, "%d", m_value);
-	return buf;
+  char buf[50];
+  sprintf(buf, "%d", m_value);
+  return buf;
 }
 
 void OBDWordValue::setValue(word newValue)
 {
-	resetUpdateTimer();
-	m_value = newValue;
+  resetUpdateTimer();
+  m_value = newValue;
 }
 
-word OBDWordValue::value()
+void OBDWordValue::setValue(uint8_t *data)
 {
-	return m_value;
+  uint16_t tmp = *data * 256;
+  data++;
+  tmp += *data;
+
+  switch (m_conversion) {
+    case PLAIN_WORD_CONVERSION:
+      setValue(tmp);
+      break;
+    case DIV4_WORD_CONVERSION:
+      setValue(tmp / 4);
+      break;
+    default:
+      // TODO: give an error message
+      break;
+  }
 }
-  
+
+word OBDWordValue::wordValue()
+{
+  return m_value;
+}
+
+#ifdef LOOPBACK_MODE
+uint16_t OBDWordValue::simulateWord()
+{
+  if (m_simIncrease) {
+    m_simValue += m_simStepValue;
+    if (m_simValue >= m_simMaxValue) m_simIncrease = false;
+  } else {
+    m_simValue -= m_simStepValue;
+    if (m_simValue <= m_simMinValue) m_simIncrease = true;
+  }
+  return m_simValue;
+}
+#endif
+
+
+

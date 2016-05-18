@@ -198,6 +198,7 @@
 
 CAN_Frame::CAN_Frame()
 {
+  clear();
 }
 
 void CAN_Frame::init(uint32_t id, uint8_t len, uint8_t *buf)
@@ -223,19 +224,20 @@ void CAN_Frame::clear()
 ** Function name:           PumaCAN
 ** Descriptions:            Public function to declare CAN class and the /CS pin.
 *********************************************************************************************************/
-PumaCAN::PumaCAN(uint8_t _CS)
+PumaCAN::PumaCAN()
 {
-  MCPCS = _CS;
-  pinMode(MCPCS, OUTPUT);
-  MCP2515_UNSELECT();
 }
 
 /*********************************************************************************************************
 ** Function name:           begin
 ** Descriptions:            Public function to declare controller initialization parameters.
 *********************************************************************************************************/
-bool PumaCAN::begin(ID_MODE_SET idmodeset, CAN_SPEED speedset, CAN_CLOCK clockset)
+bool PumaCAN::begin(uint8_t _CS, ID_MODE_SET idmodeset, CAN_SPEED speedset, CAN_CLOCK clockset)
 {
+  MCPCS = _CS;
+  pinMode(MCPCS, OUTPUT);
+  MCP2515_UNSELECT();
+
   SPI.begin();
   return mcp2515_init(idmodeset, speedset, clockset);
 }

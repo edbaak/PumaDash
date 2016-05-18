@@ -332,9 +332,9 @@ class PumaCAN
       MCP_CONFIG     = 0x80
     } CAN_MODE;
     
-    PumaCAN(uint8_t _CS);
+    PumaCAN();
 
-    bool begin(ID_MODE_SET idmodeset, CAN_SPEED speedset, CAN_CLOCK clockset);       // Initilize controller prameters
+    bool begin(uint8_t _CS, ID_MODE_SET idmodeset, CAN_SPEED speedset, CAN_CLOCK clockset);       // Initilize controller prameters
     bool setMode(CAN_MODE opMode);                                        // Set operational mode
     bool hasError();                                             // Check for errors
     void softReset();                                           // Soft Reset MCP2515
