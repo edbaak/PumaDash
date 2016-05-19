@@ -160,7 +160,7 @@ void BaseScreen::updateStatusBar()
   static unsigned int last_update = millis();
   unsigned int tmp = millis();
 
-  Display_->txt_FGcolour(GREEN);
+  Display_->txt_FGcolour(LIGHTGREEN);
   Display_->txt_Width(1);
   Display_->txt_Height(1);
 
@@ -258,7 +258,7 @@ void Screen0::updatePitch(byte x, byte y, byte interleave, int angle)
     }
   }
 
-  int color = GREEN;
+  int color = LIGHTGREEN;
   if (abs(angle) > 35)
     color = RED;
   else if (abs(angle) > 15)
@@ -312,7 +312,7 @@ void Screen0::updateRoll(byte x, byte y, byte interleave, int angle)
     }
   }
 
-  int color = GREEN;
+  int color = LIGHTGREEN;
   if (abs(angle) > 35)
     color = RED;
   else if (abs(angle) > 15)
@@ -355,7 +355,7 @@ void Screen0::updateCompass(word heading)
       old_heading = heading;
       last_update = tmp;
 
-      Display_->txt_FGcolour(GREEN);
+      Display_->txt_FGcolour(LIGHTGREEN);
       Display_->txt_Width(6);
       Display_->txt_Height(6);
       Display_->txt_Xgap(2);
@@ -383,7 +383,7 @@ void Screen0::updateCompass(word heading)
       Display_->gfx_Orbit(heading + 150, radius_ / 2, &orbitX2, &orbitY2);
       word orbitX3, orbitY3;
       Display_->gfx_Orbit(heading + 210, radius_ / 2, &orbitX3, &orbitY3);
-      Display_->gfx_TriangleFilled(orbitX1, orbitY1, orbitX2, orbitY2, orbitX3, orbitY3, GREEN);
+      Display_->gfx_TriangleFilled(orbitX1, orbitY1, orbitX2, orbitY2, orbitX3, orbitY3, LIGHTGREEN);
     }
   }
 }
@@ -423,7 +423,7 @@ void Screen0::updateTPMSvalue(byte tireLocation)
   else if (Display_->m_tpms->tirePressureWarning(tireLocation))
     Display_->txt_FGcolour(YELLOW);
   else
-    Display_->txt_FGcolour(GREEN);
+    Display_->txt_FGcolour(LIGHTGREEN);
   Display_->print(Display_->m_tpms->tirePressure(tireLocation));
 
   x2 = x + TPMS_X2_OFFSET;
@@ -434,7 +434,7 @@ void Screen0::updateTPMSvalue(byte tireLocation)
   else if (Display_->m_tpms->tireTemperatureWarning(tireLocation))
     Display_->txt_FGcolour(YELLOW);
   else
-    Display_->txt_FGcolour(GREEN);
+    Display_->txt_FGcolour(LIGHTGREEN);
   Display_->print(Display_->m_tpms->tireTemperature(tireLocation));
 }
 
@@ -465,7 +465,7 @@ void Screen1::init()
 
 void Screen1::update()
 {
-  updateSpeed(Display_->m_obd->dataObject(PID_SPEED)->wordValue());
+  updateSpeed(Display_->m_obd->dataObject(PID_SPEED)->byteValue());
   updateRpm(Display_->m_obd->dataObject(PID_RPM)->wordValue());
   updateStatusBar();
 }
@@ -484,56 +484,53 @@ void Screen1::redrawLabels()
   //  Display_->print("Speed");
 
   Display_->gfx_MoveTo(x_mid, maxHeight() - 100);
-#define MAX_BUF 93
-  word x_pos[MAX_BUF + 2];
-  word y_pos[MAX_BUF + 2];
-  word heading = 150;
-  int c = 5;
-  word R;
-  for (int i = 0; i < MAX_BUF; i++) {
+
+  #define MAX_BUF 8 // one extra for safety sake
+  word x_pos[MAX_BUF];
+  word y_pos[MAX_BUF];
+  word i = 0;
+  for (word heading = 150; heading <= 390; heading += 40) {
     Display_->gfx_Orbit(heading, rpm_radius, &x_pos[i], &y_pos[i]);
-    i++;
-    R = rpm_radius + 4;
-    if (c == 5) {
-      R = rpm_radius + 10;
-      c = 0;
-    }
-    Display_->gfx_Orbit(heading, R, &x_pos[i], &y_pos[i]);
-    i++;
-    x_pos[i] = x_pos[i - 2];
-    y_pos[i] = y_pos[i - 2];
-    heading += 8;
-    c++;
+    Display_->gfx_CircleFilled(x_pos[i], y_pos[i], 4, WHITE);
+    i++;    
   }
 
-#define _0000_pos 1
-#define _1000_pos 16
-#define _2000_pos 31
-#define _3000_pos 46
-#define _4000_pos 61
-#define _5000_pos 76
-#define _6000_pos 91
+  for (word heading = 170; heading < 390; heading += 40) {
+    word x_start, y_start, x_end, y_end;
+    Display_->gfx_Orbit(heading, rpm_radius, &x_start, &y_start);
+    Display_->gfx_Orbit(heading, rpm_radius+10, &x_end, &y_end);
+    Display_->gfx_Line(x_start, y_start, x_end, y_end, WHITE);
+  }
 
-  Display_->gfx_Polyline(_4000_pos, &x_pos[0], &y_pos[0], WHITE);
-  Display_->gfx_Polyline(MAX_BUF - _4000_pos, &x_pos[_4000_pos], &y_pos[_4000_pos], RED);
+  for (word heading = 150; heading < 390; heading += 40) {
+    word x_start, y_start, x_end, y_end;
+    for (word offset = 10; offset < 40; offset += 20) {
+      Display_->gfx_Orbit(heading+offset, rpm_radius, &x_start, &y_start);
+      Display_->gfx_Orbit(heading+offset, rpm_radius+5, &x_end, &y_end);
+      Display_->gfx_Line(x_start, y_start, x_end, y_end, WHITE);
+    }
+  }
 
-  Display_->gfx_MoveTo(x_pos[_0000_pos] - 15, y_pos[_0000_pos] - 5);
+  Display_->txt_Width(2);
+  Display_->txt_Height(2);
   Display_->txt_FGcolour(WHITE);
+  Display_->gfx_MoveTo(x_pos[0] - 23, y_pos[0] - 5);
   Display_->print("0");
-  Display_->gfx_MoveTo(x_pos[_1000_pos] - 35, y_pos[_1000_pos] - 7);
-  Display_->print("1000");
-  Display_->gfx_MoveTo(x_pos[_2000_pos] - 35, y_pos[_2000_pos] - 10);
-  Display_->print("2000");
-  Display_->gfx_MoveTo(x_pos[_3000_pos] - 15, y_pos[_3000_pos] - 14);
-  Display_->print("3000");
-  Display_->txt_FGcolour(RED);
-  Display_->gfx_MoveTo(x_pos[_4000_pos] + 5, y_pos[_4000_pos] - 10);
-  Display_->print("4000");
-  Display_->gfx_MoveTo(x_pos[_5000_pos] + 5, y_pos[_5000_pos] - 7);
-  Display_->print("5000");
-  Display_->gfx_MoveTo(x_pos[_6000_pos] + 8, y_pos[_6000_pos] - 5);
-  Display_->print("6000");
+  Display_->gfx_MoveTo(x_pos[1] - 20, y_pos[1] - 10);
+  Display_->print("1");
+  Display_->gfx_MoveTo(x_pos[2] - 25, y_pos[2] - 18);
+  Display_->print("2");
+  Display_->gfx_MoveTo(x_pos[3] - 6, y_pos[3] - 30);
+  Display_->print("3");
+  Display_->gfx_MoveTo(x_pos[4] + 10, y_pos[4] - 18);
+  Display_->print("4");
+  Display_->gfx_MoveTo(x_pos[5] + 10, y_pos[5] - 10);
+  Display_->print("5");
+  Display_->gfx_MoveTo(x_pos[6] + 9, y_pos[6] - 5);
+  Display_->print("6");
 
+  Display_->txt_Width(1);
+  Display_->txt_Height(1);
   Display_->txt_FGcolour(WHITE);
   Display_->gfx_MoveTo(x_mid + 50, 120);
   Display_->print("rpm");
@@ -604,7 +601,7 @@ void Screen1::redrawLabels()
 
 void Screen1::updateSpeed(word speed)
 {
-  word color = GREEN;
+  word color = LIGHTGREEN;
   if (speed > 110)
     color = RED;
 
@@ -639,7 +636,7 @@ void Screen1::updateSpeed(word speed)
 
 void Screen1::updateRpm(word rpm)
 {
-  word color = GREEN;
+  word color = LIGHTGREEN;
   if (rpm >= 4000)
     color = RED;
   else if (rpm < 1200)
@@ -732,7 +729,7 @@ void Screen2::updateCruiseControl()
   // Only update the static display items once every second
   if (tmp - last_update > 1000) {
     last_update = tmp;
-    Display_->txt_FGcolour(GREEN);
+    Display_->txt_FGcolour(LIGHTGREEN);
     Display_->gfx_MoveTo(80, 40);
     Display_->txt_Width(4);
     Display_->txt_Height(4);
