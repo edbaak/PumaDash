@@ -37,18 +37,18 @@ PumaOBD::PumaOBD()
 
   addDataObject(new OBDWordValue(PID_RPM, "Rpm", 50, DIV4_WORD_CONVERSION, 0, 6000, 300));
   addDataObject(new OBDByteValue(PID_SPEED, "Speed", 250, PLAIN_BYTE_CONVERSION, 0, 115, 3));
-  addDataObject(new OBDIntValue(PID_COOLANT_TEMP, "Coolant Temperature", 5000, TEMPERATURE_INT_CONVERSION, 25, 100, 8));
-  //  addDataObject(new OBDByteValue(PID_BAROMETRIC_PRESSURE, "Barometric Pressure", 90000,
-  //  addDataObject(new OBDIntValue(PID_INTAKE_AIR_TEMP, "Intake Air Temperature", 60000, BYTE_MINUS40
-  //  addDataObject(new OBDIntValue(PID_AMBIENT_AIR_TEMP, "Ambient Air Temperature", 60000, BYTE_MINUS40
-  //  addDataObject(new OBDFloatValue(PID_CONTROL_MODULE_VOLTAGE, "Battery Voltage", 40000, WORD_DIV1000 // V
-  //  addDataObject(new OBDFloatValue(PID_ENGINE_FUEL_RATE, "Fuel Rate", 30000, WORD_DIV20 // L/h
-  //  addDataObject(new OBDByteValue(PID_FUEL_LEVEL, "Fuel Level", 30000, BYTE_PERCENTAGE (word * 100 / 255)
-  //  addDataObject(new OBDIntValue(PID_ENGINE_OIL_TEMP, "Engine Oil Temperature", 10000, BYTE_MINUS40
+  addDataObject(new OBDLongValue(PID_COOLANT_TEMP, "Coolant Temperature", 3000, INT_MINUS40, -25, 130, 4));
+  //  addDataObject(new OBDByteValue(PID_BAROMETRIC_PRESSURE, "Barometric Pressure", 30000,
+  addDataObject(new OBDLongValue(PID_INTAKE_AIR_TEMP, "Intake Air Temperature", 10000, INT_MINUS40, 10, 50, 5));
+  addDataObject(new OBDLongValue(PID_AMBIENT_AIR_TEMP, "Ambient Air Temperature", 10000, INT_MINUS40, 10, 50, 5));
+  //  addDataObject(new OBDFloatValue(PID_CONTROL_MODULE_VOLTAGE, "Battery Voltage", 5000, WORD_DIV1000 // V
+  //  addDataObject(new OBDFloatValue(PID_ENGINE_FUEL_RATE, "Fuel Rate", 3000, WORD_DIV20 // L/h
+  //  addDataObject(new OBDByteValue(PID_FUEL_LEVEL, "Fuel Level", 3000, BYTE_PERCENTAGE (word * 100 / 255)
+  //  addDataObject(new OBDLongValue(PID_ENGINE_OIL_TEMP, "Engine Oil Temperature", 2000, BYTE_MINUS40
   //  addDataObject(new OBDByteValue(PID_CALCULATED_ENGINE_LOAD, "Engine Load", 1000, BYTE_PERCENTAGE (word * 100 / 255)
   //  addDataObject(new OBDByteValue(PID_ABSOLUTE_ENGINE_LOAD, "Abs Engine Load", 1000, BYTE_PERCENTAGE (word * 100 / 255)
-  //  addDataObject(new OBDIntValue(PID_ENGINE_TORQUE_DEMANDED, "Torque Demanded", 1000, INT_MINUS125 // %
-  //  addDataObject(new OBDIntValue(PID_ENGINE_TORQUE_PERCENTAGE, "Torque Percentage", 1000, INT_MINUS125 // %
+  //  addDataObject(new OBDLongValue(PID_ENGINE_TORQUE_DEMANDED, "Torque Demanded", 1000, INT_MINUS125 // %
+  //  addDataObject(new OBDLongValue(PID_ENGINE_TORQUE_PERCENTAGE, "Torque Percentage", 1000, INT_MINUS125 // %
 
   //  addDataObject(new OBDWordValue(PID_EVAP_SYS_VAPOR_PRESSURE, SHIFT_RIGHT_2 // kPa
   //  addDataObject(new OBDByteValue(PID_FUEL_PRESSURE, TIMES_3 // kPa
@@ -65,7 +65,7 @@ PumaOBD::PumaOBD()
   //  addDataObject(new OBDByteValue(PID_ETHANOL_FUEL, BYTE_PERCENTAGE (word * 100 / 255)
   //  addDataObject(new OBDByteValue(PID_HYBRID_BATT_REMAINING_LIFE, BYTE_PERCENTAGE (word * 100 / 255)
   //  addDataObject(new OBDWordValue(PID_MAF_AIR_FLOW_RATE, WORD_DIV100 // grams/sec
-  //  addDataObject(new OBDIntValue(PID_TIMING_ADVANCE, BYTE_DIV2_MINUS64
+  //  addDataObject(new OBDLongValue(PID_TIMING_ADVANCE, BYTE_DIV2_MINUS64
   //  addDataObject(new OBDWordValue(PID_DISTANCE_SINCE_DTC_CLEARED, PLAIN_WORD_CONVERSION: // km
   //  addDataObject(new OBDWordValue(PID_DISTANCE_WITH_MIL_ON, PLAIN_WORD_CONVERSION: // km
   //  addDataObject(new OBDWordValue(PID_RUN_TIME_WITH_MIL_ON, PLAIN_WORD_CONVERSION: // minute
@@ -73,11 +73,11 @@ PumaOBD::PumaOBD()
   //  addDataObject(new OBDWordValue(PID_RUNTIME_SINCE_ENG_START, PLAIN_WORD_CONVERSION: // second
   //  addDataObject(new OBDWordValue(PID_FUEL_RAIL_PRESSURE, PLAIN_WORD_CONVERSION: // kPa
   //  addDataObject(new OBDWordValue(PID_ENGINE_REF_TORQUE, PLAIN_WORD_CONVERSION: // Nm
-  //  addDataObject(new OBDIntValue(PID_SHORT_TERM_FUEL_TRIM_1, INT_MINUS128_TIMES100_DIV128
-  //  addDataObject(new OBDIntValue(PID_LONG_TERM_FUEL_TRIM_1, INT_MINUS128_TIMES100_DIV128
-  //  addDataObject(new OBDIntValue(PID_SHORT_TERM_FUEL_TRIM_2, INT_MINUS128_TIMES100_DIV128
-  //  addDataObject(new OBDIntValue(PID_LONG_TERM_FUEL_TRIM_2, INT_MINUS128_TIMES100_DIV128
-  //  addDataObject(new OBDIntValue(PID_EGR_ERROR, INT_MINUS128_TIMES100_DIV128
+  //  addDataObject(new OBDLongValue(PID_SHORT_TERM_FUEL_TRIM_1, INT_MINUS128_TIMES100_DIV128
+  //  addDataObject(new OBDLongValue(PID_LONG_TERM_FUEL_TRIM_1, INT_MINUS128_TIMES100_DIV128
+  //  addDataObject(new OBDLongValue(PID_SHORT_TERM_FUEL_TRIM_2, INT_MINUS128_TIMES100_DIV128
+  //  addDataObject(new OBDLongValue(PID_LONG_TERM_FUEL_TRIM_2, INT_MINUS128_TIMES100_DIV128
+  //  addDataObject(new OBDLongValue(PID_EGR_ERROR, INT_MINUS128_TIMES100_DIV128
   //  addDataObject(new OBDLongValue(PID_FUEL_INJECTION_TIMING, LONG_MINUS26880_DIV128
   //  addDataObject(new OBDLongValue(PID_CATALYST_TEMP_B1S1, LONG_DIV10_MINUS40
   //  addDataObject(new OBDLongValue(PID_CATALYST_TEMP_B2S1, LONG_DIV10_MINUS40
@@ -216,8 +216,11 @@ void PumaOBD::updateSensor(OBDDataValue *sensor)
     message.m_data[2] = sensor->pid(); // The pid to which the simulated data applies
     if (dl > 0) {
       if (dl == 1) {
-        uint8_t value = sensor->simulateByte();
-        message.m_data[3] = value;
+        if (sensor->dataConversion() == INT_MINUS40) {
+          message.m_data[3] = sensor->simulateLong();
+        } else {
+          message.m_data[3] = sensor->simulateByte();
+        }
       } if (dl == 2) {
         uint16_t value = sensor->simulateWord();
         message.m_data[3] = value >> 8;
@@ -395,16 +398,23 @@ String OBDDataValue::label()
   return m_label;
 }
 
+String OBDDataValue::toString()
+{
+  return 'UNDEF";
+}
+
 OBDByteValue::OBDByteValue(uint8_t pid, String label, uint16_t updateInterval, OBD_DATA_CONVERSION conversion, byte min, byte max, byte step) :
   OBDDataValue(pid, label, updateInterval, conversion)
 {
   m_value = 0;
 #ifdef LOOPBACK_MODE
-  m_simValue = 0;
+  m_simValue = min;
   m_simIncrease = true;
   m_simMinValue = min;
   m_simMaxValue = max;
   m_simStepValue = step;
+#else
+  min = max = step;
 #endif
 }
 
@@ -450,12 +460,12 @@ uint8_t OBDByteValue::simulateByte()
 }
 #endif
 
-OBDIntValue::OBDIntValue(uint8_t pid, String label, uint16_t updateInterval, OBD_DATA_CONVERSION conversion, int min, int max, int step) :
+OBDLongValue::OBDLongValue(uint8_t pid, String label, uint16_t updateInterval, OBD_DATA_CONVERSION conversion, long min, long max, long step) :
   OBDDataValue(pid, label, updateInterval, conversion)
 {
   m_value = 0;
 #ifdef LOOPBACK_MODE
-  m_simValue = 0;
+  m_simValue = min;
   m_simIncrease = true;
   m_simMinValue = min;
   m_simMaxValue = max;
@@ -463,40 +473,34 @@ OBDIntValue::OBDIntValue(uint8_t pid, String label, uint16_t updateInterval, OBD
 #endif
 }
 
-String OBDIntValue::toString()
+String OBDLongValue::toString()
 {
   char buf[50];
-  sprintf(buf, "%d", m_value);
+  sprintf(buf, "%li", m_value);
   return buf;
 }
 
-void OBDIntValue::setValue(int newValue)
+void OBDLongValue::setValue(long newValue)
 {
   resetUpdateTimer();
   m_value = newValue;
 }
 
-void OBDIntValue::setValue(uint8_t *data)
+void OBDLongValue::setValue(uint8_t *data)
 {
-  Serial.print("setValue(");
-  Serial.print(*data);
-  Serial.print("), ");
-  int8_t tmp = (int8_t) * data;
-  Serial.print(tmp);
-  Serial.print("-");
-  if (m_conversion == TEMPERATURE_INT_CONVERSION)
+  int32_t tmp = *data;
+  if (m_conversion == INT_MINUS40)
     setValue(tmp - 40);
-  Serial.println(tmp - 40);  
   //TODO: add more conversions?
 }
 
-int OBDIntValue::intValue()
+long OBDLongValue::longValue()
 {
   return m_value;
 }
 
 #ifdef LOOPBACK_MODE
-int8_t OBDIntValue::simulateInt()
+uint8_t OBDLongValue::simulateLong()
 {
   if (m_simIncrease) {
     m_simValue += m_simStepValue;
@@ -505,10 +509,11 @@ int8_t OBDIntValue::simulateInt()
     m_simValue -= m_simStepValue;
     if (m_simValue <= m_simMinValue) m_simIncrease = true;
   }
-  if (m_conversion == TEMPERATURE_INT_CONVERSION)
-    return m_simValue + 40;
+  if (m_conversion == INT_MINUS40) {
+    return uint8_t(m_simValue + 40);
+  }
   //TODO: add more conversions?
-  return 0;
+  return uint8_t(m_simValue);
 }
 #endif
 
@@ -518,7 +523,7 @@ OBDWordValue::OBDWordValue(uint8_t pid, String label, uint16_t updateInterval, O
 {
   m_value = 0;
 #ifdef LOOPBACK_MODE
-  m_simValue = 0;
+  m_simValue = min;
   m_simIncrease = true;
   m_simMinValue = min;
   m_simMaxValue = max;

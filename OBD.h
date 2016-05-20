@@ -255,9 +255,9 @@
 
 typedef enum OBD_DATA_CONVERSION {
   PLAIN_BYTE_CONVERSION,
-  TEMPERATURE_INT_CONVERSION,
   PLAIN_WORD_CONVERSION,
-  DIV4_WORD_CONVERSION
+  DIV4_WORD_CONVERSION,
+  INT_MINUS40
 } OBD_DATA_CONVERSION;
 
 class OBDDataValue
@@ -272,14 +272,22 @@ class OBDDataValue
     bool needsUpdate();
     void updateRequested();
     String label();
+    virtual String toString();
+    
     virtual uint8_t dataBytes() {
       return 0;
+    }
+    virtual OBD_DATA_CONVERSION dataConversion() {
+      return m_conversion;
     }
     virtual void setValue(uint8_t *data) {};
     virtual byte byteValue() {
       return 0;
     };
     virtual word wordValue() {
+      return 0;
+    };
+    virtual long longValue() {
       return 0;
     };
 #ifdef LOOPBACK_MODE
@@ -289,7 +297,7 @@ class OBDDataValue
     virtual uint16_t simulateWord() {
       return 0;
     };
-    virtual int8_t simulateInt() {
+    virtual uint8_t simulateLong() {
       return 0;
     };
 #endif
@@ -332,29 +340,29 @@ class OBDByteValue : public OBDDataValue
 #endif
 };
 
-class OBDIntValue : public OBDDataValue
+class OBDLongValue : public OBDDataValue
 {
   public:
-    OBDIntValue(uint8_t pid, String label, uint16_t updateInterval, OBD_DATA_CONVERSION conversion, int min = 0, int max = 0, int step = 0);
+    OBDLongValue(uint8_t pid, String label, uint16_t updateInterval, OBD_DATA_CONVERSION conversion, long min = 0, long max = 0, long step = 0);
     String toString();
-    virtual void setValue(int newValue);
+    virtual void setValue(long newValue);
     virtual void setValue(uint8_t *data);
-    virtual int intValue();
+    virtual long longValue();
     virtual uint8_t dataBytes() {
       return 1;
     }
 #ifdef LOOPBACK_MODE
-    virtual int8_t simulateInt();
+    virtual uint8_t simulateLong();
 #endif
 
   private:
-    int m_value;
+    long m_value;
 #ifdef LOOPBACK_MODE
-    int m_simValue;
+    long m_simValue;
     bool m_simIncrease;
-    int m_simMinValue;
-    int m_simMaxValue;
-    int m_simStepValue;
+    long m_simMinValue;
+    long m_simMaxValue;
+    long m_simStepValue;
 #endif
 };
 
