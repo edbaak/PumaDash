@@ -26,6 +26,8 @@
 #include "WProgram.h" // for Arduino 23
 #endif
 
+#define rpm_radius 110
+
 // ******************************************************************************************************
 //                                              PumaDisplay
 // ******************************************************************************************************
@@ -77,7 +79,6 @@ BaseScreen *PumaDisplay::activeScreen()
 void PumaDisplay::update()
 {
   if (!g_init_display && m_screen0.touchPressed()) {
-    gfx_Cls();
     g_active_screen++;
     if (g_active_screen > 2)
       g_active_screen = 0;
@@ -107,8 +108,8 @@ void PumaDisplay::reset()
 
 BaseScreen::BaseScreen()
 {
-  display_max_width = 0;
-  display_max_height = 0;
+  display_max_y = 0;
+  display_max_x = 0;
 }
 
 void BaseScreen::setup(PumaDisplay *disp)
@@ -118,15 +119,18 @@ void BaseScreen::setup(PumaDisplay *disp)
 
 void BaseScreen::init()
 {  
-  display_max_width = Display_->gfx_Get(X_MAX) + 1;
-  display_max_height = Display_->gfx_Get(Y_MAX) + 1;
-  top_separator_line = display_max_height / 3;
+  Display_->gfx_Cls();
+  Display_->gfx_ScreenMode(displayOrientation());
+
+  display_max_x = Display_->gfx_Get(X_MAX);
+  display_max_y = Display_->gfx_Get(Y_MAX);
+  top_separator_line = display_max_y / 3;
   mid_separator_line = top_separator_line + (top_separator_line * 2 / 3);
   bottom_separator_line = top_separator_line + (top_separator_line * 4 / 3);
-  start_x = 10;
-  end_x = display_max_width - 11;
-  mid_screen = display_max_width / 2;
-  Display_->gfx_ScreenMode(displayOrientation());
+  left_border = 10;
+  right_border = display_max_x - left_border;
+  display_y_mid = display_max_y / 2;
+  display_x_mid = display_max_x / 2;
 }
 
 bool BaseScreen::touchPressed()
@@ -137,12 +141,12 @@ bool BaseScreen::touchPressed()
 
 word BaseScreen::maxWidth()
 {
-  return display_max_width;
+  return display_max_x + 1;
 }
 
 word BaseScreen::maxHeight()
 {
-  return display_max_height;
+  return display_max_y + 1;
 }
 
 bool BaseScreen::updateNeeded(unsigned int &lastUpdate, word updateInterval)
@@ -188,6 +192,50 @@ void BaseScreen::updateStatusBar()
   last_update = tmp;
 }
 
+void BaseScreen::printPrepare(word x, word y, int color, int textSize)
+{
+  Display_->gfx_MoveTo(x, y);
+  Display_->txt_Width(textSize);
+  Display_->txt_Height(textSize);
+  Display_->txt_FGcolour(color);  
+}
+
+void BaseScreen::printLabel(String label, word x, word y, int color, int textSize)
+{
+  printPrepare(x, y, color, textSize);
+  Display_->print(label);
+}
+
+void BaseScreen::printValue(int value, word x, word y, int color, int textSize)
+{
+  printPrepare(x, y, color, textSize);
+  Display_->print(value);
+}
+
+void BaseScreen::printValue(word value, word x, word y, int color, int textSize)
+{
+  printPrepare(x, y, color, textSize);
+  Display_->print(value);
+}
+
+void BaseScreen::printValue(long value, word x, word y, int color, int textSize)
+{
+  printPrepare(x, y, color, textSize);
+  Display_->print(value);
+}
+
+void BaseScreen::printValue(String value, word x, word y, int color, int textSize)
+{
+  printPrepare(x, y, color, textSize);
+  Display_->print(value);
+}
+
+String BaseScreen::intToString(int value)
+{
+  String s(value);
+  return s;
+}
+
 // ******************************************************************************************************
 //                                              LEFT DISPLAY
 // ******************************************************************************************************
@@ -221,18 +269,18 @@ void Screen0::update()
 
 void Screen0::redrawLabels()
 {
-  Display_->txt_FGcolour(WHITE);
-  Display_->gfx_MoveTo(120, top_separator_line + 3);
-  Display_->print("TPMS");
-  Display_->gfx_LinePattern(0x00aa);
-  Display_->gfx_Line(start_x + 20, mid_separator_line, end_x - 20, mid_separator_line, WHITE);
-  Display_->gfx_Line(start_x + 20, bottom_separator_line, end_x - 20, bottom_separator_line, WHITE);
-  Display_->gfx_Line(mid_screen, top_separator_line + 32, mid_screen, display_max_height - 30, WHITE);
+  printLabel("TPMS", 120, top_separator_line + 3, WHITE);
 
-  Display_->gfx_MoveTo(100, 3);
-  Display_->print("Direction");
+  Display_->gfx_LinePattern(0x00aa);
+  byte border = 30;
+  Display_->gfx_Line(border, mid_separator_line, display_max_x - border, mid_separator_line, WHITE);
+  Display_->gfx_Line(border, bottom_separator_line, display_max_x - border, bottom_separator_line, WHITE);
+  Display_->gfx_Line(display_max_x / 2, top_separator_line + border, display_max_x / 2, display_max_x - border, WHITE);
+
+  printLabel("Position", 100, 3, WHITE);
+
   Display_->gfx_LinePattern(0);
-  Display_->gfx_Line(start_x, top_separator_line, end_x, top_separator_line, WHITE);
+  Display_->gfx_Line(left_border, top_separator_line, right_border, top_separator_line, WHITE);
 }
 
 void Screen0::updatePitch(byte x, byte y, byte interleave, int angle)
@@ -264,12 +312,7 @@ void Screen0::updatePitch(byte x, byte y, byte interleave, int angle)
   else if (abs(angle) > 15)
     color = YELLOW;
 
-  Display_->gfx_MoveTo(x - 1, y + interleave * 18 + 1);
-
-  Display_->txt_Width(2);
-  Display_->txt_Height(2);
-  Display_->txt_FGcolour(color);
-  Display_->print(abs(angle));
+  printValue(abs(angle), x - 1, y + interleave * 18 + 1, color, 2);
 
   if (angle > 45)
     angle = 45;
@@ -318,12 +361,7 @@ void Screen0::updateRoll(byte x, byte y, byte interleave, int angle)
   else if (abs(angle) > 15)
     color = YELLOW;
 
-  Display_->gfx_MoveTo(x + interleave * 18 + 4, y - 13);
-
-  Display_->txt_Width(2);
-  Display_->txt_Height(2);
-  Display_->txt_FGcolour(color);
-  Display_->print(abs(angle));
+  printValue(abs(angle), x + interleave * 18 + 4, y - 13, color, 2);
 
   if (angle > 45)
     angle = 45;
@@ -355,16 +393,12 @@ void Screen0::updateCompass(word heading)
       old_heading = heading;
       last_update = tmp;
 
-      Display_->txt_FGcolour(LIGHTGREEN);
-      Display_->txt_Width(6);
-      Display_->txt_Height(6);
       Display_->txt_Xgap(2);
-      Display_->gfx_MoveTo(65, 40);
-      if (heading < 100)
-        Display_->print("0");
-      if (heading < 10)
-        Display_->print("0");
-      Display_->print(heading);
+      char hd[5];
+      sprintf(hd, "%0d3", heading);
+      
+      Display_->txt_FGcolour(LIGHTGREEN);
+      printValue(hd, 65, 40, LIGHTGREEN, 6);
       Display_->txt_Xgap(0);
 
       heading += 270;
@@ -397,7 +431,7 @@ void Screen0::updateTPMSvalue(byte tireLocation)
 
   word x = 0;
   if (tireLocation == FRONT_RIGHT || tireLocation == REAR_RIGHT || tireLocation == TRAILER_RIGHT) {
-    x = mid_screen;
+    x = display_max_x / 2;
   }
 
   word y = 0;
@@ -411,31 +445,24 @@ void Screen0::updateTPMSvalue(byte tireLocation)
 
   Display_->gfx_Line(x + TPMS_X1_OFFSET, y + TPMS_Y1_OFFSET , x + TPMS_X2_OFFSET, y + TPMS_Y2_OFFSET, WHITE);
 
-  Display_->txt_Width(2);
-  Display_->txt_Height(2);
-
-  int x1, y1, x2, y2;
+  word x1, y1, x2, y2;
   x1 = x + TPMS_X1_OFFSET / 2;
   y2 = y + TPMS_Y2_OFFSET;
-  Display_->gfx_MoveTo(x1, y2);
+  int color = LIGHTGREEN;
   if (Display_->m_tpms->tirePressureAlarm(tireLocation))
-    Display_->txt_FGcolour(RED);
+    color = RED;
   else if (Display_->m_tpms->tirePressureWarning(tireLocation))
-    Display_->txt_FGcolour(YELLOW);
-  else
-    Display_->txt_FGcolour(LIGHTGREEN);
-  Display_->print(Display_->m_tpms->tirePressure(tireLocation));
+    color = YELLOW;
+  printValue(uint16_t(Display_->m_tpms->tirePressure(tireLocation)), x1, y2, color, 2);
 
+  color = LIGHTGREEN;
   x2 = x + TPMS_X2_OFFSET;
   y1 = y + TPMS_Y1_OFFSET - 20;
-  Display_->gfx_MoveTo(x2, y1);
   if (Display_->m_tpms->tireTemperatureAlarm(tireLocation))
-    Display_->txt_FGcolour(RED);
+    color = RED;
   else if (Display_->m_tpms->tireTemperatureWarning(tireLocation))
-    Display_->txt_FGcolour(YELLOW);
-  else
-    Display_->txt_FGcolour(LIGHTGREEN);
-  Display_->print(Display_->m_tpms->tireTemperature(tireLocation));
+    color = YELLOW;
+  printValue(int32_t(Display_->m_tpms->tireTemperature(tireLocation)), x2, y1, color, 2);
 }
 
 // ******************************************************************************************************
@@ -450,23 +477,24 @@ void Screen1::init()
 {
   BaseScreen::init();
 
-  y_mid = maxHeight() / 2;
-  x_mid = maxWidth() / 2;
   left_vertical = 160;
   right_vertical = maxWidth() - left_vertical;
   bottom_divider = maxHeight() - 130;
   label_x_offset = 13;
-  label1_y_offset = 90;
-  label2_y_offset = 160;
-  label3_y_offset = 230;
+  big_border = 20;
+  word z = (display_max_y - big_border) / 3;
+  label1_y_offset = big_border;
+  label2_y_offset = label1_y_offset + z;
+  label3_y_offset = label2_y_offset + z;
 }
-
-#define rpm_radius 130
 
 void Screen1::update()
 {
   updateSpeed(Display_->m_obd->dataObject(PID_SPEED)->byteValue());
   updateRpm(Display_->m_obd->dataObject(PID_RPM)->wordValue());
+  updateTemperatures(Display_->m_obd->dataObject(PID_AMBIENT_AIR_TEMP)->longValue(), 
+                    Display_->m_obd->dataObject(PID_COOLANT_TEMP)->longValue(), 
+                    Display_->m_obd->dataObject(PID_INTAKE_AIR_TEMP)->longValue());
   updateStatusBar();
 }
 
@@ -480,12 +508,12 @@ void Screen1::redrawLabels()
   Display_->txt_FGcolour(WHITE);
   Display_->gfx_LinePattern(0);
 
-  //  Display_->gfx_MoveTo(x_mid - 120, 3);
+  //  Display_->gfx_MoveTo(display_display_x_mid - 120, 3);
   //  Display_->print("Speed");
 
-  Display_->gfx_MoveTo(x_mid, maxHeight() - 100);
+  Display_->gfx_MoveTo(display_x_mid, maxHeight() - 100);
 
-  #define MAX_BUF 8 // one extra for safety sake
+  #define MAX_BUF 10
   word x_pos[MAX_BUF];
   word y_pos[MAX_BUF];
   word i = 0;
@@ -511,92 +539,64 @@ void Screen1::redrawLabels()
     }
   }
 
-  Display_->txt_Width(2);
-  Display_->txt_Height(2);
-  Display_->txt_FGcolour(WHITE);
-  Display_->gfx_MoveTo(x_pos[0] - 23, y_pos[0] - 5);
-  Display_->print("0");
-  Display_->gfx_MoveTo(x_pos[1] - 20, y_pos[1] - 10);
-  Display_->print("1");
-  Display_->gfx_MoveTo(x_pos[2] - 25, y_pos[2] - 18);
-  Display_->print("2");
-  Display_->gfx_MoveTo(x_pos[3] - 6, y_pos[3] - 30);
-  Display_->print("3");
-  Display_->gfx_MoveTo(x_pos[4] + 10, y_pos[4] - 18);
-  Display_->print("4");
-  Display_->gfx_MoveTo(x_pos[5] + 10, y_pos[5] - 10);
-  Display_->print("5");
-  Display_->gfx_MoveTo(x_pos[6] + 9, y_pos[6] - 5);
-  Display_->print("6");
-
-  Display_->txt_Width(1);
-  Display_->txt_Height(1);
-  Display_->txt_FGcolour(WHITE);
-  Display_->gfx_MoveTo(x_mid + 50, 120);
-  Display_->print("rpm");
-  Display_->gfx_MoveTo(x_mid + 60, 230);
-  Display_->print("Km/h");
+  printLabel("0", x_pos[0] - 23, y_pos[0] - 5, WHITE, 2);
+  printLabel("1", x_pos[1] - 20, y_pos[1] - 10, WHITE, 2);
+  printLabel("2", x_pos[2] - 25, y_pos[2] - 18, WHITE, 2);
+  printLabel("3", x_pos[3] - 6, y_pos[3] - 30, WHITE, 2);
+  printLabel("4", x_pos[4] + 10, y_pos[4] - 18, WHITE, 2);
+  printLabel("5", x_pos[5] + 10, y_pos[5] - 10, WHITE, 2);
+  printLabel("6", x_pos[6] + 9, y_pos[6] - 5, WHITE, 2);
+  printLabel("rpm", display_x_mid + 50, 120, WHITE);
+  printLabel("Km/h", display_x_mid + 60, 230, WHITE);
 
   /*
     Display_->gfx_Line(left_vertical, 0, left_vertical, maxHeight()-1, WHITE);
     Display_->gfx_Line(right_vertical, 0, right_vertical, maxHeight()-1, WHITE);
-    Display_->gfx_Line(0, y_mid, left_vertical, y_mid, WHITE);
-    Display_->gfx_Line(right_vertical, y_mid, maxWidth() - 1, y_mid, WHITE);
+    Display_->gfx_Line(0, display_y_mid, left_vertical, display_y_mid, WHITE);
+    Display_->gfx_Line(right_vertical, display_y_mid, maxWidth() - 1, display_y_mid, WHITE);
     Display_->gfx_Line(left_vertical, bottom_divider, right_vertical, bottom_divider, WHITE);
 
-    Display_->gfx_MoveTo(x_mid - 30, 3);
-    Display_->print("Speed");
-    Display_->gfx_MoveTo(left_vertical / 2 - 20, 3);
-    Display_->print("Temp");
-    Display_->gfx_MoveTo(label_x_offset, label1_y_offset);
-    Display_->print("Air");
-    Display_->gfx_MoveTo(label_x_offset, label2_y_offset);
-    Display_->print("Engine");
-    Display_->gfx_MoveTo(label_x_offset, label3_y_offset);
-    Display_->print("Turbo");
+    printLabel("Speed", display_x_mid - 30, 3, WHITE);
+    printLabel("Temp", left_vertical / 2 - 20, 3, WHITE);
+  */  
+    printLabel("Air", label_x_offset, label1_y_offset, WHITE);
+    printLabel("Engine", label_x_offset, label2_y_offset, WHITE);
+    printLabel("Turbo", label_x_offset, label3_y_offset, WHITE);
 
-    Display_->gfx_MoveTo(left_vertical / 2 - 40, y_mid + 3);
-    Display_->print("Pressure");
-    Display_->gfx_MoveTo(label_x_offset, label1_y_offset + y_mid);
-    Display_->print("Fuel");
-    Display_->gfx_MoveTo(label_x_offset, label2_y_offset + y_mid);
-    Display_->print("Oil");
-    Display_->gfx_MoveTo(label_x_offset, label3_y_offset + y_mid);
-    Display_->print("Air");
+/*
+    printLabel("Pressure", left_vertical / 2 - 40, display_y_mid + 3, WHITE);
+    printLabel("Fuel", label_x_offset, label1_y_offset + display_y_mid, WHITE);
+    printLabel("Oil", label_x_offset, label2_y_offset + display_y_mid, WHITE);
+    printLabel("Air", label_x_offset, label3_y_offset + display_y_mid, WHITE);
 
-    Display_->gfx_MoveTo(y_mid - 50, bottom_divider + 3);
-    Display_->print("Drivetrain");
-    Display_->gfx_MoveTo(left_vertical + 15, bottom_divider + 15);
-    Display_->print("Torque");
-    Display_->gfx_MoveTo(left_vertical + 15, bottom_divider + 50);
-    Display_->print("Power");
-    Display_->gfx_MoveTo(right_vertical - 120, bottom_divider + 15);
-    Display_->print("Lockers");
-    Display_->gfx_MoveTo(right_vertical - 120, bottom_divider + 50);
-    Display_->print("F:");
-    Display_->gfx_MoveTo(right_vertical - 120, bottom_divider + 85);
-    Display_->print("C:");
-    Display_->gfx_MoveTo(right_vertical - 120, bottom_divider + 120);
-    Display_->print("R:");
+    printLabel("Drivetrain", display_y_mid - 50, bottom_divider + 3, WHITE);
+    printLabel("Torque", left_vertical + 15, bottom_divider + 15, WHITE);
+    printLabel("Power", left_vertical + 15, bottom_divider + 50, WHITE);
+    printLabel("Lockers", right_vertical - 120, bottom_divider + 15, WHITE);
+    printLabel("F:", right_vertical - 120, bottom_divider + 50, WHITE);
+    printLabel("C:", right_vertical - 120, bottom_divider + 85, WHITE);
+    printLabel("R:", right_vertical - 120, bottom_divider + 120, WHITE);
+    printLabel("Fuel", right_vertical + left_vertical / 2 - 20, 3, WHITE);
+*/
+    printLabel("Tank", right_vertical + label_x_offset, label1_y_offset, WHITE);
+    printLabel("Range", right_vertical + label_x_offset, label2_y_offset, WHITE);
+    printLabel("Economy", right_vertical + label_x_offset, label3_y_offset, WHITE);
 
-    Display_->gfx_MoveTo(right_vertical + left_vertical / 2 - 20, 3);
-    Display_->print("Fuel");
-    Display_->gfx_MoveTo(right_vertical + label_x_offset, label1_y_offset);
-    Display_->print("Tank");
-    Display_->gfx_MoveTo(right_vertical + label_x_offset, label2_y_offset);
-    Display_->print("Range");
-    Display_->gfx_MoveTo(right_vertical + label_x_offset, label3_y_offset);
-    Display_->print("Economy");
+/*
+    printLabel("Distance", right_vertical + left_vertical / 2 - 40, display_y_mid + 3, WHITE);
+    printLabel("Odo", right_vertical + label_x_offset, label1_y_offset + display_y_mid, WHITE);
+    printLabel("Trip", right_vertical + label_x_offset, label2_y_offset + display_y_mid, WHITE);
+    printLabel("Last Service", right_vertical + label_x_offset, label3_y_offset + display_y_mid, WHITE);
+*/
+}
 
-    Display_->gfx_MoveTo(right_vertical + left_vertical / 2 - 40, y_mid + 3);
-    Display_->print("Distance");
-    Display_->gfx_MoveTo(right_vertical + label_x_offset, label1_y_offset + y_mid);
-    Display_->print("Odo");
-    Display_->gfx_MoveTo(right_vertical + label_x_offset, label2_y_offset + y_mid);
-    Display_->print("Trip");
-    Display_->gfx_MoveTo(right_vertical + label_x_offset, label3_y_offset + y_mid);
-    Display_->print("Last Service");
-  */
+void Screen1::updateTemperatures(long air, long engine, long turbo)
+{
+    word x_value_offset = 20;
+    word y_value_offset = 20;
+    printValue(air, label_x_offset + x_value_offset, label1_y_offset + y_value_offset, LIGHTGREEN, 2);
+    printValue(engine, label_x_offset + x_value_offset, label2_y_offset + y_value_offset, LIGHTGREEN, 2);
+    printValue(turbo, label_x_offset + x_value_offset, label3_y_offset + y_value_offset, LIGHTGREEN, 2);
 }
 
 void Screen1::updateSpeed(word speed)
@@ -611,27 +611,20 @@ void Screen1::updateSpeed(word speed)
   static word last_x;
   word new_x;
 
-  Display_->txt_Width(7);
-  Display_->txt_Height(7);
-
   if (last_speed != speed) {
-    Display_->gfx_MoveTo(last_x, y);
-    Display_->txt_FGcolour(BLACK);
-    Display_->print(last_speed);
+    printValue(last_speed, last_x, y, BLACK, 7);
     last_speed = speed;
   }
 
   if (speed < 10)
-    new_x = x_mid - 25;
+    new_x = display_x_mid - 25;
   else if (speed < 100)
-    new_x = x_mid - 50;
+    new_x = display_x_mid - 50;
   else
-    new_x = x_mid - 80;
+    new_x = display_x_mid - 80;
   last_x = new_x;
 
-  Display_->gfx_MoveTo(new_x, y);
-  Display_->txt_FGcolour(color);
-  Display_->print(speed);
+  printValue(speed, new_x, y, color, 7);
 }
 
 void Screen1::updateRpm(word rpm)
@@ -651,32 +644,25 @@ void Screen1::updateRpm(word rpm)
     Display_->gfx_TriangleFilled(x_pos[0], y_pos[0], x_pos[1], y_pos[1], x_pos[2], y_pos[2], BLACK);
 
   word rpm_heading = 150 + round(rpm * 40.0 / 1000.0);
-  Display_->gfx_MoveTo(x_mid, maxHeight() - 100);
+  Display_->gfx_MoveTo(display_x_mid, maxHeight() - 100);
   Display_->gfx_Orbit(rpm_heading, rpm_radius - 7, &x_pos[0], &y_pos[0]);
   Display_->gfx_Orbit(rpm_heading - 4, rpm_radius - 30, &x_pos[1], &y_pos[1]);
   Display_->gfx_Orbit(rpm_heading + 4, rpm_radius - 30, &x_pos[2], &y_pos[2]);
   Display_->gfx_TriangleFilled(x_pos[0], y_pos[0], x_pos[1], y_pos[1], x_pos[2], y_pos[2], color);
 
-  Display_->txt_Width(3);
-  Display_->txt_Height(3);
-
   word new_x;
   if (rpm >= 1000)
-    new_x = x_mid - 58;
+    new_x = display_x_mid - 58;
   else
-    new_x = x_mid - 40;
+    new_x = display_x_mid - 40;
 
   if (last_rpm != rpm) {
-    Display_->gfx_MoveTo(last_x, 95);
-    Display_->txt_FGcolour(BLACK);
-    Display_->print(last_rpm);
+    printValue(last_rpm, last_x, 95, BLACK, 3);
     last_rpm = rpm;
   }
 
   last_x = new_x;
-  Display_->gfx_MoveTo(new_x, 95);
-  Display_->txt_FGcolour(color);
-  Display_->print(rpm);
+  printValue(rpm, new_x, 95, color, 3);
 }
 
 // ******************************************************************************************************
@@ -716,7 +702,7 @@ void Screen2::redrawLabels()
   Display_->print("Throttle");
 
   Display_->gfx_LinePattern(0);
-  Display_->gfx_Line(start_x, top_separator_line, end_x, top_separator_line, WHITE);
+  Display_->gfx_Line(left_border, top_separator_line, right_border, top_separator_line, WHITE);
   Display_->gfx_MoveTo(60, top_separator_line + 3);
   Display_->print("On-Board Diagnostics");
 }

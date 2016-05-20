@@ -47,6 +47,13 @@ public:
   virtual byte displayOrientation() { return 0; };
   virtual void update() {};
   virtual void init();
+
+  void printLabel(String label, word x, word y, int color, int textSize = 1);
+  void printValue(int value, word x, word y, int color, int textSize = 1);
+  void printValue(word value, word x, word y, int color, int textSize = 1);
+  void printValue(long value, word x, word y, int color, int textSize = 1);
+  void printValue(char* value, word x, word y, int color, int textSize = 1);
+  String intToString(int value);
   
   word maxWidth();
   word maxHeight();  
@@ -55,15 +62,20 @@ public:
   bool touchPressed();
 
 protected:
+  void printPrepare(word x, word y, int color, int textSize);
+
+protected:
   PumaDisplay *Display_;
-  word display_max_width;
-  word display_max_height;
-  int top_separator_line;
-  int mid_separator_line;
-  int bottom_separator_line;
-  int start_x;
-  int end_x;
-  int mid_screen;   
+  word display_max_x;
+  word display_max_y;
+  word display_x_mid;
+  word display_y_mid;
+  word left_border;
+  word right_border;
+  byte big_border;
+  word top_separator_line;
+  word mid_separator_line;
+  word bottom_separator_line;
 };
 
 class Screen0 : public BaseScreen
@@ -93,10 +105,9 @@ public:
 protected:
   void updateSpeed(word speed);
   void updateRpm(word rpm);
+  void updateTemperatures(long air, long engine, long turbo);
       
 private:
-  word y_mid;
-  word x_mid;
   word left_vertical;
   word right_vertical;
   word bottom_divider;
