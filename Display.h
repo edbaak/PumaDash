@@ -37,28 +37,41 @@
 
 class PumaDisplay;
 
+class SensorWidget
+{
+  public:
+    SensorWidget(word pid, byte fontSize, word x, word y);
+
+  protected:
+    friend class BaseScreen;  
+    word m_pid;
+    byte m_fontSize;
+    word m_x;
+    word m_y;
+
+    SensorWidget *m_next;
+};
+
 class BaseScreen
 {
 public:
   BaseScreen();
   
   virtual void setup(PumaDisplay *disp); 
-  virtual void redrawLabels() {};
   virtual byte displayOrientation() { return 0; };
   virtual void update() {};
   virtual void init();
 
+  void addSensor(SensorWidget *sensor);
+  SensorWidget *findSensor(word pid);
+  void updateSensor(OBDDataValue *sensor);
+
   void printLabel(String label, word x, word y, int color, int textSize = 1);
-  void printValue(int value, word x, word y, int color, int textSize = 1);
-  void printValue(word value, word x, word y, int color, int textSize = 1);
-  void printValue(long value, word x, word y, int color, int textSize = 1);
-  void printValue(char* value, word x, word y, int color, int textSize = 1);
-  String intToString(int value);
+  void printSubLabel(String subLabel, word x, word y, int color, int textSize = 1);
+  void printValue(String value, word x, word y, int color, int textSize = 1);
   
   word maxWidth();
   word maxHeight();  
-  bool updateNeeded(unsigned int &lastUpdate, word updateInterval);
-  void updateStatusBar();
   bool touchPressed();
 
 protected:
@@ -66,6 +79,7 @@ protected:
 
 protected:
   PumaDisplay *Display_;
+  SensorWidget *m_first;
   word display_max_x;
   word display_max_y;
   word display_x_mid;
@@ -73,9 +87,11 @@ protected:
   word left_border;
   word right_border;
   byte big_border;
+  word left_divider_line;
+  word right_divider_line;
   word top_separator_line;
   word mid_separator_line;
-  word bottom_separator_line;
+  word bottom_divider;
 };
 
 class Screen0 : public BaseScreen
@@ -83,7 +99,6 @@ class Screen0 : public BaseScreen
 public:
   Screen0();
   void update();
-  void redrawLabels(); 
   virtual byte displayOrientation();
   
 protected:  
@@ -97,20 +112,13 @@ class Screen1 : public BaseScreen
 {
 public:
   Screen1();
-  void update();
-  void redrawLabels(); 
   virtual byte displayOrientation();
   virtual void init();
 
 protected:
-  void updateSpeed(word speed);
   void updateRpm(word rpm);
-  void updateTemperatures(long air, long engine, long turbo);
       
 private:
-  word left_vertical;
-  word right_vertical;
-  word bottom_divider;
   word label_x_offset;
   word label1_y_offset;
   word label2_y_offset;
@@ -138,6 +146,7 @@ class PumaDisplay : public Diablo_Serial_4DLib
     void reset();
     void setup();
     BaseScreen *activeScreen();
+    void updateSensor(OBDDataValue *sensor);
     
   protected:
     bool g_init_display;

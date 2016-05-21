@@ -52,7 +52,7 @@ void PumaDisplay::setup()
   m_screen0.setup(this);
   m_screen1.setup(this);
   m_screen2.setup(this);
-  
+
   // Initialize the Display
   DISPLAY_SERIAL1.begin(DISPLAY_SPEED) ;
 
@@ -68,12 +68,12 @@ BaseScreen *PumaDisplay::activeScreen()
 {
   if (g_active_screen == 0) {
     return &m_screen0;
-  } else { 
+  } else {
     if (g_active_screen == 1)
       return &m_screen1;
   }
-  
-  return &m_screen2;    
+
+  return &m_screen2;
 }
 
 void PumaDisplay::update()
@@ -88,10 +88,14 @@ void PumaDisplay::update()
   if (g_init_display) {
     g_init_display = false;
     activeScreen()->init();
-    activeScreen()->redrawLabels();
   }
 
   activeScreen()->update();
+}
+
+void PumaDisplay::updateSensor(OBDDataValue *sensor)
+{
+  activeScreen()->updateSensor(sensor);
 }
 
 void PumaDisplay::reset()
@@ -103,6 +107,19 @@ void PumaDisplay::reset()
 }
 
 // ******************************************************************************************************
+//                                              SensorWidget
+// ******************************************************************************************************
+
+SensorWidget::SensorWidget(word pid, byte fontSize, word x, word y)
+{
+  m_x = x;
+  m_y = y;
+  m_pid = pid;
+  m_fontSize = fontSize;
+  m_next = 0;
+}
+
+// ******************************************************************************************************
 //                                              BASE SCREEN
 // ******************************************************************************************************
 
@@ -110,6 +127,7 @@ BaseScreen::BaseScreen()
 {
   display_max_y = 0;
   display_max_x = 0;
+  m_first = 0;
 }
 
 void BaseScreen::setup(PumaDisplay *disp)
@@ -118,7 +136,8 @@ void BaseScreen::setup(PumaDisplay *disp)
 }
 
 void BaseScreen::init()
-{  
+{
+  // TODO: Make some of these into #defines
   Display_->gfx_Cls();
   Display_->gfx_ScreenMode(displayOrientation());
 
@@ -126,11 +145,53 @@ void BaseScreen::init()
   display_max_y = Display_->gfx_Get(Y_MAX);
   top_separator_line = display_max_y / 3;
   mid_separator_line = top_separator_line + (top_separator_line * 2 / 3);
-  bottom_separator_line = top_separator_line + (top_separator_line * 4 / 3);
+  bottom_divider = top_separator_line + (top_separator_line * 4 / 3);
   left_border = 10;
   right_border = display_max_x - left_border;
   display_y_mid = display_max_y / 2;
   display_x_mid = display_max_x / 2;
+}
+
+void BaseScreen::addSensor(SensorWidget *sensor)
+{
+  //TODO: this might benefit from more automation, i.e. calculate the position of the sensor based on some standard definitions such as TOP_LEFT, MID_LEFT, etc,
+  if (m_first == 0) {
+    m_first = sensor;
+    return;
+  }
+
+  SensorWidget *tmp = m_first;
+  while (tmp) {
+    if (tmp->m_next == 0) {
+      tmp->m_next = sensor;
+      return;
+    }
+    tmp = tmp->m_next;
+  }
+}
+
+SensorWidget *BaseScreen::findSensor(word pid)
+{
+  SensorWidget *tmp = m_first;
+  while (tmp) {
+    if (tmp->m_pid == pid)
+      return tmp;
+    tmp = tmp->m_next;
+  }
+  return 0;
+}
+
+void BaseScreen::updateSensor(OBDDataValue *sensor)
+{
+  SensorWidget *tmp = findSensor(sensor->pid());
+  if (tmp) {
+    // TODO: optimize by only repainting label and sublabel when needed.
+    if (sensor->label() != "")
+      printLabel(sensor->label(), tmp->m_x, tmp->m_y, WHITE, 1);
+    printValue(sensor->toString(), tmp->m_x + 5, tmp->m_y + 10, sensor->color(), tmp->m_fontSize);
+    if (sensor->subLabel() != "")
+      printLabel(sensor->subLabel(), tmp->m_x + 30, tmp->m_y + 20, WHITE, 1);
+  }
 }
 
 bool BaseScreen::touchPressed()
@@ -149,55 +210,12 @@ word BaseScreen::maxHeight()
   return display_max_y + 1;
 }
 
-bool BaseScreen::updateNeeded(unsigned int &lastUpdate, word updateInterval)
-{
-  unsigned int tmp = millis();
-  if (tmp - lastUpdate > updateInterval) {
-    lastUpdate = tmp;
-    return true;
-  }
-  return false;
-}
-
-void BaseScreen::updateStatusBar()
-{
-  static unsigned int last_update = millis();
-  unsigned int tmp = millis();
-
-  Display_->txt_FGcolour(LIGHTGREEN);
-  Display_->txt_Width(1);
-  Display_->txt_Height(1);
-
-  static unsigned int last_tick_update = last_update;
-  static String tick_string = " ";
-
-  // Only update the static display items once every second
-  if (tmp - last_tick_update > 1000) {
-    last_tick_update = tmp;
-    tick_string += ".";
-
-    if (tick_string.length() > 29) {
-      tick_string = " ";
-      Display_->gfx_MoveTo(0, 470);
-      Display_->print("                                 ");
-    }
-  }
-
-  Display_->gfx_MoveTo(0, 470);
-  int z = tmp - last_update;
-  if (z < 1000)
-    Display_->print(" ");
-  Display_->print(z);
-  Display_->print(tick_string);
-  last_update = tmp;
-}
-
 void BaseScreen::printPrepare(word x, word y, int color, int textSize)
 {
   Display_->gfx_MoveTo(x, y);
   Display_->txt_Width(textSize);
   Display_->txt_Height(textSize);
-  Display_->txt_FGcolour(color);  
+  Display_->txt_FGcolour(color);
 }
 
 void BaseScreen::printLabel(String label, word x, word y, int color, int textSize)
@@ -206,34 +224,19 @@ void BaseScreen::printLabel(String label, word x, word y, int color, int textSiz
   Display_->print(label);
 }
 
-void BaseScreen::printValue(int value, word x, word y, int color, int textSize)
+void BaseScreen::printSubLabel(String subLabel, word x, word y, int color, int textSize)
 {
   printPrepare(x, y, color, textSize);
-  Display_->print(value);
-}
-
-void BaseScreen::printValue(word value, word x, word y, int color, int textSize)
-{
-  printPrepare(x, y, color, textSize);
-  Display_->print(value);
-}
-
-void BaseScreen::printValue(long value, word x, word y, int color, int textSize)
-{
-  printPrepare(x, y, color, textSize);
-  Display_->print(value);
+  Display_->print(subLabel);
 }
 
 void BaseScreen::printValue(String value, word x, word y, int color, int textSize)
 {
+  byte fixedStringLength = 3;
+  while (value.length() < fixedStringLength)
+    value = " " + value;
   printPrepare(x, y, color, textSize);
   Display_->print(value);
-}
-
-String BaseScreen::intToString(int value)
-{
-  String s(value);
-  return s;
 }
 
 // ******************************************************************************************************
@@ -255,26 +258,23 @@ void Screen0::update()
   updatePitch(10, 8, 7, Display_->m_position->pitch());
   updateRoll(46, 149, 10, Display_->m_position->roll());
 
-  static unsigned int last_update = 0;
-  if (updateNeeded(last_update, 3000)) {
-    updateTPMSvalue(FRONT_LEFT);
-    updateTPMSvalue(FRONT_RIGHT);
-    updateTPMSvalue(REAR_LEFT);
-    updateTPMSvalue(REAR_RIGHT);
-    updateTPMSvalue(TRAILER_LEFT);
-    updateTPMSvalue(TRAILER_RIGHT);
-  }
-  updateStatusBar();
+  updateTPMSvalue(FRONT_LEFT);
+  updateTPMSvalue(FRONT_RIGHT);
+  updateTPMSvalue(REAR_LEFT);
+  updateTPMSvalue(REAR_RIGHT);
+  updateTPMSvalue(TRAILER_LEFT);
+  updateTPMSvalue(TRAILER_RIGHT);
 }
 
-void Screen0::redrawLabels()
+/*
+ void Screen0::redrawLabels()
 {
   printLabel("TPMS", 120, top_separator_line + 3, WHITE);
 
   Display_->gfx_LinePattern(0x00aa);
   byte border = 30;
   Display_->gfx_Line(border, mid_separator_line, display_max_x - border, mid_separator_line, WHITE);
-  Display_->gfx_Line(border, bottom_separator_line, display_max_x - border, bottom_separator_line, WHITE);
+  Display_->gfx_Line(border, bottom_divider, display_max_x - border, bottom_separator_line, WHITE);
   Display_->gfx_Line(display_max_x / 2, top_separator_line + border, display_max_x / 2, display_max_x - border, WHITE);
 
   printLabel("Position", 100, 3, WHITE);
@@ -282,6 +282,7 @@ void Screen0::redrawLabels()
   Display_->gfx_LinePattern(0);
   Display_->gfx_Line(left_border, top_separator_line, right_border, top_separator_line, WHITE);
 }
+*/
 
 void Screen0::updatePitch(byte x, byte y, byte interleave, int angle)
 {
@@ -312,7 +313,7 @@ void Screen0::updatePitch(byte x, byte y, byte interleave, int angle)
   else if (abs(angle) > 15)
     color = YELLOW;
 
-  printValue(abs(angle), x - 1, y + interleave * 18 + 1, color, 2);
+  printValue(String(abs(angle)), x - 1, y + interleave * 18 + 1, color, 2);
 
   if (angle > 45)
     angle = 45;
@@ -361,7 +362,7 @@ void Screen0::updateRoll(byte x, byte y, byte interleave, int angle)
   else if (abs(angle) > 15)
     color = YELLOW;
 
-  printValue(abs(angle), x + interleave * 18 + 4, y - 13, color, 2);
+  printValue(String(abs(angle)), x + interleave * 18 + 4, y - 13, color, 2);
 
   if (angle > 45)
     angle = 45;
@@ -396,8 +397,6 @@ void Screen0::updateCompass(word heading)
       Display_->txt_Xgap(2);
       char hd[5];
       sprintf(hd, "%0d3", heading);
-      
-      Display_->txt_FGcolour(LIGHTGREEN);
       printValue(hd, 65, 40, LIGHTGREEN, 6);
       Display_->txt_Xgap(0);
 
@@ -453,7 +452,7 @@ void Screen0::updateTPMSvalue(byte tireLocation)
     color = RED;
   else if (Display_->m_tpms->tirePressureWarning(tireLocation))
     color = YELLOW;
-  printValue(uint16_t(Display_->m_tpms->tirePressure(tireLocation)), x1, y2, color, 2);
+  printValue(String(Display_->m_tpms->tirePressure(tireLocation)), x1, y2, color, 2);
 
   color = LIGHTGREEN;
   x2 = x + TPMS_X2_OFFSET;
@@ -462,7 +461,7 @@ void Screen0::updateTPMSvalue(byte tireLocation)
     color = RED;
   else if (Display_->m_tpms->tireTemperatureWarning(tireLocation))
     color = YELLOW;
-  printValue(int32_t(Display_->m_tpms->tireTemperature(tireLocation)), x2, y1, color, 2);
+  printValue(String(Display_->m_tpms->tireTemperature(tireLocation)), x2, y1, color, 2);
 }
 
 // ******************************************************************************************************
@@ -477,8 +476,8 @@ void Screen1::init()
 {
   BaseScreen::init();
 
-  left_vertical = 160;
-  right_vertical = maxWidth() - left_vertical;
+  left_divider_line = 160;
+  right_divider_line = maxWidth() - left_divider_line;
   bottom_divider = maxHeight() - 130;
   label_x_offset = 13;
   big_border = 20;
@@ -486,16 +485,12 @@ void Screen1::init()
   label1_y_offset = big_border;
   label2_y_offset = label1_y_offset + z;
   label3_y_offset = label2_y_offset + z;
-}
 
-void Screen1::update()
-{
-  updateSpeed(Display_->m_obd->dataObject(PID_SPEED)->byteValue());
-  updateRpm(Display_->m_obd->dataObject(PID_RPM)->wordValue());
-  updateTemperatures(Display_->m_obd->dataObject(PID_AMBIENT_AIR_TEMP)->longValue(), 
-                    Display_->m_obd->dataObject(PID_COOLANT_TEMP)->longValue(), 
-                    Display_->m_obd->dataObject(PID_INTAKE_AIR_TEMP)->longValue());
-  updateStatusBar();
+  addSensor(new SensorWidget(PID_SPEED, 7, display_x_mid - 25, 145));
+  addSensor(new SensorWidget(PID_RPM, 3, display_x_mid - 58, 95));
+  addSensor(new SensorWidget(PID_AMBIENT_AIR_TEMP, 2, label_x_offset, label1_y_offset));
+  addSensor(new SensorWidget(PID_COOLANT_TEMP, 2, label_x_offset, label2_y_offset));
+  addSensor(new SensorWidget(PID_INTAKE_AIR_TEMP, 2, label_x_offset, label3_y_offset));
 }
 
 byte Screen1::displayOrientation()
@@ -503,6 +498,8 @@ byte Screen1::displayOrientation()
   return LANDSCAPE;
 }
 
+/*
+  // TODO: probably need to re-use some of this
 void Screen1::redrawLabels()
 {
   Display_->txt_FGcolour(WHITE);
@@ -513,28 +510,28 @@ void Screen1::redrawLabels()
 
   Display_->gfx_MoveTo(display_x_mid, maxHeight() - 100);
 
-  #define MAX_BUF 10
+#define MAX_BUF 10
   word x_pos[MAX_BUF];
   word y_pos[MAX_BUF];
   word i = 0;
   for (word heading = 150; heading <= 390; heading += 40) {
     Display_->gfx_Orbit(heading, rpm_radius, &x_pos[i], &y_pos[i]);
     Display_->gfx_CircleFilled(x_pos[i], y_pos[i], 4, WHITE);
-    i++;    
+    i++;
   }
 
   for (word heading = 170; heading < 390; heading += 40) {
     word x_start, y_start, x_end, y_end;
     Display_->gfx_Orbit(heading, rpm_radius, &x_start, &y_start);
-    Display_->gfx_Orbit(heading, rpm_radius+10, &x_end, &y_end);
+    Display_->gfx_Orbit(heading, rpm_radius + 10, &x_end, &y_end);
     Display_->gfx_Line(x_start, y_start, x_end, y_end, WHITE);
   }
 
   for (word heading = 150; heading < 390; heading += 40) {
     word x_start, y_start, x_end, y_end;
     for (word offset = 10; offset < 40; offset += 20) {
-      Display_->gfx_Orbit(heading+offset, rpm_radius, &x_start, &y_start);
-      Display_->gfx_Orbit(heading+offset, rpm_radius+5, &x_end, &y_end);
+      Display_->gfx_Orbit(heading + offset, rpm_radius, &x_start, &y_start);
+      Display_->gfx_Orbit(heading + offset, rpm_radius + 5, &x_end, &y_end);
       Display_->gfx_Line(x_start, y_start, x_end, y_end, WHITE);
     }
   }
@@ -546,86 +543,46 @@ void Screen1::redrawLabels()
   printLabel("4", x_pos[4] + 10, y_pos[4] - 18, WHITE, 2);
   printLabel("5", x_pos[5] + 10, y_pos[5] - 10, WHITE, 2);
   printLabel("6", x_pos[6] + 9, y_pos[6] - 5, WHITE, 2);
-  printLabel("rpm", display_x_mid + 50, 120, WHITE);
-  printLabel("Km/h", display_x_mid + 60, 230, WHITE);
+  // printLabel("rpm", display_x_mid + 50, 120, WHITE);
+  // printLabel("Km/h", display_x_mid + 60, 230, WHITE);
 
-  /*
-    Display_->gfx_Line(left_vertical, 0, left_vertical, maxHeight()-1, WHITE);
-    Display_->gfx_Line(right_vertical, 0, right_vertical, maxHeight()-1, WHITE);
-    Display_->gfx_Line(0, display_y_mid, left_vertical, display_y_mid, WHITE);
-    Display_->gfx_Line(right_vertical, display_y_mid, maxWidth() - 1, display_y_mid, WHITE);
-    Display_->gfx_Line(left_vertical, bottom_divider, right_vertical, bottom_divider, WHITE);
-
-    printLabel("Speed", display_x_mid - 30, 3, WHITE);
-    printLabel("Temp", left_vertical / 2 - 20, 3, WHITE);
-  */  
-    printLabel("Air", label_x_offset, label1_y_offset, WHITE);
-    printLabel("Engine", label_x_offset, label2_y_offset, WHITE);
-    printLabel("Turbo", label_x_offset, label3_y_offset, WHITE);
-
-/*
-    printLabel("Pressure", left_vertical / 2 - 40, display_y_mid + 3, WHITE);
-    printLabel("Fuel", label_x_offset, label1_y_offset + display_y_mid, WHITE);
-    printLabel("Oil", label_x_offset, label2_y_offset + display_y_mid, WHITE);
-    printLabel("Air", label_x_offset, label3_y_offset + display_y_mid, WHITE);
-
-    printLabel("Drivetrain", display_y_mid - 50, bottom_divider + 3, WHITE);
-    printLabel("Torque", left_vertical + 15, bottom_divider + 15, WHITE);
-    printLabel("Power", left_vertical + 15, bottom_divider + 50, WHITE);
-    printLabel("Lockers", right_vertical - 120, bottom_divider + 15, WHITE);
-    printLabel("F:", right_vertical - 120, bottom_divider + 50, WHITE);
-    printLabel("C:", right_vertical - 120, bottom_divider + 85, WHITE);
-    printLabel("R:", right_vertical - 120, bottom_divider + 120, WHITE);
-    printLabel("Fuel", right_vertical + left_vertical / 2 - 20, 3, WHITE);
+//    Display_->gfx_Line(left_divider_line, 0, left_divider_line, maxHeight()-1, WHITE);
+//    Display_->gfx_Line(right_divider_line, 0, right_divider_line, maxHeight()-1, WHITE);
+//    Display_->gfx_Line(0, display_y_mid, left_divider_line, display_y_mid, WHITE);
+//    Display_->gfx_Line(right_divider_line, display_y_mid, maxWidth() - 1, display_y_mid, WHITE);
+//    Display_->gfx_Line(left_divider_line, bottom_divider, right_divider_line, bottom_divider, WHITE);
+//
+//    printLabel("Speed", display_x_mid - 30, 3, WHITE);
+//    printLabel("Temp", left_divider_line / 2 - 20, 3, WHITE);
+//
+//    printLabel("Air", label_x_offset, label1_y_offset, WHITE);
+//    printLabel("Engine", label_x_offset, label2_y_offset, WHITE);
+//    printLabel("Turbo", label_x_offset, label3_y_offset, WHITE);
+//
+//    printLabel("Pressure", left_divider_line / 2 - 40, display_y_mid + 3, WHITE);
+//    printLabel("Fuel", label_x_offset, label1_y_offset + display_y_mid, WHITE);
+//    printLabel("Oil", label_x_offset, label2_y_offset + display_y_mid, WHITE);
+//    printLabel("Air", label_x_offset, label3_y_offset + display_y_mid, WHITE);
+//
+//    printLabel("Drivetrain", display_y_mid - 50, bottom_divider + 3, WHITE);
+//    printLabel("Torque", left_divider_line + 15, bottom_divider + 15, WHITE);
+//    printLabel("Power", left_divider_line + 15, bottom_divider + 50, WHITE);
+//    printLabel("Lockers", right_divider_line - 120, bottom_divider + 15, WHITE);
+//    printLabel("F:", right_divider_line - 120, bottom_divider + 50, WHITE);
+//    printLabel("C:", right_divider_line - 120, bottom_divider + 85, WHITE);
+//    printLabel("R:", right_divider_line - 120, bottom_divider + 120, WHITE);
+//    printLabel("Fuel", right_divider_line + left_divider_line / 2 - 20, 3, WHITE);
+//
+//    printLabel("Tank", right_divider_line + label_x_offset, label1_y_offset, WHITE);
+//    printLabel("Range", right_divider_line + label_x_offset, label2_y_offset, WHITE);
+//    printLabel("Economy", right_divider_line + label_x_offset, label3_y_offset, WHITE);
+//
+//    printLabel("Distance", right_divider_line + left_divider_line / 2 - 40, display_y_mid + 3, WHITE);
+//    printLabel("Odo", right_divider_line + label_x_offset, label1_y_offset + display_y_mid, WHITE);
+//    printLabel("Trip", right_divider_line + label_x_offset, label2_y_offset + display_y_mid, WHITE);
+//    printLabel("Last Service", right_divider_line + label_x_offset, label3_y_offset + display_y_mid, WHITE);
+}
 */
-    printLabel("Tank", right_vertical + label_x_offset, label1_y_offset, WHITE);
-    printLabel("Range", right_vertical + label_x_offset, label2_y_offset, WHITE);
-    printLabel("Economy", right_vertical + label_x_offset, label3_y_offset, WHITE);
-
-/*
-    printLabel("Distance", right_vertical + left_vertical / 2 - 40, display_y_mid + 3, WHITE);
-    printLabel("Odo", right_vertical + label_x_offset, label1_y_offset + display_y_mid, WHITE);
-    printLabel("Trip", right_vertical + label_x_offset, label2_y_offset + display_y_mid, WHITE);
-    printLabel("Last Service", right_vertical + label_x_offset, label3_y_offset + display_y_mid, WHITE);
-*/
-}
-
-void Screen1::updateTemperatures(long air, long engine, long turbo)
-{
-    word x_value_offset = 20;
-    word y_value_offset = 20;
-    printValue(air, label_x_offset + x_value_offset, label1_y_offset + y_value_offset, LIGHTGREEN, 2);
-    printValue(engine, label_x_offset + x_value_offset, label2_y_offset + y_value_offset, LIGHTGREEN, 2);
-    printValue(turbo, label_x_offset + x_value_offset, label3_y_offset + y_value_offset, LIGHTGREEN, 2);
-}
-
-void Screen1::updateSpeed(word speed)
-{
-  word color = LIGHTGREEN;
-  if (speed > 110)
-    color = RED;
-
-  word y = 145;
-
-  static word last_speed;
-  static word last_x;
-  word new_x;
-
-  if (last_speed != speed) {
-    printValue(last_speed, last_x, y, BLACK, 7);
-    last_speed = speed;
-  }
-
-  if (speed < 10)
-    new_x = display_x_mid - 25;
-  else if (speed < 100)
-    new_x = display_x_mid - 50;
-  else
-    new_x = display_x_mid - 80;
-  last_x = new_x;
-
-  printValue(speed, new_x, y, color, 7);
-}
 
 void Screen1::updateRpm(word rpm)
 {
@@ -636,7 +593,6 @@ void Screen1::updateRpm(word rpm)
     color = YELLOW;
 
   static word last_rpm = 0;
-  static word last_x;
   static word x_pos[3] = {0, 0, 0};
   static word y_pos[3] = {0, 0, 0};
 
@@ -650,19 +606,7 @@ void Screen1::updateRpm(word rpm)
   Display_->gfx_Orbit(rpm_heading + 4, rpm_radius - 30, &x_pos[2], &y_pos[2]);
   Display_->gfx_TriangleFilled(x_pos[0], y_pos[0], x_pos[1], y_pos[1], x_pos[2], y_pos[2], color);
 
-  word new_x;
-  if (rpm >= 1000)
-    new_x = display_x_mid - 58;
-  else
-    new_x = display_x_mid - 40;
-
-  if (last_rpm != rpm) {
-    printValue(last_rpm, last_x, 95, BLACK, 3);
-    last_rpm = rpm;
-  }
-
-  last_x = new_x;
-  printValue(rpm, new_x, 95, color, 3);
+  printValue(String(rpm), display_x_mid - 58, 95, color, 3);
 }
 
 // ******************************************************************************************************
@@ -680,12 +624,8 @@ byte Screen2::displayOrientation()
 
 void Screen2::update()
 {
-  static unsigned int last_update = 0;
-  if (updateNeeded(last_update, 3000)) {
-    updateCruiseControl();
-    updateOBD2Status();
-  }
-  updateStatusBar();
+  updateCruiseControl();
+  updateOBD2Status();
 }
 
 void Screen2::redrawLabels()

@@ -31,6 +31,8 @@
 #include <SPI.h>
 #include "CAN.h"
 
+class PumaDisplay;
+
 //#define OBD_TIMEOUT_SHORT 1000 /* ms */
 //#define OBD_TIMEOUT_LONG 15000 /* ms */
 //#define OBD_TIMEOUT_GPS 200 /* ms */
@@ -264,16 +266,18 @@ class OBDDataValue
 {
   public:
     OBDDataValue();
-    OBDDataValue(uint8_t pid, String label, uint16_t updateInterval, OBD_DATA_CONVERSION conversion);
+    OBDDataValue(uint8_t pid, String label, String format, String subLabel, uint16_t updateInterval, OBD_DATA_CONVERSION conversion);
     virtual ~OBDDataValue();
 
-    uint8_t pid();
     void resetUpdateTimer();
     bool needsUpdate();
     void updateRequested();
+
+    uint8_t pid();
     String label();
+    String subLabel();
     virtual String toString();
-    
+    virtual word color();
     virtual uint8_t dataBytes() {
       return 0;
     }
@@ -310,6 +314,8 @@ class OBDDataValue
     uint16_t m_updateInterval;
     uint8_t m_pid;
     String m_label;
+    String m_subLabel;
+    String m_format;
     uint32_t m_simulator;
     OBD_DATA_CONVERSION m_conversion;
 };
@@ -317,7 +323,7 @@ class OBDDataValue
 class OBDByteValue : public OBDDataValue
 {
   public:
-    OBDByteValue(uint8_t pid, String label, uint16_t updateInterval, OBD_DATA_CONVERSION conversion, byte min = 0, byte max = 0, byte step = 0);
+    OBDByteValue(uint8_t pid, String label, String format, String subLabel, uint16_t updateInterval, OBD_DATA_CONVERSION conversion, byte min = 0, byte max = 0, byte step = 0);
     String toString();
     virtual void setValue(byte newValue);
     virtual void setValue(uint8_t *data);
@@ -343,7 +349,7 @@ class OBDByteValue : public OBDDataValue
 class OBDLongValue : public OBDDataValue
 {
   public:
-    OBDLongValue(uint8_t pid, String label, uint16_t updateInterval, OBD_DATA_CONVERSION conversion, long min = 0, long max = 0, long step = 0);
+    OBDLongValue(uint8_t pid, String label, String format, String subLabel, uint16_t updateInterval, OBD_DATA_CONVERSION conversion, long min = 0, long max = 0, long step = 0);
     String toString();
     virtual void setValue(long newValue);
     virtual void setValue(uint8_t *data);
@@ -369,7 +375,7 @@ class OBDLongValue : public OBDDataValue
 class OBDWordValue : public OBDDataValue
 {
   public:
-    OBDWordValue(uint8_t pid, String label, uint16_t updateInterval, OBD_DATA_CONVERSION conversion, word min = 0, word max = 0, word step = 0);
+    OBDWordValue(uint8_t pid, String label, String format, String subLabel, uint16_t updateInterval, OBD_DATA_CONVERSION conversion, word min = 0, word max = 0, word step = 0);
     String toString();
     virtual void setValue(word newValue);
     virtual void setValue(uint8_t *data);
@@ -396,6 +402,7 @@ class PumaOBD
 {
   public:
     PumaOBD();
+    void setDisplay(PumaDisplay *display);
     void setup();
     void update();
 
@@ -416,6 +423,7 @@ class PumaOBD
 
   private:
     PumaCAN m_CAN;
+    PumaDisplay *m_display;
 
   private:
 #ifdef RECORD_UNKNOWN_PIDS

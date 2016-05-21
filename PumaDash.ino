@@ -37,6 +37,7 @@ PumaOBD g_obd;                                                                //
 PumaDisplay g_display(&DISPLAY_SERIAL1, &g_position, &g_tpms, &g_speed, &g_obd);  // Basic display driver
 
 void setup() {
+  g_obd.setDisplay(&g_display);
   Serial.begin(DISPLAY_SPEED);
   initLogging();
   g_obd.setup();
