@@ -32,12 +32,8 @@
 //                                              PumaDisplay
 // ******************************************************************************************************
 
-PumaDisplay::PumaDisplay(Stream * virtualPort, Direction *pos, Tpms *tpms, CruiseCtrl *speed, PumaOBD *obd) : Diablo_Serial_4DLib(virtualPort)
+PumaDisplay::PumaDisplay(Stream *virtualPort) : Diablo_Serial_4DLib(virtualPort)
 {
-  m_position = pos;
-  m_tpms = tpms;
-  m_speed = speed;
-  m_obd = obd;
   g_init_display = true;
   g_active_screen = 1; // Define the default screen. We can change this by tapping the touchscreen
 
@@ -45,9 +41,14 @@ PumaDisplay::PumaDisplay(Stream * virtualPort, Direction *pos, Tpms *tpms, Cruis
   pinMode(PIN_DISPLAY_RESET, OUTPUT);
 }
 
-void PumaDisplay::setup()
+void PumaDisplay::setup(Direction *pos, Tpms *tpms, CruiseCtrl *speed, PumaOBD *obd)
 {
   reset();
+
+  m_position = pos;
+  m_tpms = tpms;
+  m_speed = speed;
+  m_obd = obd;
 
   m_screen0.setup(this);
   m_screen1.setup(this);
@@ -66,14 +67,11 @@ void PumaDisplay::setup()
 
 BaseScreen *PumaDisplay::activeScreen()
 {
-  if (g_active_screen == 0) {
-    return &m_screen0;
-  } else {
-    if (g_active_screen == 1)
-      return &m_screen1;
+  switch (g_active_screen) {
+    case 0: return &m_screen0;
+    case 1: return &m_screen1;
+    default: return &m_screen2;
   }
-
-  return &m_screen2;
 }
 
 void PumaDisplay::update()
@@ -90,6 +88,7 @@ void PumaDisplay::update()
     activeScreen()->init();
   }
 
+// TODO: activescreen update should be removed completely, and instead replace with update events driven by refreshed obd data
   activeScreen()->update();
 }
 
@@ -103,7 +102,7 @@ void PumaDisplay::reset()
   digitalWrite(PIN_DISPLAY_RESET, 1);  // Reset the Display via D4
   delay(100);
   digitalWrite(PIN_DISPLAY_RESET, 0);  // unReset the Display via D4
-  delay(4000);
+  delay(3500);
 }
 
 // ******************************************************************************************************
@@ -486,11 +485,14 @@ void Screen1::init()
   label2_y_offset = label1_y_offset + z;
   label3_y_offset = label2_y_offset + z;
 
-  addSensor(new SensorWidget(PID_SPEED, 7, display_x_mid - 25, 145));
-  addSensor(new SensorWidget(PID_RPM, 3, display_x_mid - 58, 95));
-  addSensor(new SensorWidget(PID_AMBIENT_AIR_TEMP, 2, label_x_offset, label1_y_offset));
-  addSensor(new SensorWidget(PID_COOLANT_TEMP, 2, label_x_offset, label2_y_offset));
-  addSensor(new SensorWidget(PID_INTAKE_AIR_TEMP, 2, label_x_offset, label3_y_offset));
+  // Only create and add sensor objects the first time we call init.
+  if (m_first == 0) {
+    addSensor(new SensorWidget(PID_SPEED, 7, display_x_mid - 25, 145));
+    addSensor(new SensorWidget(PID_RPM, 3, display_x_mid - 58, 95));
+    addSensor(new SensorWidget(PID_AMBIENT_AIR_TEMP, 2, label_x_offset, label1_y_offset));
+    addSensor(new SensorWidget(PID_COOLANT_TEMP, 2, label_x_offset, label2_y_offset));
+    addSensor(new SensorWidget(PID_INTAKE_AIR_TEMP, 2, label_x_offset, label3_y_offset));
+  }
 }
 
 byte Screen1::displayOrientation()

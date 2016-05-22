@@ -39,16 +39,16 @@ PumaOBD::PumaOBD()
   m_current = 0;
   m_display = 0;
 
-  addDataObject(new OBDWordValue(PID_RPM, "", "%4d", "Rpm", 50, DIV4_WORD_CONVERSION, 0, 6000, 300));
-  addDataObject(new OBDByteValue(PID_SPEED, "", "%3d", "Km/h", 250, PLAIN_BYTE_CONVERSION, 0, 115, 3));
+  addDataObject(new OBDWordValue(PID_RPM, "", "%4d", "Rpm", 50, WORD_DIV4_CONVERSION, 0, 6000, 300));
+  addDataObject(new OBDByteValue(PID_SPEED, "", "%3d", "Km/h", 250, BYTE_NO_CONVERSION, 0, 115, 3));
   addDataObject(new OBDLongValue(PID_COOLANT_TEMP, "Coolant", "%3d", "C", 3000, INT_MINUS40, -25, 130, 4));
   //  addDataObject(new OBDByteValue(PID_BAROMETRIC_PRESSURE, "Barometric Pressure", 30000,
   addDataObject(new OBDLongValue(PID_INTAKE_AIR_TEMP, "Intake Air", "%3d", "C", 10000, INT_MINUS40, 10, 50, 5));
   addDataObject(new OBDLongValue(PID_AMBIENT_AIR_TEMP, "Ambient Air", "%3d", "C", 10000, INT_MINUS40, 10, 50, 5));
+//  addDataObject(new OBDLongValue(PID_ENGINE_OIL_TEMP, "Engine Oil", "%3d", "C", 2000, INT_MINUS40, 0, 150, 4));
   //  addDataObject(new OBDFloatValue(PID_CONTROL_MODULE_VOLTAGE, "Battery Voltage", 5000, WORD_DIV1000 // V
   //  addDataObject(new OBDFloatValue(PID_ENGINE_FUEL_RATE, "Fuel Rate", 3000, WORD_DIV20 // L/h
   //  addDataObject(new OBDByteValue(PID_FUEL_LEVEL, "Fuel Level", 3000, BYTE_PERCENTAGE (word * 100 / 255)
-  //  addDataObject(new OBDLongValue(PID_ENGINE_OIL_TEMP, "Engine Oil Temperature", 2000, BYTE_MINUS40
   //  addDataObject(new OBDByteValue(PID_CALCULATED_ENGINE_LOAD, "Engine Load", 1000, BYTE_PERCENTAGE (word * 100 / 255)
   //  addDataObject(new OBDByteValue(PID_ABSOLUTE_ENGINE_LOAD, "Abs Engine Load", 1000, BYTE_PERCENTAGE (word * 100 / 255)
   //  addDataObject(new OBDLongValue(PID_ENGINE_TORQUE_DEMANDED, "Torque Demanded", 1000, INT_MINUS125 // %
@@ -70,13 +70,13 @@ PumaOBD::PumaOBD()
   //  addDataObject(new OBDByteValue(PID_HYBRID_BATT_REMAINING_LIFE, BYTE_PERCENTAGE (word * 100 / 255)
   //  addDataObject(new OBDWordValue(PID_MAF_AIR_FLOW_RATE, WORD_DIV100 // grams/sec
   //  addDataObject(new OBDLongValue(PID_TIMING_ADVANCE, BYTE_DIV2_MINUS64
-  //  addDataObject(new OBDWordValue(PID_DISTANCE_SINCE_DTC_CLEARED, PLAIN_WORD_CONVERSION: // km
-  //  addDataObject(new OBDWordValue(PID_DISTANCE_WITH_MIL_ON, PLAIN_WORD_CONVERSION: // km
-  //  addDataObject(new OBDWordValue(PID_RUN_TIME_WITH_MIL_ON, PLAIN_WORD_CONVERSION: // minute
-  //  addDataObject(new OBDWordValue(PID_TIME_SINCE_DTC_CLEARED, PLAIN_WORD_CONVERSION: // minute
-  //  addDataObject(new OBDWordValue(PID_RUNTIME_SINCE_ENG_START, PLAIN_WORD_CONVERSION: // second
-  //  addDataObject(new OBDWordValue(PID_FUEL_RAIL_PRESSURE, PLAIN_WORD_CONVERSION: // kPa
-  //  addDataObject(new OBDWordValue(PID_ENGINE_REF_TORQUE, PLAIN_WORD_CONVERSION: // Nm
+  //  addDataObject(new OBDWordValue(PID_DISTANCE_SINCE_DTC_CLEARED, WORD_NO_CONVERSION: // km
+  //  addDataObject(new OBDWordValue(PID_DISTANCE_WITH_MIL_ON, WORD_NO_CONVERSION: // km
+  //  addDataObject(new OBDWordValue(PID_RUN_TIME_WITH_MIL_ON, WORD_NO_CONVERSION: // minute
+  //  addDataObject(new OBDWordValue(PID_TIME_SINCE_DTC_CLEARED, WORD_NO_CONVERSION: // minute
+  //  addDataObject(new OBDWordValue(PID_RUNTIME_SINCE_ENG_START, WORD_NO_CONVERSION: // second
+  //  addDataObject(new OBDWordValue(PID_FUEL_RAIL_PRESSURE, WORD_NO_CONVERSION: // kPa
+  //  addDataObject(new OBDWordValue(PID_ENGINE_REF_TORQUE, WORD_NO_CONVERSION: // Nm
   //  addDataObject(new OBDLongValue(PID_SHORT_TERM_FUEL_TRIM_1, INT_MINUS128_TIMES100_DIV128
   //  addDataObject(new OBDLongValue(PID_LONG_TERM_FUEL_TRIM_1, INT_MINUS128_TIMES100_DIV128
   //  addDataObject(new OBDLongValue(PID_SHORT_TERM_FUEL_TRIM_2, INT_MINUS128_TIMES100_DIV128
@@ -93,11 +93,6 @@ PumaOBD::PumaOBD()
   for (word i = 0; i < MAX_UNKNOWN_PIDS; i++)
     m_unknownPIDS[i] = 0;
 #endif
-}
-
-void PumaOBD::setDisplay(PumaDisplay *display)
-{
-  m_display = display;
 }
 
 void PumaOBD::addDataObject(OBDDataValue *object)
@@ -160,8 +155,10 @@ OBDDataValue *PumaOBD::iterateDataObject(bool needsUpdate)
   return 0;
 }
 
-void PumaOBD::setup()
+void PumaOBD::setup(PumaDisplay *display)
 {
+  m_display = display;
+
   // Switch Pin 10-13 to INPUT mode so they are high impedance, floating. That way we can hardwire Pins 50-53 onto them, so that we can use the CAN-Board on a Mega.
   // Connect pin 53 to 10 == CS (Chip Select)
   // Connect Pin 52 to 13 == SCK (Clock)
@@ -184,13 +181,16 @@ void PumaOBD::setup()
   m_CAN.setFilter(PumaCAN::FILT2, false, 0x07E80000);
 }
 
-void PumaOBD::update()
+void PumaOBD::readRxBuffers()
 {
   // First we process messages in the RX buffer, so that we clear it and don't ask for updates that we just received
   byte i = 0; // add a safety net against infinite loop
   while (readMessage() && i++ < 4) {
   }  // Read and process OBD messages
+}
 
+void PumaOBD::requestObdUpdates()
+{
   // Now check if there is any data that needs an update.
   // We only ask for MAX 2 elements at a time, because the MCP2515 can only handle two sets of data.
   // To ensure that every data element gets a chance we rotate through the list in a round robin fashion
@@ -354,7 +354,7 @@ OBDDataValue::OBDDataValue()
   m_lastUpdate = 0;
   m_updateRequested = 0;
   m_label = "UNDEF";
-  m_conversion = PLAIN_BYTE_CONVERSION;
+  m_conversion = BYTE_NO_CONVERSION;
   m_next = 0;
 }
 
@@ -444,28 +444,16 @@ OBDByteValue::OBDByteValue(uint8_t pid, String label, String format, String subL
 
 String OBDByteValue::toString()
 {
-  char buf[50];
-  sprintf(buf, "%d", m_value);
+  char buf[20];
+  sprintf(buf, m_format.c_str(), m_value);
   return buf;
-}
-
-void OBDByteValue::setValue(byte newValue)
-{
-  resetUpdateTimer();
-  m_value = newValue;
 }
 
 void OBDByteValue::setValue(uint8_t *data)
 {
-  uint8_t tmp = (uint8_t) * data;
-  if (m_conversion == PLAIN_BYTE_CONVERSION)
-    setValue(tmp);
+  resetUpdateTimer();
+  m_value = *data;
   //TODO: add more conversions?
-}
-
-byte OBDByteValue::byteValue()
-{
-  return m_value;
 }
 
 #ifdef LOOPBACK_MODE
@@ -478,7 +466,7 @@ uint8_t OBDByteValue::simulateByte()
     m_simValue -= m_simStepValue;
     if (m_simValue <= m_simMinValue) m_simIncrease = true;
   }
-  if (m_conversion == PLAIN_BYTE_CONVERSION)
+  if (m_conversion == BYTE_NO_CONVERSION)
     return m_simValue;
   return 0;
 }
@@ -501,28 +489,18 @@ OBDLongValue::OBDLongValue(uint8_t pid, String label, String format, String subL
 
 String OBDLongValue::toString()
 {
-  char buf[50];
-  sprintf(buf, "%li", m_value);
+  char buf[20];
+  sprintf(buf, m_format.c_str(), m_value);
   return buf;
-}
-
-void OBDLongValue::setValue(long newValue)
-{
-  resetUpdateTimer();
-  m_value = newValue;
 }
 
 void OBDLongValue::setValue(uint8_t *data)
 {
-  int32_t tmp = *data;
+  resetUpdateTimer();
+  m_value = *data;
   if (m_conversion == INT_MINUS40)
-    setValue(tmp - 40);
+    m_value -= 40;
   //TODO: add more conversions?
-}
-
-long OBDLongValue::longValue()
-{
-  return m_value;
 }
 
 #ifdef LOOPBACK_MODE
@@ -561,33 +539,21 @@ OBDWordValue::OBDWordValue(uint8_t pid, String label, String format, String subL
 
 String OBDWordValue::toString()
 {
-  char buf[50];
-  sprintf(buf, "%d", m_value);
+  char buf[20];
+  sprintf(buf, m_format.c_str(), m_value);
   return buf;
-}
-
-void OBDWordValue::setValue(word newValue)
-{
-  resetUpdateTimer();
-  m_value = newValue;
 }
 
 void OBDWordValue::setValue(uint8_t *data)
 {
-  uint16_t tmp = *data * 256;
+  resetUpdateTimer();
+  m_value = *data * 256;
   data++;
-  tmp += *data;
+  m_value += *data;
 
-  if (m_conversion == PLAIN_WORD_CONVERSION)
-    setValue(tmp);
-  else if (m_conversion == DIV4_WORD_CONVERSION)
-    setValue(tmp / 4);
+  if (m_conversion == WORD_DIV4_CONVERSION)
+    m_value /= 4;
   //TODO: add more conversions?
-}
-
-word OBDWordValue::wordValue()
-{
-  return m_value;
 }
 
 #ifdef LOOPBACK_MODE
@@ -601,9 +567,9 @@ uint16_t OBDWordValue::simulateWord()
     if (m_simValue <= m_simMinValue) m_simIncrease = true;
   }
 
-  if (m_conversion == PLAIN_WORD_CONVERSION)
+  if (m_conversion == WORD_NO_CONVERSION)
     return m_simValue;
-  else if (m_conversion == DIV4_WORD_CONVERSION)
+  else if (m_conversion == WORD_DIV4_CONVERSION)
     return m_simValue * 4;
   //TODO: add more conversions?
 

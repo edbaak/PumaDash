@@ -256,9 +256,9 @@ class PumaDisplay;
 #endif
 
 typedef enum OBD_DATA_CONVERSION {
-  PLAIN_BYTE_CONVERSION,
-  PLAIN_WORD_CONVERSION,
-  DIV4_WORD_CONVERSION,
+  BYTE_NO_CONVERSION,
+  WORD_NO_CONVERSION,
+  WORD_DIV4_CONVERSION,
   INT_MINUS40
 } OBD_DATA_CONVERSION;
 
@@ -278,23 +278,14 @@ class OBDDataValue
     String subLabel();
     virtual String toString();
     virtual word color();
-    virtual uint8_t dataBytes() {
-      return 0;
-    }
     virtual OBD_DATA_CONVERSION dataConversion() {
       return m_conversion;
     }
     virtual void setValue(uint8_t *data) {};
-    virtual byte byteValue() {
-      return 0;
-    };
-    virtual word wordValue() {
-      return 0;
-    };
-    virtual long longValue() {
-      return 0;
-    };
 #ifdef LOOPBACK_MODE
+    virtual uint8_t dataBytes() {
+      return 0;
+    }
     virtual uint8_t simulateByte() {
       return 0;
     };
@@ -325,13 +316,12 @@ class OBDByteValue : public OBDDataValue
   public:
     OBDByteValue(uint8_t pid, String label, String format, String subLabel, uint16_t updateInterval, OBD_DATA_CONVERSION conversion, byte min = 0, byte max = 0, byte step = 0);
     String toString();
-    virtual void setValue(byte newValue);
     virtual void setValue(uint8_t *data);
-    virtual byte byteValue();
+
+#ifdef LOOPBACK_MODE
     virtual uint8_t dataBytes() {
       return 1;
     }
-#ifdef LOOPBACK_MODE
     virtual uint8_t simulateByte();
 #endif
 
@@ -351,13 +341,12 @@ class OBDLongValue : public OBDDataValue
   public:
     OBDLongValue(uint8_t pid, String label, String format, String subLabel, uint16_t updateInterval, OBD_DATA_CONVERSION conversion, long min = 0, long max = 0, long step = 0);
     String toString();
-    virtual void setValue(long newValue);
     virtual void setValue(uint8_t *data);
-    virtual long longValue();
+
+#ifdef LOOPBACK_MODE
     virtual uint8_t dataBytes() {
       return 1;
     }
-#ifdef LOOPBACK_MODE
     virtual uint8_t simulateLong();
 #endif
 
@@ -377,13 +366,12 @@ class OBDWordValue : public OBDDataValue
   public:
     OBDWordValue(uint8_t pid, String label, String format, String subLabel, uint16_t updateInterval, OBD_DATA_CONVERSION conversion, word min = 0, word max = 0, word step = 0);
     String toString();
-    virtual void setValue(word newValue);
     virtual void setValue(uint8_t *data);
-    virtual word wordValue();
+
+#ifdef LOOPBACK_MODE
     virtual uint8_t dataBytes() {
       return 2;
     }
-#ifdef LOOPBACK_MODE
     virtual uint16_t simulateWord();
 #endif
 
@@ -402,9 +390,9 @@ class PumaOBD
 {
   public:
     PumaOBD();
-    void setDisplay(PumaDisplay *display);
-    void setup();
-    void update();
+    void setup(PumaDisplay *display);
+    void readRxBuffers();
+    void requestObdUpdates();
 
     void addDataObject(OBDDataValue *obj);
     OBDDataValue *dataObject(uint8_t PID);

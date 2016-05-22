@@ -30,24 +30,24 @@
 #include <Diablo_Serial_4DLib.h>
 #include "Display.h"
 
-Direction g_position;                                                         // GPS position & pitch and roll of vehicle
-Tpms g_tpms;                                                                  // Tire Pressure Monitoring
-CruiseCtrl g_speed;                                                           // Speed Control and deals with gearbox ratios etc to calculate gear shifts
-PumaOBD g_obd;                                                                // On Board Diagnostics for the Vehicle
-PumaDisplay g_display(&DISPLAY_SERIAL1, &g_position, &g_tpms, &g_speed, &g_obd);  // Basic display driver
+Direction g_position;                     // GPS position & pitch and roll of vehicle
+Tpms g_tpms;                              // Tire Pressure Monitoring
+CruiseCtrl g_speed;                       // Speed Control and deals with gearbox ratios etc to calculate gear shifts
+PumaOBD g_obd;                            // On Board Diagnostics for the Vehicle
+PumaDisplay g_display(&DISPLAY_SERIAL1);  // Basic display driver
 
 void setup() {
-  g_obd.setDisplay(&g_display);
   Serial.begin(DISPLAY_SPEED);
   initLogging();
-  g_obd.setup();
-  g_display.setup();
+  g_obd.setup(&g_display);
+  g_display.setup(&g_position, &g_tpms, &g_speed, &g_obd);
 }
 
 void loop() {
   g_tpms.update();
   g_position.update();
-  g_obd.update();
+  g_obd.readRxBuffers();
+  g_obd.requestObdUpdates();
   g_speed.update();
   g_display.update();
 }

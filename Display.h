@@ -141,10 +141,10 @@ protected:
 class PumaDisplay : public Diablo_Serial_4DLib
 {
   public:
-    PumaDisplay(Stream * virtualPort, Direction *pos, Tpms *tpms, CruiseCtrl *speed, PumaOBD *obd);
+    PumaDisplay(Stream * virtualPort);
+    void setup(Direction *pos, Tpms *tpms, CruiseCtrl *speed, PumaOBD *obd);
     void update();
     void reset();
-    void setup();
     BaseScreen *activeScreen();
     void updateSensor(OBDDataValue *sensor);
     
