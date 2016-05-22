@@ -17,6 +17,12 @@
   1301  USA
 */
 
+#if (ARDUINO >= 100)
+#include "Arduino.h" // for Arduino 1.0
+#else
+#include "WProgram.h" // for Arduino 23
+#endif
+
 #include "Utils.h"
 #include <SPI.h>
 #include "CAN.h"
