@@ -32,6 +32,12 @@
 //#define VEHICLEDASH_DEBUG    // TODO: only used in Tpms and Position to simulate data
 //#define OBD_DEBUG            // Prints out raw OBD RX data to Serial
 
+#define PUMA_LABEL_SIZE 1
+#define PUMA_LABEL_COLOR WHITE
+#define PUMA_ALARM_COLOR RED
+#define PUMA_WARNING_COLOR YELLOW
+#define PUMA_NORMAL_COLOR LIGHTGREEN
+
 // Mega board PIN definitions
 #define PIN_DISPLAY_RESET 4
 #define PIN_CAN_BOARD_LED1 7

@@ -118,13 +118,13 @@ Table::Table(PumaDisplay *display, String title, word borderLines, byte columns,
   m_max_y = maxY;
   m_title_height = 0;
   if (title.length() > 0) {
-    display->txt_FGcolour(WHITE);
-    display->txt_Width(1);
-    display->txt_Height(1);
-    word w = display->charwidth('A');
+    display->txt_FGcolour(PUMA_LABEL_COLOR);
+    display->txt_Width(PUMA_LABEL_SIZE);
+    display->txt_Height(PUMA_LABEL_SIZE);
+    word w = display->charwidth('A') * PUMA_LABEL_SIZE;
     word x = m_min_x + (m_max_x - m_min_x) / 2;
     x -= w * title.length() / 2;
-    m_title_height = display->charheight('A') + 4;
+    m_title_height = display->charheight('A') * PUMA_LABEL_SIZE + 4;
 
     display->gfx_MoveTo(x, m_min_y + 2);
     display->print(title);
@@ -134,26 +134,26 @@ Table::Table(PumaDisplay *display, String title, word borderLines, byte columns,
   m_cell_height = ((m_max_y - m_min_y) - m_title_height) / m_rows;
 
   if ((m_border_lines & LEFT_BORDER) > 0) {
-    display->gfx_Line(m_min_x, m_min_y, m_min_x, m_max_y, WHITE);
+    display->gfx_Line(m_min_x, m_min_y, m_min_x, m_max_y, PUMA_LABEL_COLOR);
   }
   if ((m_border_lines & RIGHT_BORDER) > 0) {
-    display->gfx_Line(m_max_x, m_min_y, m_max_x, m_max_y, WHITE);
+    display->gfx_Line(m_max_x, m_min_y, m_max_x, m_max_y, PUMA_LABEL_COLOR);
   }
   if ((m_border_lines & TOP_BORDER) > 0) {
-    display->gfx_Line(m_min_x, m_min_y, m_max_x, m_min_y, WHITE);
+    display->gfx_Line(m_min_x, m_min_y, m_max_x, m_min_y, PUMA_LABEL_COLOR);
   }
   if ((m_border_lines & BOTTOM_BORDER) > 0) {
-    display->gfx_Line(m_min_x, m_max_y, m_max_x, m_max_y, WHITE);
+    display->gfx_Line(m_min_x, m_max_y, m_max_x, m_max_y, PUMA_LABEL_COLOR);
   }
   if ((m_border_lines & SHOW_GRID) > 0) {
     display->gfx_LinePattern(0x00aa);
     byte border = 30;
     if (m_columns > 1)
       for (byte column = 1; column <= m_columns; column++)
-        display->gfx_Line(cellX(column), m_min_y + border, cellX(column), m_max_y - border, WHITE);
+        display->gfx_Line(cellX(column), m_min_y + border, cellX(column), m_max_y - border, PUMA_LABEL_COLOR);
     if (m_rows > 1)
       for (byte row = 1; row <= m_rows; row++)
-        display->gfx_Line(m_min_x + border, cellY(row), m_max_x - border, cellY(row), WHITE);
+        display->gfx_Line(m_min_x + border, cellY(row), m_max_x - border, cellY(row), PUMA_LABEL_COLOR);
     display->gfx_LinePattern(0);
   }
 }
