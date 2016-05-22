@@ -19,6 +19,7 @@
 
 #include "Utils.h"
 #include <SD.h>
+#include "Display.h"
 
 String g_logFileName = "";
 
@@ -99,5 +100,60 @@ void logData(char *s)
     Serial.println("Error opening SD file for logging");
   }
 }
+
+// ************************************************************************
+
+Table::Table(PumaDisplay *display, String title, word borderLines, byte columns, byte rows, word minX, word maxX, word minY, word maxY)
+{
+  m_display = display;
+  m_title = title;
+  m_border_lines = borderLines;
+  m_columns = columns;
+  m_min_x = minX;
+  m_max_x = maxX;
+  m_rows = rows;
+  m_min_y = minY;
+  m_max_y = maxY;
+  m_title_height = 0;
+  if (title.length() > 0) {
+    display->txt_FGcolour(WHITE);
+    display->txt_Width(1);
+    display->txt_Height(1);
+    word w = display->charwidth('A');
+    word x = m_min_x + (m_max_x - m_min_x) / 2;
+    x -= w * title.length() / 2;
+    m_title_height = display->charheight('A') + 4;
+
+    display->gfx_MoveTo(x, m_min_y+2);
+    display->print(title);
+  }
+
+  m_cell_width = (m_max_x - m_min_x) / m_columns;
+  m_cell_height = ((m_max_y - m_min_y) - m_title_height) / m_rows;
+
+  if ((m_border_lines & LEFT_BORDER) > 0) {
+    display->gfx_Line(m_min_x, m_min_y, m_min_x, m_max_y, WHITE);
+  }
+  if ((m_border_lines & RIGHT_BORDER) > 0) {
+    display->gfx_Line(m_max_x, m_min_y, m_max_x, m_max_y, WHITE);
+  }
+  if ((m_border_lines & TOP_BORDER) > 0) {
+    display->gfx_Line(m_min_x, m_min_y, m_max_x, m_min_y, WHITE);
+  }
+  if ((m_border_lines & BOTTOM_BORDER) > 0) {
+    display->gfx_Line(m_min_x, m_max_y, m_max_x, m_max_y, WHITE);
+  }  
+}
+
+word Table::cellX(byte column)
+{
+  return m_min_x + (column * m_cell_width);
+}
+
+word Table::cellY(byte row)
+{
+  return m_min_y + m_title_height + (row * m_cell_height);
+}
+
 
 

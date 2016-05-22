@@ -20,16 +20,17 @@
 #ifndef Utils_h
 #define Utils_h
  
-//#if (ARDUINO >= 100)
-//	#include "Arduino.h" // for Arduino 1.0
-//#else
-//	#include "WProgram.h" // for Arduino 23
-//#endif
+#if (ARDUINO >= 100)
+	#include "Arduino.h" // for Arduino 1.0
+#else
+	#include "WProgram.h" // for Arduino 23
+#endif
 
 #define DISPLAY_SPEED 115200   // The baudrate at which we're running the 4D display
 #define LOGFILE_PREFIX 165     // Prefix for SD card logging file names, i.e. 165_0001.txt
 //#define LOOPBACK_MODE        // CAN loopback mode. Messages transmitted are looped back to the CAN receiver, which helps with debugging.
 //#define VEHICLEDASH_DEBUG
+//#define OBD_DEBUG
 
 // Mega board PIN definitions
 #define PIN_DISPLAY_RESET 4
@@ -50,5 +51,40 @@
 void uniqueLogFileName();
 void initLogging();
 void logData(char *s);
+
+class PumaDisplay;
+
+class Table
+{
+  public:
+typedef enum BORDER_LINES {
+    NONE = 0,
+    LEFT_BORDER = 0x01,
+    TOP_BORDER = 0x02,
+    RIGHT_BORDER = 0x04,
+    BOTTOM_BORDER = 0x08,
+    ALL_BORDER = 0x0F,
+    GRID = 0x10
+} BORDER_LINES;
+
+    Table(PumaDisplay *display, String title, word borderLines, byte columns, byte rows, word minX, word maxX, word minY, word maxY);
+    word cellX(byte column);
+    word cellY(byte row);
+    
+  private:
+    PumaDisplay *m_display; 
+    String m_title;
+    word m_title_height;
+    word m_border_lines;
+    word m_columns;
+    word m_min_x;
+    word m_max_x;
+    word m_rows;
+    word m_min_y;
+    word m_max_y;
+    word m_cell_width;
+    word m_cell_height;
+};
+
 
 #endif
