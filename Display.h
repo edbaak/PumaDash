@@ -36,6 +36,7 @@
 #include "OBD.h"
 
 class PumaDisplay;
+#define MAX_CHAR_SIZE 10
 
 class SensorWidget
 {
@@ -64,7 +65,7 @@ public:
 
   void addSensor(SensorWidget *sensor);
   SensorWidget *findSensor(word pid);
-  void updateSensor(OBDDataValue *sensor);
+  void updateSensor(OBDData *sensor);
 
   void printLabel(String label, word x, word y, int color, int textSize = 1);
   void printSubLabel(String subLabel, word x, word y, int color, int textSize = 1);
@@ -86,12 +87,15 @@ protected:
   word display_y_mid;
   word left_border;
   word right_border;
-  byte big_border;
+  word top_border;
+  word bottom_border;
   word left_divider_line;
   word right_divider_line;
   word top_separator_line;
   word mid_separator_line;
   word bottom_divider;
+  word char_width[MAX_CHAR_SIZE];
+  word char_height[MAX_CHAR_SIZE];  
 };
 
 class Screen0 : public BaseScreen
@@ -120,9 +124,6 @@ protected:
       
 private:
   word label_x_offset;
-  word label1_y_offset;
-  word label2_y_offset;
-  word label3_y_offset;
 };
 
 class Screen2 : public BaseScreen
@@ -146,7 +147,7 @@ class PumaDisplay : public Diablo_Serial_4DLib
     void update();
     void reset();
     BaseScreen *activeScreen();
-    void updateSensor(OBDDataValue *sensor);
+    void updateSensor(OBDData *sensor);
     
   protected:
     bool g_init_display;

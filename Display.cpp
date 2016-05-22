@@ -88,11 +88,11 @@ void PumaDisplay::update()
     activeScreen()->init();
   }
 
-// TODO: activescreen update should be removed completely, and instead replace with update events driven by refreshed obd data
+  // TODO: activescreen update should be removed completely, and instead replace with update events driven by refreshed obd data
   activeScreen()->update();
 }
 
-void PumaDisplay::updateSensor(OBDDataValue *sensor)
+void PumaDisplay::updateSensor(OBDData *sensor)
 {
   activeScreen()->updateSensor(sensor);
 }
@@ -149,6 +149,15 @@ void BaseScreen::init()
   right_border = display_max_x - left_border;
   display_y_mid = display_max_y / 2;
   display_x_mid = display_max_x / 2;
+  top_border = 10;
+  bottom_border = display_max_y - top_border;
+
+  for (byte i = 1; i <= MAX_CHAR_SIZE; i++) {
+    Display_->txt_Width(i);
+    Display_->txt_Height(i);
+    char_width[i] = Display_->charwidth('0');
+    char_height[i] = Display_->charheight('0');
+  }
 }
 
 void BaseScreen::addSensor(SensorWidget *sensor)
@@ -180,16 +189,27 @@ SensorWidget *BaseScreen::findSensor(word pid)
   return 0;
 }
 
-void BaseScreen::updateSensor(OBDDataValue *sensor)
+void BaseScreen::updateSensor(OBDData *sensor)
 {
   SensorWidget *tmp = findSensor(sensor->pid());
+  byte size = tmp->m_fontSize;
+  word x1 = tmp->m_x;
+  word y1 = tmp->m_y;
   if (tmp) {
     // TODO: optimize by only repainting label and sublabel when needed.
-    if (sensor->label() != "")
-      printLabel(sensor->label(), tmp->m_x, tmp->m_y, WHITE, 1);
-    printValue(sensor->toString(), tmp->m_x + 5, tmp->m_y + 10, sensor->color(), tmp->m_fontSize);
-    if (sensor->subLabel() != "")
-      printLabel(sensor->subLabel(), tmp->m_x + 30, tmp->m_y + 20, WHITE, 1);
+    if (sensor->label() != "") {
+      printLabel(sensor->label(), x1, y1, WHITE, 1);
+      x1 += char_width[1] * 2;
+      y1 += char_height[1];
+    }
+
+    printValue(sensor->toString(), x1, y1, sensor->color(), size);
+
+    if (sensor->subLabel() != "") {
+      x1 = x1 + (char_width[1] / 2) + (char_width[size] * sensor->valueLength());
+      y1 = y1 + char_height[size] - char_height[1];
+      printLabel(sensor->subLabel(), x1, y1, WHITE, 1);
+    }
   }
 }
 
@@ -231,7 +251,9 @@ void BaseScreen::printSubLabel(String subLabel, word x, word y, int color, int t
 
 void BaseScreen::printValue(String value, word x, word y, int color, int textSize)
 {
+  // TODO: This can be done better
   byte fixedStringLength = 3;
+
   while (value.length() < fixedStringLength)
     value = " " + value;
   printPrepare(x, y, color, textSize);
@@ -475,23 +497,37 @@ void Screen1::init()
 {
   BaseScreen::init();
 
-  left_divider_line = 160;
+  left_divider_line = 135;
   right_divider_line = maxWidth() - left_divider_line;
   bottom_divider = maxHeight() - 130;
   label_x_offset = 13;
-  big_border = 20;
-  word z = (display_max_y - big_border) / 3;
-  label1_y_offset = big_border;
-  label2_y_offset = label1_y_offset + z;
-  label3_y_offset = label2_y_offset + z;
 
   // Only create and add sensor objects the first time we call init.
   if (m_first == 0) {
-    addSensor(new SensorWidget(PID_SPEED, 7, display_x_mid - 25, 145));
-    addSensor(new SensorWidget(PID_RPM, 3, display_x_mid - 58, 95));
-    addSensor(new SensorWidget(PID_AMBIENT_AIR_TEMP, 2, label_x_offset, label1_y_offset));
-    addSensor(new SensorWidget(PID_COOLANT_TEMP, 2, label_x_offset, label2_y_offset));
-    addSensor(new SensorWidget(PID_INTAKE_AIR_TEMP, 2, label_x_offset, label3_y_offset));
+    byte speed_size = 5;
+    addSensor(new SensorWidget(PID_SPEED, speed_size, display_x_mid - (char_width[speed_size] * 1.5), 145));
+    addSensor(new SensorWidget(PID_RPM, 3, display_x_mid - (char_width[3] * 2), 95));
+    
+    Table t1(Display_, "Temperature", Table::RIGHT_BORDER | Table::BOTTOM_BORDER, 1, 3, 
+            left_border, left_divider_line, 
+            top_border, display_max_y / 2);
+    addSensor(new SensorWidget(PID_AMBIENT_AIR_TEMP, 2, label_x_offset, t1.cellY(0)));
+    addSensor(new SensorWidget(PID_COOLANT_TEMP, 2, label_x_offset, t1.cellY(1)));
+    addSensor(new SensorWidget(PID_INTAKE_AIR_TEMP, 2, label_x_offset, t1.cellY(2)));
+
+    Table t2(Display_, "Pressure", Table::TOP_BORDER | Table::RIGHT_BORDER, 1, 3, 
+            left_border, left_divider_line, 
+            display_max_y / 2, bottom_border);
+    addSensor(new SensorWidget(PID_FUEL_PRESSURE, 2, label_x_offset, t2.cellY(0)));
+    addSensor(new SensorWidget(PID_BAROMETRIC_PRESSURE, 2, label_x_offset, t2.cellY(1)));
+//    addSensor(new SensorWidget(PID_OIL, 2, label_x_offset, t2.cellY(2)));
+
+    Table t3(Display_, "Fuel", Table::LEFT_BORDER | Table::BOTTOM_BORDER, 1, 3, 
+            right_divider_line, right_border, 
+            top_border, display_max_y / 2);
+    addSensor(new SensorWidget(PID_FUEL_LEVEL, 2, right_divider_line + label_x_offset, t3.cellY(0))); // Tank
+    addSensor(new SensorWidget(PID_ENGINE_FUEL_RATE, 2, right_divider_line + label_x_offset, t3.cellY(1)));  // Economy
+//    addSensor(new SensorWidget(PID_RANGE, 2, right_divider_line + label_x_offset, t3.cellY(2)));     // Range
   }
 }
 
@@ -555,16 +591,6 @@ void Screen1::redrawLabels()
 //    Display_->gfx_Line(left_divider_line, bottom_divider, right_divider_line, bottom_divider, WHITE);
 //
 //    printLabel("Speed", display_x_mid - 30, 3, WHITE);
-//    printLabel("Temp", left_divider_line / 2 - 20, 3, WHITE);
-//
-//    printLabel("Air", label_x_offset, label1_y_offset, WHITE);
-//    printLabel("Engine", label_x_offset, label2_y_offset, WHITE);
-//    printLabel("Turbo", label_x_offset, label3_y_offset, WHITE);
-//
-//    printLabel("Pressure", left_divider_line / 2 - 40, display_y_mid + 3, WHITE);
-//    printLabel("Fuel", label_x_offset, label1_y_offset + display_y_mid, WHITE);
-//    printLabel("Oil", label_x_offset, label2_y_offset + display_y_mid, WHITE);
-//    printLabel("Air", label_x_offset, label3_y_offset + display_y_mid, WHITE);
 //
 //    printLabel("Drivetrain", display_y_mid - 50, bottom_divider + 3, WHITE);
 //    printLabel("Torque", left_divider_line + 15, bottom_divider + 15, WHITE);
@@ -573,11 +599,6 @@ void Screen1::redrawLabels()
 //    printLabel("F:", right_divider_line - 120, bottom_divider + 50, WHITE);
 //    printLabel("C:", right_divider_line - 120, bottom_divider + 85, WHITE);
 //    printLabel("R:", right_divider_line - 120, bottom_divider + 120, WHITE);
-//    printLabel("Fuel", right_divider_line + left_divider_line / 2 - 20, 3, WHITE);
-//
-//    printLabel("Tank", right_divider_line + label_x_offset, label1_y_offset, WHITE);
-//    printLabel("Range", right_divider_line + label_x_offset, label2_y_offset, WHITE);
-//    printLabel("Economy", right_divider_line + label_x_offset, label3_y_offset, WHITE);
 //
 //    printLabel("Distance", right_divider_line + left_divider_line / 2 - 40, display_y_mid + 3, WHITE);
 //    printLabel("Odo", right_divider_line + label_x_offset, label1_y_offset + display_y_mid, WHITE);
