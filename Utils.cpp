@@ -108,9 +108,11 @@ Table::Table(PumaDisplay *display, String title, word borderLines, byte columns,
   m_display = display;
   m_title = title;
   m_border_lines = borderLines;
+  if (columns < 1) columns = 1;
   m_columns = columns;
   m_min_x = minX;
   m_max_x = maxX;
+  if (rows < 1) rows = 1;
   m_rows = rows;
   m_min_y = minY;
   m_max_y = maxY;
@@ -124,7 +126,7 @@ Table::Table(PumaDisplay *display, String title, word borderLines, byte columns,
     x -= w * title.length() / 2;
     m_title_height = display->charheight('A') + 4;
 
-    display->gfx_MoveTo(x, m_min_y+2);
+    display->gfx_MoveTo(x, m_min_y + 2);
     display->print(title);
   }
 
@@ -142,7 +144,18 @@ Table::Table(PumaDisplay *display, String title, word borderLines, byte columns,
   }
   if ((m_border_lines & BOTTOM_BORDER) > 0) {
     display->gfx_Line(m_min_x, m_max_y, m_max_x, m_max_y, WHITE);
-  }  
+  }
+  if ((m_border_lines & SHOW_GRID) > 0) {
+    display->gfx_LinePattern(0x00aa);
+    byte border = 30;
+    if (m_columns > 1)
+      for (byte column = 1; column <= m_columns; column++)
+        display->gfx_Line(cellX(column), m_min_y + border, cellX(column), m_max_y - border, WHITE);
+    if (m_rows > 1)
+      for (byte row = 1; row <= m_rows; row++)
+        display->gfx_Line(m_min_x + border, cellY(row), m_max_x - border, cellY(row), WHITE);
+    display->gfx_LinePattern(0);
+  }
 }
 
 word Table::cellX(byte column)

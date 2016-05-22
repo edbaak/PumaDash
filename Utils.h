@@ -29,8 +29,8 @@
 #define DISPLAY_SPEED 115200   // The baudrate at which we're running the 4D display
 #define LOGFILE_PREFIX 165     // Prefix for SD card logging file names, i.e. 165_0001.txt
 //#define LOOPBACK_MODE        // CAN loopback mode. Messages transmitted are looped back to the CAN receiver, which helps with debugging.
-//#define VEHICLEDASH_DEBUG
-//#define OBD_DEBUG
+//#define VEHICLEDASH_DEBUG    // TODO: only used in Tpms and Position to simulate data
+//#define OBD_DEBUG            // Prints out raw OBD RX data to Serial
 
 // Mega board PIN definitions
 #define PIN_DISPLAY_RESET 4
@@ -64,7 +64,7 @@ typedef enum BORDER_LINES {
     RIGHT_BORDER = 0x04,
     BOTTOM_BORDER = 0x08,
     ALL_BORDER = 0x0F,
-    GRID = 0x10
+    SHOW_GRID = 0x10
 } BORDER_LINES;
 
     Table(PumaDisplay *display, String title, word borderLines, byte columns, byte rows, word minX, word maxX, word minY, word maxY);

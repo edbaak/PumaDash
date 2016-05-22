@@ -291,17 +291,7 @@ void Screen0::update()
  void Screen0::redrawLabels()
 {
   printLabel("TPMS", 120, top_separator_line + 3, WHITE);
-
-  Display_->gfx_LinePattern(0x00aa);
-  byte border = 30;
-  Display_->gfx_Line(border, mid_separator_line, display_max_x - border, mid_separator_line, WHITE);
-  Display_->gfx_Line(border, bottom_divider, display_max_x - border, bottom_separator_line, WHITE);
-  Display_->gfx_Line(display_max_x / 2, top_separator_line + border, display_max_x / 2, display_max_x - border, WHITE);
-
   printLabel("Position", 100, 3, WHITE);
-
-  Display_->gfx_LinePattern(0);
-  Display_->gfx_Line(left_border, top_separator_line, right_border, top_separator_line, WHITE);
 }
 */
 
