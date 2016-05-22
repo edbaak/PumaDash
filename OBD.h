@@ -257,17 +257,21 @@ class PumaDisplay;
 
 typedef enum OBD_DATA_CONVERSION {
   BYTE_NO_CONVERSION,
+  BYTE_PERCENTAGE,
   WORD_NO_CONVERSION,
-  WORD_DIV4_CONVERSION,
-  INT_MINUS40
+  WORD_DIV4,
+  WORD_DIV20,
+  INT_MINUS40,
+  BYTE_TIMES10,
+  BYTE_TIMES3
 } OBD_DATA_CONVERSION;
 
-class OBDDataValue
+class OBDData
 {
   public:
-    OBDDataValue();
-    OBDDataValue(uint8_t pid, String label, String format, String subLabel, uint16_t updateInterval, OBD_DATA_CONVERSION conversion);
-    virtual ~OBDDataValue();
+    OBDData();
+    OBDData(uint8_t pid, String label, String format, String subLabel, uint16_t updateInterval, OBD_DATA_CONVERSION conversion, long min, long max, long step);
+    virtual ~OBDData();
 
     void resetUpdateTimer();
     bool needsUpdate();
@@ -278,28 +282,18 @@ class OBDDataValue
     String subLabel();
     virtual String toString();
     virtual word color();
+    byte valueLength();
     virtual OBD_DATA_CONVERSION dataConversion() {
       return m_conversion;
     }
-    virtual void setValue(uint8_t *data) {};
+    virtual void setValue(uint8_t *data);
 #ifdef LOOPBACK_MODE
-    virtual uint8_t dataBytes() {
-      return 0;
-    }
-    virtual uint8_t simulateByte() {
-      return 0;
-    };
-    virtual uint16_t simulateWord() {
-      return 0;
-    };
-    virtual uint8_t simulateLong() {
-      return 0;
-    };
+    virtual void simulateData(CAN_Frame *message);
 #endif
 
   protected:
     friend class PumaOBD;
-    OBDDataValue *m_next;
+    OBDData *m_next;
     unsigned long m_lastUpdate;
     unsigned long m_updateRequested;
     uint16_t m_updateInterval;
@@ -309,46 +303,6 @@ class OBDDataValue
     String m_format;
     uint32_t m_simulator;
     OBD_DATA_CONVERSION m_conversion;
-};
-
-class OBDByteValue : public OBDDataValue
-{
-  public:
-    OBDByteValue(uint8_t pid, String label, String format, String subLabel, uint16_t updateInterval, OBD_DATA_CONVERSION conversion, byte min = 0, byte max = 0, byte step = 0);
-    String toString();
-    virtual void setValue(uint8_t *data);
-
-#ifdef LOOPBACK_MODE
-    virtual uint8_t dataBytes() {
-      return 1;
-    }
-    virtual uint8_t simulateByte();
-#endif
-
-  private:
-    byte m_value;
-#ifdef LOOPBACK_MODE
-    byte m_simValue;
-    bool m_simIncrease;
-    byte m_simMinValue;
-    byte m_simMaxValue;
-    byte m_simStepValue;
-#endif
-};
-
-class OBDLongValue : public OBDDataValue
-{
-  public:
-    OBDLongValue(uint8_t pid, String label, String format, String subLabel, uint16_t updateInterval, OBD_DATA_CONVERSION conversion, long min = 0, long max = 0, long step = 0);
-    String toString();
-    virtual void setValue(uint8_t *data);
-
-#ifdef LOOPBACK_MODE
-    virtual uint8_t dataBytes() {
-      return 1;
-    }
-    virtual uint8_t simulateLong();
-#endif
 
   private:
     long m_value;
@@ -358,32 +312,7 @@ class OBDLongValue : public OBDDataValue
     long m_simMinValue;
     long m_simMaxValue;
     long m_simStepValue;
-#endif
-};
-
-class OBDWordValue : public OBDDataValue
-{
-  public:
-    OBDWordValue(uint8_t pid, String label, String format, String subLabel, uint16_t updateInterval, OBD_DATA_CONVERSION conversion, word min = 0, word max = 0, word step = 0);
-    String toString();
-    virtual void setValue(uint8_t *data);
-
-#ifdef LOOPBACK_MODE
-    virtual uint8_t dataBytes() {
-      return 2;
-    }
-    virtual uint16_t simulateWord();
-#endif
-
-  private:
-    word m_value;
-#ifdef LOOPBACK_MODE
-    word m_simValue;
-    word m_simIncrease;
-    word m_simMinValue;
-    word m_simMaxValue;
-    word m_simStepValue;
-#endif
+#endif    
 };
 
 class PumaOBD
@@ -394,20 +323,20 @@ class PumaOBD
     void readRxBuffers();
     void requestObdUpdates();
 
-    void addDataObject(OBDDataValue *obj);
-    OBDDataValue *dataObject(uint8_t PID);
+    void addDataObject(OBDData *obj);
+    OBDData *dataObject(uint8_t PID);
 
   protected:
     bool readMessage();
     bool processMessage(CAN_Frame message);
     void requestPID(uint16_t pid);
-    void updateSensor(OBDDataValue *sensor);
+    void updateSensor(OBDData *sensor);
 
-    OBDDataValue m_invalidPID; // This object is used to return a valid pointer in case we don't support the PID
-    OBDDataValue *m_first;
-    OBDDataValue *m_last;
-    OBDDataValue *m_current;
-    OBDDataValue *iterateDataObject(bool needsUpdate);
+    OBDData m_invalidPID; // This object is used to return a valid pointer in case we don't support the PID
+    OBDData *m_first;
+    OBDData *m_last;
+    OBDData *m_current;
+    OBDData *iterateDataObject(bool needsUpdate);
 
   private:
     PumaCAN m_CAN;
