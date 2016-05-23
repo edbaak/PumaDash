@@ -113,4 +113,16 @@ class TpmsWidget : public SensorWidget
     void updateTemperature(byte tireLocation);
 };
 
+class ListWidget : public SensorWidget
+{
+  public:
+    ListWidget(PumaDisplay *display, String title, word pid, byte fontSize, word x1, word y1, word x2, word y2);
+    void appendLine(String line);
+    
+  private:
+    String m_title;
+    word m_x2;
+    word m_y2;
+};
+
 #endif

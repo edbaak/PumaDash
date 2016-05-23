@@ -333,4 +333,18 @@ void TpmsWidget::updateTemperature(byte tireLocation)
   m_display->activeScreen()->printValue(String(m_display->m_tpms->tireTemperature(tireLocation)), x2, y1, color, 2);
 }
 
+// ******************************************************************************************************
+//                                              TpmsWidget
+// ******************************************************************************************************
+
+ListWidget::ListWidget(PumaDisplay *display, String title, word pid, byte fontSize, word x1, word y1, word x2, word y2) : SensorWidget(display, pid, fontSize, x1, y1)
+{
+  m_title = title; 
+  m_x2 = x2;
+  m_y2 = y2;
+}
+
+void ListWidget::appendLine(String line)
+{
+}
 
