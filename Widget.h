@@ -105,4 +105,12 @@ class CompassWidget : public SensorWidget
     void updateHeading(word heading);
 };
 
+class TpmsWidget : public SensorWidget
+{
+  public:
+    TpmsWidget(PumaDisplay *display, word pid, byte fontSize, word x, word y);
+    void updatePressure(byte tireLocation);
+    void updateTemperature(byte tireLocation);
+};
+
 #endif

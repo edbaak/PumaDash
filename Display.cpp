@@ -261,9 +261,19 @@ void Screen0::init()
 
   // Only create and add sensor objects the first time we call init.
   if (m_first == 0) {
+    printLabel("Position", 100, 3, PUMA_LABEL_COLOR);
     addSensor(new PitchAndRollWidget(Display_, PID_PITCH, PUMA_LABEL_SIZE, 10, 8, true, 7 ));
     addSensor(new PitchAndRollWidget(Display_, PID_ROLL, PUMA_LABEL_SIZE, 46, 149, true, 10 ));
     addSensor(new CompassWidget(Display_, PID_HEADING, PUMA_LABEL_SIZE, 100, 100)); // TODO: set at correct x,y position
+    Table t1(Display_, "TPMS", Table::TOP_BORDER | Table::SHOW_GRID, 2, 3,
+             left_border, left_divider_line,
+             top_border, display_max_y / 2);
+    addSensor(new TpmsWidget(Display_, PID_TPMS_FL, 2, t1.cellX(0), t1.cellY(0)));
+    addSensor(new TpmsWidget(Display_, PID_TPMS_FR, 2, t1.cellX(1), t1.cellY(0)));
+    addSensor(new TpmsWidget(Display_, PID_TPMS_RL, 2, t1.cellX(0), t1.cellY(1)));
+    addSensor(new TpmsWidget(Display_, PID_TPMS_RR, 2, t1.cellX(1), t1.cellY(1)));
+    addSensor(new TpmsWidget(Display_, PID_TPMS_TL, 2, t1.cellX(0), t1.cellY(2)));
+    addSensor(new TpmsWidget(Display_, PID_TPMS_TR, 2, t1.cellX(1), t1.cellY(2)));
   }
 }
 
@@ -274,63 +284,6 @@ byte Screen0::displayOrientation()
 
 void Screen0::update()
 {
-  updateTPMSvalue(FRONT_LEFT);
-  updateTPMSvalue(FRONT_RIGHT);
-  updateTPMSvalue(REAR_LEFT);
-  updateTPMSvalue(REAR_RIGHT);
-  updateTPMSvalue(TRAILER_LEFT);
-  updateTPMSvalue(TRAILER_RIGHT);
-}
-
-/*
-  void Screen0::redrawLabels()
-  {
-  printLabel("TPMS", 120, top_separator_line + 3, PUMA_LABEL_COLOR);
-  printLabel("Position", 100, 3, PUMA_LABEL_COLOR);
-  }
-*/
-
-void Screen0::updateTPMSvalue(byte tireLocation)
-{
-#define TPMS_X1_OFFSET 55
-#define TPMS_Y1_OFFSET 75
-#define TPMS_X2_OFFSET 85
-#define TPMS_Y2_OFFSET 30
-
-  word x = 0;
-  if (tireLocation == FRONT_RIGHT || tireLocation == REAR_RIGHT || tireLocation == TRAILER_RIGHT) {
-    x = display_max_x / 2;
-  }
-
-  word y = 0;
-  if (tireLocation == FRONT_LEFT || tireLocation == FRONT_RIGHT) {
-    y = top_separator_line;
-  } else if (tireLocation == REAR_LEFT || tireLocation == REAR_RIGHT) {
-    y = top_separator_line + 106;
-  } else if (tireLocation == TRAILER_LEFT || tireLocation == TRAILER_RIGHT) {
-    y = top_separator_line + 212;
-  }
-
-  Display_->gfx_Line(x + TPMS_X1_OFFSET, y + TPMS_Y1_OFFSET , x + TPMS_X2_OFFSET, y + TPMS_Y2_OFFSET, PUMA_LABEL_COLOR);
-
-  word x1, y1, x2, y2;
-  x1 = x + TPMS_X1_OFFSET / 2;
-  y2 = y + TPMS_Y2_OFFSET;
-  int color = PUMA_NORMAL_COLOR;
-  if (Display_->m_tpms->tirePressureAlarm(tireLocation))
-    color = PUMA_ALARM_COLOR;
-  else if (Display_->m_tpms->tirePressureWarning(tireLocation))
-    color = PUMA_WARNING_COLOR;
-  printValue(String(Display_->m_tpms->tirePressure(tireLocation)), x1, y2, color, 2);
-
-  color = PUMA_NORMAL_COLOR;
-  x2 = x + TPMS_X2_OFFSET;
-  y1 = y + TPMS_Y1_OFFSET - 20;
-  if (Display_->m_tpms->tireTemperatureAlarm(tireLocation))
-    color = PUMA_ALARM_COLOR;
-  else if (Display_->m_tpms->tireTemperatureWarning(tireLocation))
-    color = PUMA_WARNING_COLOR;
-  printValue(String(Display_->m_tpms->tireTemperature(tireLocation)), x2, y1, color, 2);
 }
 
 // ******************************************************************************************************

@@ -150,6 +150,7 @@ class PumaDisplay : public Diablo_Serial_4DLib
     Screen2 m_screen2;    // Visual elements of the 'Right' display
   
     Direction *m_position;
+    friend class TpmsWidget;
     Tpms *m_tpms;
     CruiseCtrl *m_speed;
     PumaOBD *m_obd;   

@@ -294,4 +294,43 @@ void CompassWidget::updateHeading(word heading)
   }
 }
 
+// ******************************************************************************************************
+//                                              TpmsWidget
+// ******************************************************************************************************
+
+#define TPMS_X1_OFFSET 55
+#define TPMS_Y1_OFFSET 75
+#define TPMS_X2_OFFSET 85
+#define TPMS_Y2_OFFSET 30
+
+TpmsWidget::TpmsWidget(PumaDisplay *display, word pid, byte fontSize, word x, word y) : SensorWidget(display, pid, fontSize, x, y)
+{
+}
+
+void TpmsWidget::updatePressure(byte tireLocation)
+{
+  m_display->gfx_Line(m_x + TPMS_X1_OFFSET, m_y + TPMS_Y1_OFFSET , m_x + TPMS_X2_OFFSET, m_y + TPMS_Y2_OFFSET, PUMA_LABEL_COLOR);
+
+  word x1 = m_x + TPMS_X1_OFFSET / 2;
+  word y2 = m_y + TPMS_Y2_OFFSET;
+  int color = PUMA_NORMAL_COLOR;
+  if (m_display->m_tpms->tirePressureAlarm(tireLocation))
+    color = PUMA_ALARM_COLOR;
+  else if (m_display->m_tpms->tirePressureWarning(tireLocation))
+    color = PUMA_WARNING_COLOR;
+  m_display->activeScreen()->printValue(String(m_display->m_tpms->tirePressure(tireLocation)), x1, y2, color, 2);
+}
+
+void TpmsWidget::updateTemperature(byte tireLocation)
+{
+  int color = PUMA_NORMAL_COLOR;
+  word x2 = m_x + TPMS_X2_OFFSET;
+  word y1 = m_y + TPMS_Y1_OFFSET - 20;
+  if (m_display->m_tpms->tireTemperatureAlarm(tireLocation))
+    color = PUMA_ALARM_COLOR;
+  else if (m_display->m_tpms->tireTemperatureWarning(tireLocation))
+    color = PUMA_WARNING_COLOR;
+  m_display->activeScreen()->printValue(String(m_display->m_tpms->tireTemperature(tireLocation)), x2, y1, color, 2);
+}
+
 

@@ -44,18 +44,12 @@
 #define PID_PITCH            0xFF01
 #define PID_ROLL             0xFF02
 #define PID_HEADING          0xFF03
-#define PID_TPMS_FL_PRESSURE 0xFF04
-#define PID_TPMS_FL_TEMP     0xFF05
-#define PID_TPMS_FR_PRESSURE 0xFF06
-#define PID_TPMS_FR_TEMP     0xFF07
-#define PID_TPMS_RL_PRESSURE 0xFF08
-#define PID_TPMS_RL_TEMP     0xFF09
-#define PID_TPMS_RR_PRESSURE 0xFF0A
-#define PID_TPMS_RR_TEMP     0xFF0B
-#define PID_TPMS_TL_PRESSURE 0xFF0C
-#define PID_TPMS_TL_TEMP     0xFF0D
-#define PID_TPMS_TR_PRESSURE 0xFF0E
-#define PID_TPMS_TR_TEMP     0xFF0F
+#define PID_TPMS_FL          0xFF04
+#define PID_TPMS_FR          0xFF05
+#define PID_TPMS_RL          0xFF06
+#define PID_TPMS_RR          0xFF07
+#define PID_TPMS_TL          0xFF08
+#define PID_TPMS_TR          0xFF09
 
 // Mega board PIN definitions
 #define PIN_DISPLAY_RESET 4
