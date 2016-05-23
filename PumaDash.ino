@@ -51,12 +51,12 @@ void setup() {
 }
 
 void loop() {
+  g_display.processTouchEvents();
   g_tpms.update();
   g_position.update();
   g_obd.requestObdUpdates();
   g_obd.readMessages();
   g_speed.update();
-  g_display.init();
 }
 
 // Interrupt handler for fetching messages from MCP2515 RX buffer

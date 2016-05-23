@@ -113,7 +113,7 @@ class PumaDisplay : public Diablo_Serial_4DLib
   public:
     PumaDisplay(Stream * virtualPort);
     void setup(Direction *pos, Tpms *tpms, CruiseCtrl *speed, PumaOBD *obd);
-    void init();
+    void processTouchEvents();
     void reset();
     
     BaseScreen *activeScreen();

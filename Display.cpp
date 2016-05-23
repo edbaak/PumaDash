@@ -74,7 +74,7 @@ BaseScreen *PumaDisplay::activeScreen()
   }
 }
 
-void PumaDisplay::init()
+void PumaDisplay::processTouchEvents()
 {
   if (!g_init_display && m_screen0.touchPressed()) {
     g_active_screen++;
@@ -99,7 +99,7 @@ void PumaDisplay::reset()
   digitalWrite(PIN_DISPLAY_RESET, 1);  // Reset the Display via D4
   delay(100);
   digitalWrite(PIN_DISPLAY_RESET, 0);  // unReset the Display via D4
-  delay(3500);
+  delay(4000);
 }
 
 // ******************************************************************************************************
