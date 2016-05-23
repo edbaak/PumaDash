@@ -36,22 +36,8 @@
 #include "OBD.h"
 
 class PumaDisplay;
+class SensorWidget;
 #define MAX_CHAR_SIZE 10
-
-class SensorWidget
-{
-  public:
-    SensorWidget(word pid, byte fontSize, word x, word y);
-
-  protected:
-    friend class BaseScreen;  
-    word m_pid;
-    byte m_fontSize;
-    word m_x;
-    word m_y;
-
-    SensorWidget *m_next;
-};
 
 class BaseScreen
 {
@@ -102,8 +88,9 @@ class Screen0 : public BaseScreen
 {
 public:
   Screen0();
-  void update();
   virtual byte displayOrientation();
+  virtual void init();
+  void update();
   
 protected:  
   void updatePitch(byte x, byte y, byte interleave, int angle);
@@ -130,9 +117,9 @@ class Screen2 : public BaseScreen
 {
 public:
   Screen2();
-  void update();
   void redrawLabels(); 
   virtual byte displayOrientation();
+  void update();
   
 protected:  
   void updateCruiseControl();

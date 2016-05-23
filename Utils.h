@@ -2,7 +2,7 @@
   2016 Copyright (c) Ed Baak  All Rights Reserved.
 
   This code is free software; you can redistribute it and/or
-  modify it under the terms of the GNU General Public License 
+  modify it under the terms of the GNU General Public License
   as published by the Free Software Foundation; either
   version 3 of the License, or (at your option) any later version.
 
@@ -11,7 +11,7 @@
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
 
-  You should have received a copy of the GNU General Public License 
+  You should have received a copy of the GNU General Public License
   along with this code; if not, write to the Free Software
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-
   1301  USA
@@ -19,11 +19,11 @@
 
 #ifndef Utils_h
 #define Utils_h
- 
+
 #if (ARDUINO >= 100)
-	#include "Arduino.h" // for Arduino 1.0
+#include "Arduino.h" // for Arduino 1.0
 #else
-	#include "WProgram.h" // for Arduino 23
+#include "WProgram.h" // for Arduino 23
 #endif
 
 #define DISPLAY_SPEED 115200   // The baudrate at which we're running the 4D display
@@ -32,11 +32,30 @@
 //#define VEHICLEDASH_DEBUG    // TODO: only used in Tpms and Position to simulate data
 //#define OBD_DEBUG            // Prints out raw OBD RX data to Serial
 
-#define PUMA_LABEL_SIZE 1
-#define PUMA_LABEL_COLOR WHITE
-#define PUMA_ALARM_COLOR RED
-#define PUMA_WARNING_COLOR YELLOW
-#define PUMA_NORMAL_COLOR LIGHTGREEN
+#define PUMA_LABEL_SIZE 1             // Font size for labels and subLabels
+#define PUMA_SENSOR_DATA_SIZE 2       // Font size for 'normal' sensor data (RPM, Speed, TPMS and a few more are shown bigger)
+#define PUMA_LABEL_COLOR WHITE        // FG color for label text
+#define PUMA_ALARM_COLOR RED          // FX color for data that is in the alarm operating zone. Usually this means a too high value, but for Fuel Tank it means 'too low'
+#define PUMA_WARNING_COLOR YELLOW     // FG color for data that is in a warning operating zone
+#define PUMA_NORMAL_COLOR LIGHTGREEN  // FG color for data that is in the normal/safe operating zone
+#define RPM_RADIUS 110                // Size of the Rpm dial
+
+// Internal PID's, i.e. not part of the OBD2 standard
+#define PID_PITCH            0xFF01
+#define PID_ROLL             0xFF02
+#define PID_HEADING          0xFF03
+#define PID_TPMS_FL_PRESSURE 0xFF04
+#define PID_TPMS_FL_TEMP     0xFF05
+#define PID_TPMS_FR_PRESSURE 0xFF06
+#define PID_TPMS_FR_TEMP     0xFF07
+#define PID_TPMS_RL_PRESSURE 0xFF08
+#define PID_TPMS_RL_TEMP     0xFF09
+#define PID_TPMS_RR_PRESSURE 0xFF0A
+#define PID_TPMS_RR_TEMP     0xFF0B
+#define PID_TPMS_TL_PRESSURE 0xFF0C
+#define PID_TPMS_TL_TEMP     0xFF0D
+#define PID_TPMS_TR_PRESSURE 0xFF0E
+#define PID_TPMS_TR_TEMP     0xFF0F
 
 // Mega board PIN definitions
 #define PIN_DISPLAY_RESET 4
@@ -57,40 +76,5 @@
 void uniqueLogFileName();
 void initLogging();
 void logData(char *s);
-
-class PumaDisplay;
-
-class Table
-{
-  public:
-typedef enum BORDER_LINES {
-    NONE = 0,
-    LEFT_BORDER = 0x01,
-    TOP_BORDER = 0x02,
-    RIGHT_BORDER = 0x04,
-    BOTTOM_BORDER = 0x08,
-    ALL_BORDER = 0x0F,
-    SHOW_GRID = 0x10
-} BORDER_LINES;
-
-    Table(PumaDisplay *display, String title, word borderLines, byte columns, byte rows, word minX, word maxX, word minY, word maxY);
-    word cellX(byte column);
-    word cellY(byte row);
-    
-  private:
-    PumaDisplay *m_display; 
-    String m_title;
-    word m_title_height;
-    word m_border_lines;
-    word m_columns;
-    word m_min_x;
-    word m_max_x;
-    word m_rows;
-    word m_min_y;
-    word m_max_y;
-    word m_cell_width;
-    word m_cell_height;
-};
-
 
 #endif

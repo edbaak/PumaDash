@@ -19,6 +19,7 @@
 
 #include "Utils.h"
 #include "Display.h"
+#include "Widget.h"
 
 #if (ARDUINO >= 100)
 #include "Arduino.h" // for Arduino 1.0
@@ -26,7 +27,6 @@
 #include "WProgram.h" // for Arduino 23
 #endif
 
-#define rpm_radius 110
 
 // ******************************************************************************************************
 //                                              PumaDisplay
@@ -103,19 +103,6 @@ void PumaDisplay::reset()
   delay(100);
   digitalWrite(PIN_DISPLAY_RESET, 0);  // unReset the Display via D4
   delay(3500);
-}
-
-// ******************************************************************************************************
-//                                              SensorWidget
-// ******************************************************************************************************
-
-SensorWidget::SensorWidget(word pid, byte fontSize, word x, word y)
-{
-  m_x = x;
-  m_y = y;
-  m_pid = pid;
-  m_fontSize = fontSize;
-  m_next = 0;
 }
 
 // ******************************************************************************************************
@@ -268,6 +255,18 @@ Screen0::Screen0() : BaseScreen()
 {
 }
 
+void Screen0::init()
+{
+  BaseScreen::init();
+
+  // Only create and add sensor objects the first time we call init.
+  if (m_first == 0) {
+    addSensor(new PitchAndRollWidget(Display_, PID_PITCH, PUMA_LABEL_SIZE, 10, 8, true, 7 ));
+    addSensor(new PitchAndRollWidget(Display_, PID_ROLL, PUMA_LABEL_SIZE, 46, 149, true, 10 ));
+    addSensor(new CompassWidget(Display_, PID_HEADING, PUMA_LABEL_SIZE, 100, 100)); // TODO: set at correct x,y position
+  }
+}
+
 byte Screen0::displayOrientation()
 {
   return PORTRAIT;
@@ -275,10 +274,6 @@ byte Screen0::displayOrientation()
 
 void Screen0::update()
 {
-  updateCompass(Display_->m_position->compass());
-  updatePitch(10, 8, 7, Display_->m_position->pitch());
-  updateRoll(46, 149, 10, Display_->m_position->roll());
-
   updateTPMSvalue(FRONT_LEFT);
   updateTPMSvalue(FRONT_RIGHT);
   updateTPMSvalue(REAR_LEFT);
@@ -288,149 +283,12 @@ void Screen0::update()
 }
 
 /*
- void Screen0::redrawLabels()
-{
+  void Screen0::redrawLabels()
+  {
   printLabel("TPMS", 120, top_separator_line + 3, PUMA_LABEL_COLOR);
   printLabel("Position", 100, 3, PUMA_LABEL_COLOR);
-}
+  }
 */
-
-void Screen0::updatePitch(byte x, byte y, byte interleave, int angle)
-{
-  static unsigned int last_update = 0;
-  unsigned int tmp = millis();
-
-  // Only update the static display items once every second
-  if (tmp - last_update > 1000) {
-    last_update = tmp;
-
-    Display_->gfx_Line(x, y, x, y + interleave * 18, PUMA_LABEL_COLOR);
-
-    byte y_ = y;
-    for (int i = -9; i <= 9; i++) {
-      int width = 2;
-      if (i == 0  || abs(i) == 9)
-        width = 8;
-      else if (abs(i) == 2 || abs(i) == 4 || abs(i) == 6 || abs(i) == 8)
-        width = 5;
-      Display_->gfx_Line(x, y_, x + width, y_, PUMA_LABEL_COLOR);
-      y_ += interleave;
-    }
-  }
-
-  int color = PUMA_NORMAL_COLOR;
-  if (abs(angle) > 35)
-    color = PUMA_ALARM_COLOR;
-  else if (abs(angle) > 15)
-    color = PUMA_WARNING_COLOR;
-
-  printValue(String(abs(angle)), x - 1, y + interleave * 18 + 1, color, 2);
-
-  if (angle > 45)
-    angle = 45;
-  else if (angle < -45)
-    angle = -45;
-
-  float f = angle;
-  f = f * interleave / 5.0;
-  static int x_ = 0;
-  static int y_ = 0;
-
-  // Reset display area
-  if (x_ != 0)
-    Display_->gfx_TriangleFilled(x_, y_, x_ + 20, y_ - 5, x_ + 20, y_ + 5, BLACK);
-
-  x_ = x + 10;
-  y_ = y + interleave * 9 - round(f);
-  Display_->gfx_TriangleFilled(x_, y_, x_ + 20, y_ - 5, x_ + 20, y_ + 5, color);
-}
-
-void Screen0::updateRoll(byte x, byte y, byte interleave, int angle)
-{
-  static unsigned int last_update = 0;
-  unsigned int tmp = millis();
-
-  // Only update the static display items once every second
-  if (tmp - last_update > 1000) {
-    last_update = tmp;
-
-    Display_->gfx_Line(x, y, x + interleave * 18, y, PUMA_LABEL_COLOR);
-    byte x_ = x;
-    for (int i = -9; i <= 9; i++) {
-      int heigth = 2;
-      if (i == 0  || abs(i) == 9)
-        heigth = 8;
-      else if (abs(i) == 2 || abs(i) == 4 || abs(i) == 6 || abs(i) == 8)
-        heigth = 5;
-      Display_->gfx_Line(x_, y - heigth, x_, y, PUMA_LABEL_COLOR);
-      x_ += interleave;
-    }
-  }
-
-  int color = PUMA_NORMAL_COLOR;
-  if (abs(angle) > 35)
-    color = PUMA_ALARM_COLOR;
-  else if (abs(angle) > 15)
-    color = PUMA_WARNING_COLOR;
-
-  printValue(String(abs(angle)), x + interleave * 18 + 4, y - 13, color, 2);
-
-  if (angle > 45)
-    angle = 45;
-  else if (angle < -45)
-    angle = -45;
-
-  float f = angle;
-  f = f * interleave / 5.0;
-
-  static int x_ = 0;
-  static int y_ = 0;
-  if (x_ != 0)
-    Display_->gfx_TriangleFilled(x_, y_, x_ - 5, y_ - 20, x_ + 5, y_ - 20, BLACK);
-
-  x_ = x + interleave * 9 + round(f);
-  y_ = y - 10;
-  Display_->gfx_TriangleFilled(x_, y_, x_ - 5, y_ - 20, x_ + 5, y_ - 20, color);
-}
-
-void Screen0::updateCompass(word heading)
-{
-  static long int old_heading = -1;
-  static unsigned int last_update = 0;
-  unsigned int tmp = millis();
-
-  // Only update the static display items once every x seconds
-  if (tmp - last_update > 2000) {
-    if (heading != old_heading) {
-      old_heading = heading;
-      last_update = tmp;
-
-      Display_->txt_Xgap(2);
-      char hd[5];
-      sprintf(hd, "%0d3", heading);
-      printValue(hd, 65, 40, PUMA_NORMAL_COLOR, 6);
-      Display_->txt_Xgap(0);
-
-      heading += 270;
-      if (heading > 360)
-        heading -= 360;
-
-      int x_ = 245;
-      int y_ = 25;
-      int radius_ = 25;
-      Display_->gfx_CircleFilled(x_, y_, radius_ - 1, BLACK);
-      Display_->gfx_Circle(x_, y_, radius_, PUMA_LABEL_COLOR);
-      Display_->gfx_MoveTo(x_, y_);
-      word orbitX1, orbitY1;
-      Display_->gfx_Orbit(heading, radius_, &orbitX1, &orbitY1);
-      word orbitX2, orbitY2;
-      Display_->gfx_Orbit(heading + 150, radius_ / 2, &orbitX2, &orbitY2);
-      word orbitX3, orbitY3;
-      Display_->gfx_Orbit(heading + 210, radius_ / 2, &orbitX3, &orbitY3);
-      Display_->gfx_TriangleFilled(orbitX1, orbitY1, orbitX2, orbitY2, orbitX3, orbitY3, PUMA_NORMAL_COLOR);
-    }
-  }
-}
 
 void Screen0::updateTPMSvalue(byte tireLocation)
 {
@@ -495,131 +353,50 @@ void Screen1::init()
   // Only create and add sensor objects the first time we call init.
   if (m_first == 0) {
     byte speed_size = 5;
-    addSensor(new SensorWidget(PID_SPEED, speed_size, display_x_mid - (char_width[speed_size] * 1.5), 145));
-    addSensor(new SensorWidget(PID_RPM, 3, display_x_mid - (char_width[3] * 2), 95));
-    
-    Table t1(Display_, "Temperature", Table::RIGHT_BORDER | Table::BOTTOM_BORDER, 1, 3, 
-            left_border, left_divider_line, 
-            top_border, display_max_y / 2);
-    addSensor(new SensorWidget(PID_AMBIENT_AIR_TEMP, 2, label_x_offset, t1.cellY(0)));
-    addSensor(new SensorWidget(PID_COOLANT_TEMP, 2, label_x_offset, t1.cellY(1)));
-    addSensor(new SensorWidget(PID_INTAKE_AIR_TEMP, 2, label_x_offset, t1.cellY(2)));
+    addSensor(new SensorWidget(Display_, PID_SPEED, speed_size, display_x_mid - (char_width[speed_size] * 1.5), 145));
+    addSensor(new RpmDialWidget(Display_, PID_RPM, 3, display_x_mid - (char_width[3] * 2), 95, RPM_RADIUS));
 
-    Table t2(Display_, "Pressure", Table::TOP_BORDER | Table::RIGHT_BORDER, 1, 3, 
-            left_border, left_divider_line, 
-            display_max_y / 2, bottom_border);
-    addSensor(new SensorWidget(PID_FUEL_PRESSURE, 2, label_x_offset, t2.cellY(0)));
-    addSensor(new SensorWidget(PID_BAROMETRIC_PRESSURE, 2, label_x_offset, t2.cellY(1)));
-//    addSensor(new SensorWidget(PID_OIL, 2, label_x_offset, t2.cellY(2)));
+    Table t1(Display_, "Temperature", Table::RIGHT_BORDER | Table::BOTTOM_BORDER, 1, 3,
+             left_border, left_divider_line,
+             top_border, display_max_y / 2);
+    addSensor(new SensorWidget(Display_, PID_AMBIENT_AIR_TEMP, 2, label_x_offset, t1.cellY(0)));
+    addSensor(new SensorWidget(Display_, PID_COOLANT_TEMP, 2, label_x_offset, t1.cellY(1)));
+    addSensor(new SensorWidget(Display_, PID_INTAKE_AIR_TEMP, 2, label_x_offset, t1.cellY(2)));
 
-    Table t3(Display_, "Fuel", Table::LEFT_BORDER | Table::BOTTOM_BORDER, 1, 3, 
-            right_divider_line, right_border, 
-            top_border, display_max_y / 2);
-    addSensor(new SensorWidget(PID_FUEL_LEVEL, 2, right_divider_line + label_x_offset, t3.cellY(0))); // Tank
-    addSensor(new SensorWidget(PID_ENGINE_FUEL_RATE, 2, right_divider_line + label_x_offset, t3.cellY(1)));  // Economy
-//    addSensor(new SensorWidget(PID_RANGE, 2, right_divider_line + label_x_offset, t3.cellY(2)));     // Range
+    Table t2(Display_, "Pressure", Table::TOP_BORDER | Table::RIGHT_BORDER, 1, 3,
+             left_border, left_divider_line,
+             display_max_y / 2, bottom_border);
+    addSensor(new SensorWidget(Display_, PID_FUEL_PRESSURE, 2, label_x_offset, t2.cellY(0)));
+    addSensor(new SensorWidget(Display_, PID_BAROMETRIC_PRESSURE, 2, label_x_offset, t2.cellY(1)));
+    //    addSensor(new SensorWidget(PID_OIL, 2, label_x_offset, t2.cellY(2)));
+
+    Table t3(Display_, "Fuel", Table::LEFT_BORDER | Table::BOTTOM_BORDER, 1, 3,
+             right_divider_line, right_border,
+             top_border, display_max_y / 2);
+    addSensor(new SensorWidget(Display_, PID_FUEL_LEVEL, 2, right_divider_line + label_x_offset, t3.cellY(0))); // Tank
+    addSensor(new SensorWidget(Display_, PID_ENGINE_FUEL_RATE, 2, right_divider_line + label_x_offset, t3.cellY(1)));  // Economy
+    //    addSensor(new SensorWidget(PID_RANGE, 2, right_divider_line + label_x_offset, t3.cellY(2)));     // Range
+
+    //    printLabel("Distance", right_divider_line + left_divider_line / 2 - 40, display_y_mid + 3, PUMA_LABEL_COLOR);
+    //    printLabel("Odo", right_divider_line + label_x_offset, label1_y_offset + display_y_mid, PUMA_LABEL_COLOR);
+    //    printLabel("Trip", right_divider_line + label_x_offset, label2_y_offset + display_y_mid, PUMA_LABEL_COLOR);
+    //    printLabel("Last Service", right_divider_line + label_x_offset, label3_y_offset + display_y_mid, PUMA_LABEL_COLOR);
+
+
+    //    printLabel("Drivetrain", display_y_mid - 50, bottom_divider + 3, PUMA_LABEL_COLOR);
+    //    printLabel("Torque", left_divider_line + 15, bottom_divider + 15, PUMA_LABEL_COLOR);
+    //    printLabel("Power", left_divider_line + 15, bottom_divider + 50, PUMA_LABEL_COLOR);
+
+    //    printLabel("Lockers", right_divider_line - 120, bottom_divider + 15, PUMA_LABEL_COLOR);
+    //    printLabel("Front", right_divider_line - 120, bottom_divider + 50, PUMA_LABEL_COLOR);
+    //    printLabel("Center", right_divider_line - 120, bottom_divider + 85, PUMA_LABEL_COLOR);
+    //    printLabel("Rear", right_divider_line - 120, bottom_divider + 120, PUMA_LABEL_COLOR);
   }
 }
 
 byte Screen1::displayOrientation()
 {
   return LANDSCAPE;
-}
-
-/*
-  // TODO: probably need to re-use some of this
-void Screen1::redrawLabels()
-{
-  Display_->txt_FGcolour(PUMA_LABEL_COLOR);
-  Display_->gfx_LinePattern(0);
-
-  //  Display_->gfx_MoveTo(display_display_x_mid - 120, 3);
-  //  Display_->print("Speed");
-
-  Display_->gfx_MoveTo(display_x_mid, maxHeight() - 100);
-
-#define MAX_BUF 10
-  word x_pos[MAX_BUF];
-  word y_pos[MAX_BUF];
-  word i = 0;
-  for (word heading = 150; heading <= 390; heading += 40) {
-    Display_->gfx_Orbit(heading, rpm_radius, &x_pos[i], &y_pos[i]);
-    Display_->gfx_CircleFilled(x_pos[i], y_pos[i], 4, PUMA_LABEL_COLOR);
-    i++;
-  }
-
-  for (word heading = 170; heading < 390; heading += 40) {
-    word x_start, y_start, x_end, y_end;
-    Display_->gfx_Orbit(heading, rpm_radius, &x_start, &y_start);
-    Display_->gfx_Orbit(heading, rpm_radius + 10, &x_end, &y_end);
-    Display_->gfx_Line(x_start, y_start, x_end, y_end, PUMA_LABEL_COLOR);
-  }
-
-  for (word heading = 150; heading < 390; heading += 40) {
-    word x_start, y_start, x_end, y_end;
-    for (word offset = 10; offset < 40; offset += 20) {
-      Display_->gfx_Orbit(heading + offset, rpm_radius, &x_start, &y_start);
-      Display_->gfx_Orbit(heading + offset, rpm_radius + 5, &x_end, &y_end);
-      Display_->gfx_Line(x_start, y_start, x_end, y_end, PUMA_LABEL_COLOR);
-    }
-  }
-
-  printLabel("0", x_pos[0] - 23, y_pos[0] - 5, PUMA_LABEL_COLOR, 2);
-  printLabel("1", x_pos[1] - 20, y_pos[1] - 10, PUMA_LABEL_COLOR, 2);
-  printLabel("2", x_pos[2] - 25, y_pos[2] - 18, PUMA_LABEL_COLOR, 2);
-  printLabel("3", x_pos[3] - 6, y_pos[3] - 30, PUMA_LABEL_COLOR, 2);
-  printLabel("4", x_pos[4] + 10, y_pos[4] - 18, PUMA_LABEL_COLOR, 2);
-  printLabel("5", x_pos[5] + 10, y_pos[5] - 10, PUMA_LABEL_COLOR, 2);
-  printLabel("6", x_pos[6] + 9, y_pos[6] - 5, PUMA_LABEL_COLOR, 2);
-  // printLabel("rpm", display_x_mid + 50, 120, PUMA_LABEL_COLOR);
-  // printLabel("Km/h", display_x_mid + 60, 230, PUMA_LABEL_COLOR);
-
-//    Display_->gfx_Line(left_divider_line, 0, left_divider_line, maxHeight()-1, PUMA_LABEL_COLOR);
-//    Display_->gfx_Line(right_divider_line, 0, right_divider_line, maxHeight()-1, PUMA_LABEL_COLOR);
-//    Display_->gfx_Line(0, display_y_mid, left_divider_line, display_y_mid, PUMA_LABEL_COLOR);
-//    Display_->gfx_Line(right_divider_line, display_y_mid, maxWidth() - 1, display_y_mid, PUMA_LABEL_COLOR);
-//    Display_->gfx_Line(left_divider_line, bottom_divider, right_divider_line, bottom_divider, PUMA_LABEL_COLOR);
-//
-//    printLabel("Speed", display_x_mid - 30, 3, PUMA_LABEL_COLOR);
-//
-//    printLabel("Drivetrain", display_y_mid - 50, bottom_divider + 3, PUMA_LABEL_COLOR);
-//    printLabel("Torque", left_divider_line + 15, bottom_divider + 15, PUMA_LABEL_COLOR);
-//    printLabel("Power", left_divider_line + 15, bottom_divider + 50, PUMA_LABEL_COLOR);
-//    printLabel("Lockers", right_divider_line - 120, bottom_divider + 15, PUMA_LABEL_COLOR);
-//    printLabel("F:", right_divider_line - 120, bottom_divider + 50, PUMA_LABEL_COLOR);
-//    printLabel("C:", right_divider_line - 120, bottom_divider + 85, PUMA_LABEL_COLOR);
-//    printLabel("R:", right_divider_line - 120, bottom_divider + 120, PUMA_LABEL_COLOR);
-//
-//    printLabel("Distance", right_divider_line + left_divider_line / 2 - 40, display_y_mid + 3, PUMA_LABEL_COLOR);
-//    printLabel("Odo", right_divider_line + label_x_offset, label1_y_offset + display_y_mid, PUMA_LABEL_COLOR);
-//    printLabel("Trip", right_divider_line + label_x_offset, label2_y_offset + display_y_mid, PUMA_LABEL_COLOR);
-//    printLabel("Last Service", right_divider_line + label_x_offset, label3_y_offset + display_y_mid, PUMA_LABEL_COLOR);
-}
-*/
-
-void Screen1::updateRpm(word rpm)
-{
-  word color = PUMA_NORMAL_COLOR;
-  if (rpm >= 4000)
-    color = PUMA_ALARM_COLOR;
-  else if (rpm < 1200)
-    color = PUMA_WARNING_COLOR;
-
-  static word last_rpm = 0;
-  static word x_pos[3] = {0, 0, 0};
-  static word y_pos[3] = {0, 0, 0};
-
-  if (x_pos[0] != 0 && last_rpm != rpm)
-    Display_->gfx_TriangleFilled(x_pos[0], y_pos[0], x_pos[1], y_pos[1], x_pos[2], y_pos[2], BLACK);
-
-  word rpm_heading = 150 + round(rpm * 40.0 / 1000.0);
-  Display_->gfx_MoveTo(display_x_mid, maxHeight() - 100);
-  Display_->gfx_Orbit(rpm_heading, rpm_radius - 7, &x_pos[0], &y_pos[0]);
-  Display_->gfx_Orbit(rpm_heading - 4, rpm_radius - 30, &x_pos[1], &y_pos[1]);
-  Display_->gfx_Orbit(rpm_heading + 4, rpm_radius - 30, &x_pos[2], &y_pos[2]);
-  Display_->gfx_TriangleFilled(x_pos[0], y_pos[0], x_pos[1], y_pos[1], x_pos[2], y_pos[2], color);
-
-  printValue(String(rpm), display_x_mid - 58, 95, color, 3);
 }
 
 // ******************************************************************************************************

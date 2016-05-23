@@ -161,8 +161,9 @@
 #define MCP_RXB1CTRL    0x70
 #define MCP_RXB1SIDH    0x71
 
-#define MCP_TX_INT          0x1C                                    // Enable all transmit interrup ts
-#define MCP_TX01_INT        0x0C                                    // Enable TXB0 and TXB1 interru pts
+// Interrupt bits
+#define MCP_TX_INT          0x1C                                    // Enable all transmit interrupts
+#define MCP_TX01_INT        0x0C                                    // Enable TXB0 and TXB1 interrupts
 #define MCP_RX_INT          0x03                                    // Enable receive interrupts
 #define MCP_NO_INT          0x00                                    // Disable all interrupts
 
@@ -232,7 +233,7 @@
 /*
  *   CANINTF Register Bits
  */
-#define MCP_RX0IF       0x01
+#define MCP_RX0IF       0x01 // Is this the bit that is set when an interrupt occurs for RX0?
 #define MCP_RX1IF       0x02
 #define MCP_TX0IF       0x04
 #define MCP_TX1IF       0x08
