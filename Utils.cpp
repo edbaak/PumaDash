@@ -26,14 +26,13 @@ String g_logFileName = "";
 void uniqueLogFileName()
 {
   word num = 0;
-  word version = 1;
+  byte version = 1;
   // Try to read the last number used to create an incremental numbered filename "MYY_xxxx.DAT"
   File dataFile = SD.open("/OBD.CFG", FILE_READ);
   if (dataFile) {
     version = dataFile.read();
-    version = version * 256 + dataFile.read();
     num = dataFile.read();
-    num = num * 256 + dataFile.read();
+    num = (num * 256) + dataFile.read();
     dataFile.close();
   }
 
@@ -45,20 +44,28 @@ void uniqueLogFileName()
   // the number and save it for next round
   if (SD.exists(s)) {
     num++; // if reaching max it'll go down to zero again.
+    if (num > 9999) num = 0;
+    
     sprintf(s, "/%d_%04d.TXT", LOGFILE_PREFIX, num);
-    // If the next sequential file also exists, we may have looped through all 99999 files, and we start
+    // If the next sequential file also exists, we may have looped through all 9999 files, and we start
     // again at 0. In which case we need to delete the old file first.
     if (SD.exists(s)) {
       SD.remove(s);
     }
-
-    File dataFile = SD.open("/OBD.CFG", FILE_READ);
-    if (dataFile) {
-      dataFile.write(version);
-      dataFile.write(num);
-      dataFile.close();
-    }
+  } else {
+    Serial.println("File doesn't exist yet");
   }
+
+//  num = 0;
+//  sprintf(s, "/%d_%04d.TXT", LOGFILE_PREFIX, num);
+
+  dataFile = SD.open("/OBD.CFG", FILE_WRITE);
+  if (dataFile) {
+    dataFile.write(version);
+    dataFile.write(num);
+    dataFile.close();
+  }
+  
   g_logFileName = String(s);
 }
 
