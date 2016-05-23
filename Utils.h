@@ -26,12 +26,16 @@
 #include "WProgram.h" // for Arduino 23
 #endif
 
+#define LOGFILE_PREFIX 1605     // Prefix for SD card logging file names, i.e. 16050001.OBD
 #define DISPLAY_SPEED 115200   // The baudrate at which we're running the 4D display
-#define LOGFILE_PREFIX 165     // Prefix for SD card logging file names, i.e. 165_0001.txt
 //#define LOOPBACK_MODE        // CAN loopback mode. Messages transmitted are looped back to the CAN receiver, which helps with debugging.
 //#define VEHICLEDASH_DEBUG    // TODO: only used in Tpms and Position to simulate data
 //#define OBD_DEBUG            // Prints out raw OBD RX data to Serial
-#define OBD_LOGGING           // Saves OBD data in a file on SD card
+#define RAW_LOGGING           // Saves RAW OBD data in a file on SD card
+#define OBD_LOGGING           // Saves Processed OBD data in a file on SD card
+
+//#define RECORD_UNKNOWN_PIDS  // To discover new unknown PIDS, enable RECORD_UNKNOWN_PIDS. NOTE: This will only work if RX Masking/Filtering is switched off
+#define MAX_UNKNOWN_PIDS 50   // Max number of unhandled PID's that we keep track of
 
 #define PUMA_LABEL_SIZE 1             // Font size for labels and subLabels
 #define PUMA_SENSOR_DATA_SIZE 2       // Font size for 'normal' sensor data (RPM, Speed, TPMS and a few more are shown bigger)
@@ -41,7 +45,7 @@
 #define PUMA_NORMAL_COLOR LIGHTGREEN  // FG color for data that is in the normal/safe operating zone
 #define RPM_RADIUS 110                // Size of the Rpm dial
 
-// Internal PID's, i.e. not part of the OBD2 standard
+// Internally simulated PID's, i.e. not part of the OBD2 standard and unknown to the vehicle ECU
 #define PID_PITCH            0xFF01
 #define PID_ROLL             0xFF02
 #define PID_HEADING          0xFF03
@@ -73,8 +77,13 @@
 #define PIN_MEGA_SPI_CS 53 // Connect pin 53 to 10 to use with CAN BOARD
 
 // Helper functions that don't belong in a class and aren't that important.
+String v2s(char* format, int value);
+String v2s(char* format, byte value);
+String v2s(char* format, word value);
+
 void uniqueLogFileName();
 void initLogging();
-void logData(char *s);
+void logRawData(char *s);
+void logObdData(String s);
 
 #endif

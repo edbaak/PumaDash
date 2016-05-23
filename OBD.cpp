@@ -232,9 +232,9 @@ void PumaOBD::updateSensor(OBDData *sensor)
 
 void PumaOBD::readRxBuffers()
 {
-  while (m_CAN.available() && (m_rxFIFO_count < MAX_RX_FIFO)) { // One or more messages available?
-    // message will follow the CAN structure of ID, RTR, length, data. Allows both Extended & Standard
+  while (m_CAN.available() && (m_rxFIFO_count < MAX_RX_FIFO)) { // One or more messages available, and FIFO buffer not full?
     m_rxFIFO[m_rxFIFO_head] = m_CAN.read();
+    m_rxFIFO[m_rxFIFO_head].m_timeStamp = millis();
     m_rxFIFO_head++;
     m_rxFIFO_count++;
     if (m_rxFIFO_head >= MAX_RX_FIFO)
@@ -244,43 +244,40 @@ void PumaOBD::readRxBuffers()
 
 void PumaOBD::readMessages()
 {
-  // First we process messages in the RX buffer, so that we clear it and don't ask for updates that we just received
-  while (readMessage()) {}  // Read and process OBD messages
+  // Process messages in the RX FIFO buffer
+  while (readMessage()) {}
 }
 
 bool PumaOBD::readMessage()
 {
   if (m_rxFIFO_tail == m_rxFIFO_head)
     return false;
-    
+
   if (m_rxFIFO_count > 10) {
     // TODO: Add this as a warning on the display
-    Serial.print("WARNING: RX FIFO is getting full: ");
-    Serial.println(m_rxFIFO_count);
+    Serial.println("WARNING: RX FIFO is getting full: " + String(m_rxFIFO_count));
   }
-  
+
   if (m_rxFIFO[m_rxFIFO_tail].m_id == 0x7E8) {
     processMessage(m_rxFIFO[m_rxFIFO_tail]);
 
-#ifdef OBD_LOGGING
+#ifdef RAW_LOGGING
     char buf[150];
-    if (m_rxFIFO[m_rxFIFO_tail].m_data[0] == 3) {
-      sprintf(buf, "P %02X, M %02X, D %02X",
-              m_rxFIFO[m_rxFIFO_tail].m_data[2], m_rxFIFO[m_rxFIFO_tail].m_data[1],
-              m_rxFIFO[m_rxFIFO_tail].m_data[3]);
-    } else if (m_rxFIFO[m_rxFIFO_tail].m_data[0] == 4) {
-      sprintf(buf, "P %02X, M %02X, D %02X, %02X",
-              m_rxFIFO[m_rxFIFO_tail].m_data[2], m_rxFIFO[m_rxFIFO_tail].m_data[1],
-              m_rxFIFO[m_rxFIFO_tail].m_data[3], m_rxFIFO[m_rxFIFO_tail].m_data[4]);
-
-    } else {
-      sprintf(buf, "P %02X, L %02X, M %02X, D %02X, %02X, %02X, %02X, %02X",
-              m_rxFIFO[m_rxFIFO_tail].m_data[2], m_rxFIFO[m_rxFIFO_tail].m_data[0], m_rxFIFO[m_rxFIFO_tail].m_data[1],
-              m_rxFIFO[m_rxFIFO_tail].m_data[3], m_rxFIFO[m_rxFIFO_tail].m_data[4], m_rxFIFO[m_rxFIFO_tail].m_data[5],
-              m_rxFIFO[m_rxFIFO_tail].m_data[6], m_rxFIFO[m_rxFIFO_tail].m_data[7]);
-    }
-
-    logData(buf);
+    sprintf(buf, "%06d, %04x, %d, %d, %d, %02X, %02X, %02X, %02X, %02X, %02X, %02X, %02X",
+            m_rxFIFO[m_rxFIFO_tail].m_timeStamp,
+            m_rxFIFO[m_rxFIFO_tail].m_id,
+            m_rxFIFO[m_rxFIFO_tail].m_rtr,
+            m_rxFIFO[m_rxFIFO_tail].m_extended,
+            m_rxFIFO[m_rxFIFO_tail].m_length,
+            m_rxFIFO[m_rxFIFO_tail].m_data[0],
+            m_rxFIFO[m_rxFIFO_tail].m_data[1],
+            m_rxFIFO[m_rxFIFO_tail].m_data[2],
+            m_rxFIFO[m_rxFIFO_tail].m_data[3],
+            m_rxFIFO[m_rxFIFO_tail].m_data[4],
+            m_rxFIFO[m_rxFIFO_tail].m_data[5],
+            m_rxFIFO[m_rxFIFO_tail].m_data[6],
+            m_rxFIFO[m_rxFIFO_tail].m_data[7]);
+    logRawData(buf);
 #endif
 
 #ifdef OBD_DEBUG
@@ -313,9 +310,12 @@ bool PumaOBD::processMessage(CAN_Frame message)
 
     OBDData *object = dataObject(pid);
     if (object != &m_invalidPID) {
-      object->setValue(data);
-      // TODO: If need be I can postpone the updateSensor until later, in which case I need to create a FIFO buffer that I cache updated sensors in
+      object->setValue(message.m_timeStamp, data);
       m_display->updateSensor(object);
+
+#ifdef OBD_LOGGING
+      logObdData(v2s("%04X ", pid) + object->toString());
+#endif
       return true;
     }
   }
@@ -364,7 +364,7 @@ OBDData::OBDData()
 {
   m_pid = 0;
   m_updateInterval = 0;
-  m_lastUpdate = 0;
+  m_timeStamp = 0;
   m_updateRequested = 0;
   m_label = "";
   m_subLabel = "";
@@ -384,7 +384,7 @@ OBDData::OBDData(uint8_t pid, String label, String format, String subLabel, uint
   m_subLabel = subLabel;
   m_updateInterval = updateInterval;
   m_conversion = conversion;
-  m_lastUpdate = 0;
+  m_timeStamp = 0;
   m_updateRequested = 0;
   m_next = 0;
   m_value = 0;
@@ -412,23 +412,12 @@ bool OBDData::needsUpdate()
     return false;
   }
 
-  if (m_lastUpdate + m_updateInterval < cur_time) {
-    updateRequested();
+  if (m_timeStamp + m_updateInterval < cur_time) {
+    m_updateRequested = millis();
     return true;
   }
 
   return false;
-}
-
-void OBDData::updateRequested()
-{
-  m_updateRequested = millis();
-}
-
-void OBDData::resetUpdateTimer()
-{
-  m_updateRequested = 0;
-  m_lastUpdate = millis();
 }
 
 String OBDData::label()
@@ -481,9 +470,10 @@ String OBDData::toString()
   return buf;
 }
 
-void OBDData::setValue(uint8_t *data)
+void OBDData::setValue(uint32_t timeStamp, uint8_t *data)
 {
-  resetUpdateTimer();
+  m_updateRequested = 0;
+  m_timeStamp = timeStamp;
   m_value = *data;
 
   if (m_conversion == WORD_NO_CONVERSION ||

@@ -249,11 +249,6 @@ class PumaDisplay;
 
 // The following 0x PID's are emitted by the Puma ECU and are ignored by OBD
 // 16E, 193, 34B, 4C0, E1, 9A, 226, 394, DF, DD, 2B8, 2DD, 1B8, 400, 405, DC, E0, 5C0, 326
-// To discover new unknown PIDS, enable RECORD_UNKNOWN_PIDS
-//#define RECORD_UNKNOWN_PIDS
-#ifdef RECORD_UNKNOWN_PIDS
-#define MAX_UNKNOWN_PIDS 50 // Max number of PID's that are communicated on the bus and that we can't process
-#endif
 
 #define MAX_RX_FIFO 12
 
@@ -275,9 +270,7 @@ class OBDData
     OBDData(uint8_t pid, String label, String format, String subLabel, uint16_t updateInterval, OBD_DATA_CONVERSION conversion, long min, long max, long step);
     virtual ~OBDData();
 
-    void resetUpdateTimer();
     bool needsUpdate();
-    void updateRequested();
 
     uint8_t pid();
     String label();
@@ -288,7 +281,7 @@ class OBDData
     virtual OBD_DATA_CONVERSION dataConversion() {
       return m_conversion;
     }
-    virtual void setValue(uint8_t *data);
+    virtual void setValue(uint32_t timeStamp, uint8_t *data);
 #ifdef LOOPBACK_MODE
     virtual void simulateData(CAN_Frame *message);
 #endif
@@ -296,8 +289,8 @@ class OBDData
   protected:
     friend class PumaOBD;
     OBDData *m_next;
-    unsigned long m_lastUpdate;
-    unsigned long m_updateRequested;
+    uint32_t m_timeStamp;
+    uint32_t m_updateRequested;
     uint16_t m_updateInterval;
     uint8_t m_pid;
     String m_label;

@@ -271,6 +271,7 @@ class CAN_Frame
     void init(uint32_t id, uint8_t len, uint8_t *buf);
     void clear();
 
+    uint32_t m_timeStamp;     // set to millis() at the time of receiving the data
     uint32_t m_id;            // if (extended == CAN_RECESSIVE) { extended ID } else { standard ID }
     uint8_t m_rtr;            // Remote Transmission Request Bit (RTR)
     uint8_t m_extended;       // Identifier Extension Bit (IDE)
