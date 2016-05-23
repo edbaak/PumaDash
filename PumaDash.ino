@@ -47,14 +47,19 @@ void setup() {
   initLogging();
   g_obd.setup(&g_display);
   g_display.setup(&g_position, &g_tpms, &g_speed, &g_obd);
+  attachInterrupt(digitalPinToInterrupt(PIN_MP2515_RX_INTERRUPT), canRxHandler, FALLING);
 }
 
 void loop() {
   g_tpms.update();
   g_position.update();
-  g_obd.readRxBuffers();
   g_obd.requestObdUpdates();
+  g_obd.readMessages();
   g_speed.update();
-  g_display.update();
+  g_display.init();
 }
 
+// Interrupt handler for fetching messages from MCP2515 RX buffer
+void canRxHandler() {
+  g_obd.readRxBuffers();
+}

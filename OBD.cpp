@@ -39,18 +39,22 @@ PumaOBD::PumaOBD()
   m_current = 0;
   m_display = 0;
 
-  addDataObject(new OBDData(PID_RPM, "", "%4d", "Rpm", 50, WORD_DIV4, 0, 6000, 300));
-  addDataObject(new OBDData(PID_SPEED, "", "%3d", "Km/h", 250, BYTE_NO_CONVERSION, 0, 115, 3));
+  m_rxFIFO_head = 0;
+  m_rxFIFO_tail = 0;
+  m_rxFIFO_count = 0;
+
+  addDataObject(new OBDData(PID_RPM, "", "%4d", "Rpm", 100, WORD_DIV4, 0, 6000, 300));
+  addDataObject(new OBDData(PID_SPEED, "", "%3d", "Km/h", 100, BYTE_NO_CONVERSION, 0, 115, 3));
 
   addDataObject(new OBDData(PID_COOLANT_TEMP, "Coolant", "%3d", "C", 3000, INT_MINUS40, -25, 130, 4));
-  addDataObject(new OBDData(PID_INTAKE_AIR_TEMP, "Intake Air", "%3d", "C", 10000, INT_MINUS40, 10, 50, 5));
-  addDataObject(new OBDData(PID_AMBIENT_AIR_TEMP, "Ambient Air", "%3d", "C", 10000, INT_MINUS40, 10, 50, 5));
+  addDataObject(new OBDData(PID_INTAKE_AIR_TEMP, "Intake Air", "%3d", "C", 5000, INT_MINUS40, 10, 50, 5));
+  addDataObject(new OBDData(PID_AMBIENT_AIR_TEMP, "Ambient Air", "%3d", "C", 5000, INT_MINUS40, 10, 50, 5));
   //  addDataObject(new OBDData(PID_ENGINE_OIL_TEMP, "Engine Oil", "%3d", "C", 2000, INT_MINUS40, 0, 150, 4));
 
-  addDataObject(new OBDData(PID_BAROMETRIC_PRESSURE, "Air", "%4d", "mBar", 10000, BYTE_TIMES10, 950, 1150, 10));
+  addDataObject(new OBDData(PID_BAROMETRIC_PRESSURE, "Air", "%4d", "mBar", 5000, BYTE_TIMES10, 950, 1150, 10));
   addDataObject(new OBDData(PID_FUEL_PRESSURE, "Fuel rail", "%4d", "kPa", 5000, BYTE_TIMES3, 0, 765, 30));
 
-  addDataObject(new OBDData(PID_FUEL_LEVEL, "Tank Level", "%3d", "%", 3000, BYTE_PERCENTAGE, 0, 100, 2)); 
+  addDataObject(new OBDData(PID_FUEL_LEVEL, "Tank Level", "%3d", "%", 3000, BYTE_PERCENTAGE, 0, 100, 2));
   addDataObject(new OBDData(PID_ENGINE_FUEL_RATE, "Fuel Rate", "%3.1f", "L/hr", 3000, WORD_DIV20, 0, 30, 1)); // L/h
 
   //  addDataObject(new OBDFloatValue(PID_CONTROL_MODULE_VOLTAGE, "Battery Voltage", 5000, WORD_DIV1000 // V
@@ -136,8 +140,9 @@ OBDData *PumaOBD::iterateDataObject(bool needsUpdate)
   if (tmp) {
     tmp = tmp->m_next;
     while (tmp && tmp != m_current) {
-      if (!needsUpdate || tmp->needsUpdate())
+      if (!needsUpdate || tmp->needsUpdate()) {
         return tmp;
+      }
       tmp = tmp->m_next;
     }
   }
@@ -146,8 +151,9 @@ OBDData *PumaOBD::iterateDataObject(bool needsUpdate)
   if (m_current != m_first) {
     tmp = m_first;
     while (tmp && tmp != m_current) {
-      if (!needsUpdate || tmp->needsUpdate())
+      if (!needsUpdate || tmp->needsUpdate()) {
         return tmp;
+      }
       tmp = tmp->m_next;
     }
   }
@@ -175,6 +181,7 @@ void PumaOBD::setup(PumaDisplay *display)
   pinMode(PIN_MEGA_SPI_MOSI, OUTPUT);
   pinMode(PIN_MEGA_SPI_SCK, OUTPUT);
   pinMode(PIN_MEGA_SPI_CS, OUTPUT);
+  pinMode(PIN_MP2515_RX_INTERRUPT, INPUT);
 
   m_CAN.begin(PIN_MEGA_SPI_CS, PumaCAN::MCP_STD, PumaCAN::CAN_500KBPS, PumaCAN::MCP_16MHZ);
   m_CAN.setMode(LOOPBACK_OR_NORMAL);
@@ -182,14 +189,6 @@ void PumaOBD::setup(PumaDisplay *display)
   m_CAN.setMask(PumaCAN::MASK1, false, 0x07FF0000);
   m_CAN.setFilter(PumaCAN::FILT0, false, 0x07E80000);
   m_CAN.setFilter(PumaCAN::FILT2, false, 0x07E80000);
-}
-
-void PumaOBD::readRxBuffers()
-{
-  // First we process messages in the RX buffer, so that we clear it and don't ask for updates that we just received
-  byte i = 0; // add a safety net against infinite loop
-  while (readMessage() && i++ < 4) {
-  }  // Read and process OBD messages
 }
 
 void PumaOBD::requestObdUpdates()
@@ -210,7 +209,7 @@ void PumaOBD::updateSensor(OBDData *sensor)
   if (sensor) {
     CAN_Frame message;
     message.m_length = 8;     // eight data bytes follow
-    
+
 #ifdef LOOPBACK_MODE
     // Simulate a sensor value and push it onto the OBD bus
     message.m_id = PID_REPLY;
@@ -231,46 +230,76 @@ void PumaOBD::updateSensor(OBDData *sensor)
   }
 }
 
+void PumaOBD::readRxBuffers()
+{
+  while (m_CAN.available() && (m_rxFIFO_count < MAX_RX_FIFO)) { // One or more messages available?
+    // message will follow the CAN structure of ID, RTR, length, data. Allows both Extended & Standard
+    m_rxFIFO[m_rxFIFO_head] = m_CAN.read();
+    m_rxFIFO_head++;
+    m_rxFIFO_count++;
+    if (m_rxFIFO_head >= MAX_RX_FIFO)
+      m_rxFIFO_head = 0;
+  }
+}
+
+void PumaOBD::readMessages()
+{
+  // First we process messages in the RX buffer, so that we clear it and don't ask for updates that we just received
+  while (readMessage()) {}  // Read and process OBD messages
+}
+
 bool PumaOBD::readMessage()
 {
-  if (m_CAN.available()) { // One or more messages available?
-    // message will follow the CAN structure of ID, RTR, length, data. Allows both Extended & Standard
-    CAN_Frame message = m_CAN.read();
-
-    if (message.m_id == 0x7E8) {
-      processMessage(message);
-
-      char buf[150];
-      if (message.m_data[0] == 3) {
-        sprintf(buf, "P %02X, M %02X, D %02X",
-                message.m_data[2], message.m_data[1],
-                message.m_data[3]);
-      } else if (message.m_data[0] == 4) {
-        sprintf(buf, "P %02X, M %02X, D %02X, %02X",
-                message.m_data[2], message.m_data[1],
-                message.m_data[3], message.m_data[4]);
-
-      } else {
-        sprintf(buf, "P %02X, L %02X, M %02X, D %02X, %02X, %02X, %02X, %02X",
-                message.m_data[2], message.m_data[0], message.m_data[1],
-                message.m_data[3], message.m_data[4], message.m_data[5],
-                message.m_data[6], message.m_data[7]);
-      }
-
-      logData(buf);
-#ifdef OBD_DEBUG
-      Serial.print(message.m_id, HEX);
-      Serial.print(", ");
-      Serial.println(buf);
-#endif
-    } else {
-#ifdef RECORD_UNKNOWN_PIDS
-      addUnhandledPID(message.m_id);
-#endif
-    }
-    return true;
+  if (m_rxFIFO_tail == m_rxFIFO_head)
+    return false;
+    
+  if (m_rxFIFO_count > 10) {
+    // TODO: Add this as a warning on the display
+    Serial.print("WARNING: RX FIFO is getting full: ");
+    Serial.println(m_rxFIFO_count);
   }
-  return false;
+  
+  if (m_rxFIFO[m_rxFIFO_tail].m_id == 0x7E8) {
+    processMessage(m_rxFIFO[m_rxFIFO_tail]);
+
+#ifdef OBD_LOGGING
+    char buf[150];
+    if (m_rxFIFO[m_rxFIFO_tail].m_data[0] == 3) {
+      sprintf(buf, "P %02X, M %02X, D %02X",
+              m_rxFIFO[m_rxFIFO_tail].m_data[2], m_rxFIFO[m_rxFIFO_tail].m_data[1],
+              m_rxFIFO[m_rxFIFO_tail].m_data[3]);
+    } else if (m_rxFIFO[m_rxFIFO_tail].m_data[0] == 4) {
+      sprintf(buf, "P %02X, M %02X, D %02X, %02X",
+              m_rxFIFO[m_rxFIFO_tail].m_data[2], m_rxFIFO[m_rxFIFO_tail].m_data[1],
+              m_rxFIFO[m_rxFIFO_tail].m_data[3], m_rxFIFO[m_rxFIFO_tail].m_data[4]);
+
+    } else {
+      sprintf(buf, "P %02X, L %02X, M %02X, D %02X, %02X, %02X, %02X, %02X",
+              m_rxFIFO[m_rxFIFO_tail].m_data[2], m_rxFIFO[m_rxFIFO_tail].m_data[0], m_rxFIFO[m_rxFIFO_tail].m_data[1],
+              m_rxFIFO[m_rxFIFO_tail].m_data[3], m_rxFIFO[m_rxFIFO_tail].m_data[4], m_rxFIFO[m_rxFIFO_tail].m_data[5],
+              m_rxFIFO[m_rxFIFO_tail].m_data[6], m_rxFIFO[m_rxFIFO_tail].m_data[7]);
+    }
+
+    logData(buf);
+#endif
+
+#ifdef OBD_DEBUG
+    Serial.print(m_rxFIFO[m_rxFIFO_tail].m_id, HEX);
+    Serial.print(", ");
+    Serial.println(buf);
+#endif
+
+  } else {
+#ifdef RECORD_UNKNOWN_PIDS
+    addUnhandledPID(m_rxFIFO[m_rxFIFO_tail].m_id);
+#endif
+  }
+
+  if (m_rxFIFO_count > 0) m_rxFIFO_count--;
+  m_rxFIFO_tail++;
+  if (m_rxFIFO_tail >= MAX_RX_FIFO) m_rxFIFO_tail = 0;
+
+  return true;
 }
 
 bool PumaOBD::processMessage(CAN_Frame message)
@@ -379,8 +408,9 @@ bool OBDData::needsUpdate()
 {
   unsigned long cur_time = millis();
 
-  if (m_updateRequested + m_updateInterval > cur_time)
+  if (m_updateRequested + m_updateInterval > cur_time) {
     return false;
+  }
 
   if (m_lastUpdate + m_updateInterval < cur_time) {
     updateRequested();
@@ -459,11 +489,11 @@ void OBDData::setValue(uint8_t *data)
   if (m_conversion == WORD_NO_CONVERSION ||
       m_conversion == WORD_DIV4 ||
       m_conversion == WORD_DIV20) {
-        m_value *= 256;
-        data++;
-        m_value += data && 0x00FF; 
-      }
-    
+    m_value *= 256;
+    data++;
+    m_value += data && 0x00FF;
+  }
+
   switch (m_conversion) {
     case INT_MINUS40:
       m_value -= 40;
@@ -485,7 +515,7 @@ void OBDData::setValue(uint8_t *data)
       m_value /= 4;
       break;
     case WORD_DIV20:
-//      m_value /= 20;
+      //      m_value /= 20;
       break;
   }
 }
@@ -517,8 +547,8 @@ void OBDData::simulateData(CAN_Frame *message)
       break;
     case BYTE_PERCENTAGE:
       message->m_data[0] = 3;
-      message->m_data[3] = uint8_t(m_simValue *255 / 100);
-      break;      
+      message->m_data[3] = uint8_t(m_simValue * 255 / 100);
+      break;
     case BYTE_NO_CONVERSION:
       message->m_data[0] = 3;
       message->m_data[3] = uint8_t(m_simValue);

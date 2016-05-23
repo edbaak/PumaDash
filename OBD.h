@@ -255,6 +255,8 @@ class PumaDisplay;
 #define MAX_UNKNOWN_PIDS 50 // Max number of PID's that are communicated on the bus and that we can't process
 #endif
 
+#define MAX_RX_FIFO 12
+
 typedef enum OBD_DATA_CONVERSION {
   BYTE_NO_CONVERSION,
   BYTE_PERCENTAGE,
@@ -320,8 +322,10 @@ class PumaOBD
   public:
     PumaOBD();
     void setup(PumaDisplay *display);
-    void readRxBuffers();
+    void readMessages();
     void requestObdUpdates();
+
+    void readRxBuffers(); // Interupt driven
 
     void addDataObject(OBDData *obj);
     OBDData *dataObject(uint8_t PID);
@@ -341,7 +345,11 @@ class PumaOBD
   private:
     PumaCAN m_CAN;
     PumaDisplay *m_display;
-
+    CAN_Frame m_rxFIFO[MAX_RX_FIFO];
+    byte m_rxFIFO_head;
+    byte m_rxFIFO_tail;
+    byte m_rxFIFO_count;
+    
   private:
 #ifdef RECORD_UNKNOWN_PIDS
     void addUnhandledPID(uint16_t pid);
