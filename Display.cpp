@@ -74,7 +74,7 @@ BaseScreen *PumaDisplay::activeScreen()
   }
 }
 
-void PumaDisplay::update()
+void PumaDisplay::init()
 {
   if (!g_init_display && m_screen0.touchPressed()) {
     g_active_screen++;
@@ -87,9 +87,6 @@ void PumaDisplay::update()
     g_init_display = false;
     activeScreen()->init();
   }
-
-  // TODO: activescreen update should be removed completely, and instead replace with update events driven by refreshed obd data
-  activeScreen()->update();
 }
 
 void PumaDisplay::updateSensor(OBDData *sensor)
@@ -282,10 +279,6 @@ byte Screen0::displayOrientation()
   return PORTRAIT;
 }
 
-void Screen0::update()
-{
-}
-
 // ******************************************************************************************************
 //                                              CENTER DISPLAY
 // ******************************************************************************************************
@@ -301,7 +294,7 @@ void Screen1::init()
   left_divider_line = 135;
   right_divider_line = maxWidth() - left_divider_line;
   bottom_divider = maxHeight() - 130;
-  label_x_offset = 13;
+  word label_x_offset = 13;
 
   // Only create and add sensor objects the first time we call init.
   if (m_first == 0) {
@@ -360,73 +353,23 @@ Screen2::Screen2() : BaseScreen()
 {
 }
 
+void Screen2::init()
+{
+  BaseScreen::init();
+
+  // Only create and add sensor objects the first time we call init.
+  if (m_first == 0) {
+    printLabel("Speed Control", 80, 30, PUMA_LABEL_COLOR);
+    addSensor(new SensorWidget(Display_, PID_CC_SPEED, 4, mid_separator_line, 50));        // Km/h
+    addSensor(new SensorWidget(Display_, PID_CC_MODE, 2, left_border, 100));         // Mode: OFF, ARMED, ON
+    addSensor(new SensorWidget(Display_, PID_CC_ACCELERATOR, 2, left_border + 150, 100));  // Throttle: 50%
+    addSensor(new ListWidget(Display_, "On-Board Diagnostics", PID_DTC, 3, left_border, 120, display_max_x, display_max_y));
+  }
+}
+
 byte Screen2::displayOrientation()
 {
   return PORTRAIT;
 }
 
-void Screen2::update()
-{
-  updateCruiseControl();
-  updateOBD2Status();
-}
-
-void Screen2::redrawLabels()
-{
-  Display_->txt_FGcolour(PUMA_LABEL_COLOR);
-
-  Display_->gfx_MoveTo(80, 3);
-  Display_->print("Cruise Control");
-  Display_->gfx_MoveTo(180, 70);
-  Display_->print("Km/h");
-  Display_->gfx_MoveTo(20, 100);
-  Display_->print("Mode");
-  Display_->gfx_MoveTo(170, 100);
-  Display_->print("Throttle");
-
-  Display_->gfx_LinePattern(0);
-  Display_->gfx_Line(left_border, top_separator_line, right_border, top_separator_line, PUMA_LABEL_COLOR);
-  Display_->gfx_MoveTo(60, top_separator_line + 3);
-  Display_->print("On-Board Diagnostics");
-}
-
-void Screen2::updateCruiseControl()
-{
-  static unsigned int last_update = 0;
-  unsigned int tmp = millis();
-
-  // Only update the static display items once every second
-  if (tmp - last_update > 1000) {
-    last_update = tmp;
-    Display_->txt_FGcolour(PUMA_NORMAL_COLOR);
-    Display_->gfx_MoveTo(80, 40);
-    Display_->txt_Width(4);
-    Display_->txt_Height(4);
-    Display_->print("100");
-
-    Display_->txt_Width(2);
-    Display_->txt_Height(2);
-    Display_->gfx_MoveTo(25, 115);
-    Display_->print("ON");
-
-    Display_->gfx_MoveTo(175, 115);
-    Display_->print("50%");
-  }
-}
-
-void Screen2::updateOBD2Status()
-{
-  static unsigned int last_update = 0;
-  unsigned int tmp = millis();
-
-  // Only update the static display items once every second
-  if (tmp - last_update > 1000) {
-    last_update = tmp;
-    Display_->txt_FGcolour(PUMA_WARNING_COLOR);
-    Display_->gfx_MoveTo(10, top_separator_line + 20);
-    Display_->txt_Width(PUMA_LABEL_SIZE);
-    Display_->txt_Height(PUMA_LABEL_SIZE);
-    Display_->print("F1B3 Fuel Injector 1 Dirty");
-  }
-}
 

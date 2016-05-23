@@ -90,13 +90,6 @@ public:
   Screen0();
   virtual byte displayOrientation();
   virtual void init();
-  void update();
-  
-protected:  
-  void updatePitch(byte x, byte y, byte interleave, int angle);
-  void updateRoll(byte x, byte y, byte interleave, int angle);
-  void updateCompass(word heading);
-  void updateTPMSvalue(byte tireLocation);
 };
 
 class Screen1 : public BaseScreen
@@ -105,25 +98,14 @@ public:
   Screen1();
   virtual byte displayOrientation();
   virtual void init();
-
-protected:
-  void updateRpm(word rpm);
-      
-private:
-  word label_x_offset;
 };
 
 class Screen2 : public BaseScreen
 {
 public:
   Screen2();
-  void redrawLabels(); 
   virtual byte displayOrientation();
-  void update();
-  
-protected:  
-  void updateCruiseControl();
-  void updateOBD2Status();
+  virtual void init();
 };
 
 class PumaDisplay : public Diablo_Serial_4DLib
@@ -131,8 +113,9 @@ class PumaDisplay : public Diablo_Serial_4DLib
   public:
     PumaDisplay(Stream * virtualPort);
     void setup(Direction *pos, Tpms *tpms, CruiseCtrl *speed, PumaOBD *obd);
-    void update();
+    void init();
     void reset();
+    
     BaseScreen *activeScreen();
     void updateSensor(OBDData *sensor);
     
