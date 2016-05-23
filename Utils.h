@@ -31,6 +31,7 @@
 //#define LOOPBACK_MODE        // CAN loopback mode. Messages transmitted are looped back to the CAN receiver, which helps with debugging.
 //#define VEHICLEDASH_DEBUG    // TODO: only used in Tpms and Position to simulate data
 //#define OBD_DEBUG            // Prints out raw OBD RX data to Serial
+#define OBD_LOGGING           // Saves OBD data in a file on SD card
 
 #define PUMA_LABEL_SIZE 1             // Font size for labels and subLabels
 #define PUMA_SENSOR_DATA_SIZE 2       // Font size for 'normal' sensor data (RPM, Speed, TPMS and a few more are shown bigger)
@@ -50,8 +51,13 @@
 #define PID_TPMS_RR          0xFF07
 #define PID_TPMS_TL          0xFF08
 #define PID_TPMS_TR          0xFF09
+#define PID_CC_SPEED         0xFF0A
+#define PID_CC_MODE          0xFF0B
+#define PID_CC_ACCELERATOR   0xFF0C
+#define PID_DTC              0xFF0D
 
 // Mega board PIN definitions
+#define PIN_MP2515_RX_INTERRUPT 2
 #define PIN_DISPLAY_RESET 4
 #define PIN_CAN_BOARD_LED1 7
 #define PIN_CAN_BOARD_LED2 8
