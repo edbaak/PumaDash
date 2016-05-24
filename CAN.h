@@ -42,8 +42,6 @@
 #ifndef _MCP2515_H_
 #define _MCP2515_H_
 
-// Constants
-
 #include "Utils.h"
 #include <Arduino.h>
 #include <SPI.h>
@@ -56,8 +54,6 @@
 #ifndef uint8_t
 #define uint8_t byte
 #endif
-
-//#define CAN_DEBUG 1                                                   /* print debug information */
 
 /*
  *   Begin mt
@@ -399,4 +395,7 @@ class PumaCAN
 };
 
 #endif
+
+
+
 
