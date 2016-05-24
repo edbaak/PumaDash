@@ -43,14 +43,25 @@ PumaOBD g_obd;                            // On Board Diagnostics for the Vehicl
 PumaDisplay g_display(&DISPLAY_SERIAL1);  // Basic display driver
 
 void setup() {
+  pinMode(PIN_CAN_BOARD_LED1, OUTPUT);
+  pinMode(PIN_CAN_BOARD_LED2, OUTPUT);
+  
   Serial.begin(DISPLAY_SPEED);
+  
   initLogging();
   g_obd.setup(&g_display);
   g_display.setup(&g_position, &g_tpms, &g_speed, &g_obd);
   attachInterrupt(digitalPinToInterrupt(PIN_MP2515_RX_INTERRUPT), canRxHandler, FALLING);
 }
 
+bool show_led1 = true;
 void loop() {
+  // Use LED1 to indicate that the main loop is running.
+  // The Led will appear to be more 'on' than 'off' but definitely needs to be flashing. Intensity will be much brighter than LED2 below.
+  // A flashing led is 'good'. It means we are not stuck in a dead-lock somewhere.
+  digitalWrite(PIN_CAN_BOARD_LED1, show_led1);
+  show_led1 = !show_led1;
+  
   g_display.processTouchEvents();
   g_tpms.update();
   g_position.update();
@@ -61,5 +72,10 @@ void loop() {
 
 // Interrupt handler for fetching messages from MCP2515 RX buffer
 void canRxHandler() {
+  // Use LED2 to indicate Interrupt activity.
+  // The Led should be on for only a very short period, so visually this will be a fast flashing led with a low light intensity. 
+  // A flashing led is 'good' it means we have incoming data, and are not stuck in a dead-lock somewhere.
+  digitalWrite(PIN_CAN_BOARD_LED2, HIGH);
   g_obd.readRxBuffers();
+  digitalWrite(PIN_CAN_BOARD_LED2, LOW);
 }
