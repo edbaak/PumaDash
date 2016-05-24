@@ -32,9 +32,9 @@
 //#define VEHICLEDASH_DEBUG    // TODO: only used in Tpms and Position to simulate data
 //#define OBD_DEBUG            // Prints out raw OBD RX data to Serial
 #define RAW_LOGGING           // Saves RAW OBD data in a file on SD card
-#define OBD_LOGGING           // Saves Processed OBD data in a file on SD card
+//#define OBD_LOGGING           // Saves Processed OBD data in a file on SD card
 
-//#define RECORD_UNKNOWN_PIDS  // To discover new unknown PIDS, enable RECORD_UNKNOWN_PIDS. NOTE: This will only work if RX Masking/Filtering is switched off
+#define PID_DISCOVERY_MODE    // To discover new unknown PIDS, enable RECORD_UNKNOWN_PIDS. NOTE: This will only work if RX Masking/Filtering is switched off
 #define MAX_UNKNOWN_PIDS 50   // Max number of unhandled PID's that we keep track of
 
 #define PUMA_LABEL_SIZE 1             // Font size for labels and subLabels

@@ -43,6 +43,13 @@ PumaOBD::PumaOBD()
   m_rxFIFO_tail = 0;
   m_rxFIFO_count = 0;
 
+#ifdef PID_DISCOVERY_MODE
+  addDataObject(new OBDData(PID_SUPPORTED_PID_01_20, "", "", "", 0, ULONG_NO_CONVERSION, 0, 0, 0));
+  addDataObject(new OBDData(PID_SUPPORTED_PID_21_40, "", "", "", 0, ULONG_NO_CONVERSION, 0, 0, 0));
+  addDataObject(new OBDData(PID_SUPPORTED_PID_41_60, "", "", "", 0, ULONG_NO_CONVERSION, 0, 0, 0));
+  addDataObject(new OBDData(PID_SUPPORTED_PID_61_80, "", "", "", 0, ULONG_NO_CONVERSION, 0, 0, 0));
+  addDataObject(new OBDData(PID_SUPPORTED_PID_81_A0, "", "", "", 0, ULONG_NO_CONVERSION, 0, 0, 0));
+#else
   addDataObject(new OBDData(PID_RPM, "", "%4d", "Rpm", 100, WORD_DIV4, 0, 6000, 300));
   addDataObject(new OBDData(PID_SPEED, "", "%3d", "Km/h", 100, BYTE_NO_CONVERSION, 0, 115, 3));
 
@@ -95,8 +102,9 @@ PumaOBD::PumaOBD()
   //  addDataObject(new OBDData(PID_CATALYST_TEMP_B1S2, LONG_DIV10_MINUS40
   //  addDataObject(new OBDData(PID_CATALYST_TEMP_B2S2, LONG_DIV10_MINUS40
   //  addDataObject(new OBDData(PID_AIR_FUEL_EQUIV_RATIO, LONG_TIMES200_DIV65536: // 0~200
+#endif
 
-#ifdef RECORD_UNKNOWN_PIDS
+#ifdef PID_DISCOVERY_MODE
   for (word i = 0; i < MAX_UNKNOWN_PIDS; i++)
     m_unknownPIDS[i] = 0;
 #endif
@@ -183,8 +191,14 @@ void PumaOBD::setup(PumaDisplay *display)
   pinMode(PIN_MEGA_SPI_CS, OUTPUT);
   pinMode(PIN_MP2515_RX_INTERRUPT, INPUT);
 
+#ifdef PID_DISCOVERY_MODE
+  Serial.println("WARNING: Running in PID Discovery mode! Normal reception of OBD data disabled.");
+#endif
+
   m_CAN.begin(PIN_MEGA_SPI_CS, PumaCAN::MCP_STD, PumaCAN::CAN_500KBPS, PumaCAN::MCP_16MHZ);
   m_CAN.setMode(LOOPBACK_OR_NORMAL);
+
+  // TODO: Add to PID_DISCOVERY_MODE?
   m_CAN.setMask(PumaCAN::MASK0, false, 0x07FF0000);
   m_CAN.setMask(PumaCAN::MASK1, false, 0x07FF0000);
   m_CAN.setFilter(PumaCAN::FILT0, false, 0x07E80000);
@@ -287,7 +301,7 @@ bool PumaOBD::readMessage()
 #endif
 
   } else {
-#ifdef RECORD_UNKNOWN_PIDS
+#ifdef PID_DISCOVERY_MODE
     addUnhandledPID(m_rxFIFO[m_rxFIFO_tail].m_id);
 #endif
   }
@@ -309,13 +323,24 @@ bool PumaOBD::processMessage(CAN_Frame message)
     data = &message.m_data[3];
 
     OBDData *object = dataObject(pid);
-    if (object != &m_invalidPID) {
+    if (object)
       object->setValue(message.m_timeStamp, data);
-      m_display->updateSensor(object);
 
-#ifdef OBD_LOGGING
-      logObdData(v2s("%04X ", pid) + object->toString());
+    if (object != &m_invalidPID) {
+#ifndef PID_DISCOVERY_MODE
+      m_display->updateSensor(object);
 #endif
+
+      bool log_data = false;
+#ifdef OBD_LOGGING
+      log_data = true;
+#endif
+#ifdef PID_DISCOVERY_MODE
+      log_data = true;
+#endif
+      if (log_data) {
+        logObdData(v2s("%04X ", pid) + object->toString());
+      }
       return true;
     }
   }
@@ -323,7 +348,7 @@ bool PumaOBD::processMessage(CAN_Frame message)
   return false;
 }
 
-#ifdef RECORD_UNKNOWN_PIDS
+#ifdef PID_DISCOVERY_MODE
 void PumaOBD::addUnhandledPID(uint16_t pid)
 {
   for (word i = 0; i < MAX_UNKNOWN_PIDS; i++) {
@@ -341,7 +366,7 @@ void PumaOBD::addUnhandledPID(uint16_t pid)
 }
 #endif
 
-#ifdef RECORD_UNKNOWN_PIDS
+#ifdef PID_DISCOVERY_MODE
 void PumaOBD::printUnhandledPIDS()
 {
   Serial.print("UNHANDLED PIDS: ");
@@ -406,17 +431,18 @@ uint8_t OBDData::pid()
 
 bool OBDData::needsUpdate()
 {
-  unsigned long cur_time = millis();
+  if (m_updateInterval > 0 || m_timeStamp == 0) {
+    unsigned long cur_time = millis();
 
-  if (m_updateRequested + m_updateInterval > cur_time) {
-    return false;
+    if (m_updateRequested + m_updateInterval > cur_time) {
+      return false;
+    }
+
+    if (m_timeStamp + m_updateInterval < cur_time) {
+      m_updateRequested = millis();
+      return true;
+    }
   }
-
-  if (m_timeStamp + m_updateInterval < cur_time) {
-    m_updateRequested = millis();
-    return true;
-  }
-
   return false;
 }
 
@@ -458,6 +484,13 @@ byte OBDData::valueLength()
 
 String OBDData::toString()
 {
+#ifdef PID_DISCOVERY_MODE
+  char buf[20];
+  if (m_conversion == ULONG_NO_CONVERSION) {
+    unsigned long tmp = m_value;
+    sprintf(buf, "0x08X", tmp);
+  }
+#else
   char buf[20];
   if (m_conversion == WORD_DIV20) {
     float tmp = m_value;
@@ -467,6 +500,7 @@ String OBDData::toString()
   } else {
     sprintf(buf, m_format.c_str(), m_value);
   }
+#endif
   return buf;
 }
 
@@ -476,9 +510,16 @@ void OBDData::setValue(uint32_t timeStamp, uint8_t *data)
   m_timeStamp = timeStamp;
   m_value = *data;
 
+  byte repeat = 0;
   if (m_conversion == WORD_NO_CONVERSION ||
       m_conversion == WORD_DIV4 ||
       m_conversion == WORD_DIV20) {
+    repeat = 1;
+  } else if (m_conversion == ULONG_NO_CONVERSION) {
+    repeat = 3;
+  }
+
+  for (byte r = 0; r < repeat; r++) {
     m_value *= 256;
     data++;
     m_value += data && 0x00FF;
@@ -506,6 +547,8 @@ void OBDData::setValue(uint32_t timeStamp, uint8_t *data)
       break;
     case WORD_DIV20:
       //      m_value /= 20;
+      break;
+    case ULONG_NO_CONVERSION:
       break;
   }
 }
@@ -559,6 +602,13 @@ void OBDData::simulateData(CAN_Frame *message)
       tmp = m_simValue * 20;
       message->m_data[3] = tmp >> 8;
       message->m_data[4] = tmp && 0x00FF;
+      break;
+    case ULONG_NO_CONVERSION:
+      message->m_data[0] = 6;
+      message->m_data[3] = (m_simValue >> 24) && 0x00FF;
+      message->m_data[4] = (m_simValue >> 16) && 0x00FF;
+      message->m_data[5] = (m_simValue >> 8) && 0x00FF;
+      message->m_data[6] = m_simValue && 0x00FF;
       break;
   }
 }
