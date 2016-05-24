@@ -27,15 +27,16 @@
 #endif
 
 #define LOGFILE_PREFIX 1605     // Prefix for SD card logging file names, i.e. 16050001.OBD
-#define DISPLAY_SPEED 115200   // The baudrate at which we're running the 4D display
-//#define LOOPBACK_MODE        // CAN loopback mode. Messages transmitted are looped back to the CAN receiver, which helps with debugging.
-//#define VEHICLEDASH_DEBUG    // TODO: only used in Tpms and Position to simulate data
-//#define OBD_DEBUG            // Prints out raw OBD RX data to Serial
-#define RAW_LOGGING           // Saves RAW OBD data in a file on SD card
+#define DISPLAY_SPEED 115200    // The baudrate at which we're running the 4D display
+//#define LOOPBACK_MODE           // CAN loopback mode. Messages transmitted are looped back to the CAN receiver, which helps with debugging.
+//#define VEHICLEDASH_DEBUG     // TODO: only used in Tpms and Position to simulate data
+//#define OBD_DEBUG             // Prints out raw OBD RX data to Serial
+//#define RAW_LOGGING           // Saves RAW OBD data in a file on SD card
 //#define OBD_LOGGING           // Saves Processed OBD data in a file on SD card
+//#define CAN_DEBUG 1           // Low level CAN debugging
 
-#define PID_DISCOVERY_MODE    // To discover new unknown PIDS, enable RECORD_UNKNOWN_PIDS. NOTE: This will only work if RX Masking/Filtering is switched off
-#define MAX_UNKNOWN_PIDS 50   // Max number of unhandled PID's that we keep track of
+//#define PID_DISCOVERY_MODE    // To discover new unknown PIDS, enable RECORD_UNKNOWN_PIDS. NOTE: This will only work if RX Masking/Filtering is switched off
+#define MAX_UNKNOWN_PIDS 50     // Max number of unhandled PID's that we keep track of
 
 #define PUMA_LABEL_SIZE 1             // Font size for labels and subLabels
 #define PUMA_SENSOR_DATA_SIZE 2       // Font size for 'normal' sensor data (RPM, Speed, TPMS and a few more are shown bigger)
@@ -70,11 +71,11 @@
 #define PIN_LEGACY_SPI_MOSI 11
 #define PIN_LEGACY_SPI_MISO 12
 #define PIN_LEGACY_SPI_SCK 13
-#define DISPLAY_SERIAL1 Serial1 // We're running the 4D Display on USART 2, using pin 18 & 19
-#define PIN_MEGA_SPI_MISO 50 // Connect Pin 50 to 12 to use with CAN BOARD
-#define PIN_MEGA_SPI_MOSI 51 // Connect Pin 51 to 11 to use with CAN BOARD
-#define PIN_MEGA_SPI_SCK 52 // Connect Pin 52 to 13 to use with CAN BOARD
-#define PIN_MEGA_SPI_CS 53 // Connect pin 53 to 10 to use with CAN BOARD
+#define DISPLAY_SERIAL1 Serial1  // We're running the 4D Display on USART 2, using pin 18 & 19
+#define PIN_MEGA_SPI_MISO 50     // Connect Pin 50 to 12 to use with CAN BOARD
+#define PIN_MEGA_SPI_MOSI 51     // Connect Pin 51 to 11 to use with CAN BOARD
+#define PIN_MEGA_SPI_SCK 52      // Connect Pin 52 to 13 to use with CAN BOARD
+#define PIN_MEGA_SPI_CS 53       // Connect pin 53 to 10 to use with CAN BOARD
 
 // Helper functions that don't belong in a class and aren't that important.
 String v2s(char* format, int value);
@@ -87,3 +88,5 @@ void logRawData(char *s);
 void logObdData(String s);
 
 #endif
+
+

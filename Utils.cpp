@@ -102,11 +102,11 @@ void initLogging()
 
   // see if the card is present and can be initialized:
   if (!SD.begin(PIN_CAN_BOARD_SD_chipSelect)) {
-    Serial.println("SD Card failed, or not present: Logging disabled");
+    Serial.println("SD Card not found: Logging disabled");
   } else {
+    Serial.print("SD Card found: ");
     uniqueLogFileName();
-    Serial.print("Logging to ");
-    Serial.println(g_logFileName);
+    Serial.println("Logging to " + g_logFileName);
   }
 }
 
@@ -140,5 +140,8 @@ void logObdData(String s)
     Serial.println("Error opening SD file for OBD logging");
   }
 }
+
+
+
 
 
