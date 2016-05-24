@@ -461,6 +461,11 @@ word OBDData::color()
   return LIGHTGREEN;
 }
 
+OBD_DATA_CONVERSION OBDData::dataConversion() 
+{
+  return m_conversion;
+}
+
 byte OBDData::valueLength()
 {
   if (m_format.length() > 0 && m_format[0] == '%') {
@@ -495,13 +500,35 @@ String OBDData::toString()
   if (m_conversion == WORD_DIV20) {
     float tmp = m_value;
     tmp /= 20;
-    tmp = 3.1;
     sprintf(buf, m_format.c_str(), tmp);
   } else {
     sprintf(buf, m_format.c_str(), m_value);
   }
 #endif
   return buf;
+}
+
+byte OBDData::toByte()
+{
+  byte b = m_value;
+  return b;
+}
+
+word OBDData::toWord()
+{
+  word w = m_value;
+  return w;
+}
+
+int OBDData::toInt()
+{
+  int i = m_value;
+  return i;
+}
+
+long OBDData::toLong()
+{
+  return m_value;
 }
 
 void OBDData::setValue(uint32_t timeStamp, uint8_t *data)

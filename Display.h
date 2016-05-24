@@ -53,18 +53,18 @@ class BaseScreen
     SensorWidget *findSensor(word pid);
     void updateSensor(OBDData *sensor);
 
-    void printLabel(String label, word x, word y, int color, int textSize = 1);
-    void printSubLabel(String subLabel, word x, word y, int color, int textSize = 1);
-    void printValue(String value, word x, word y, int color, int textSize = 1);
+    void printLabel(String label, word x, word y, int color, byte fontSize = 1);
+    void printSubLabel(String subLabel, word x, word y, int color, byte fontSize = 1);
+    void printValue(String value, byte textLength, word x, word y, int color, byte fontSize = 1);
 
     word maxWidth();
     word maxHeight();
     bool touchPressed();
-    word charWidth(byte textSize);
-    word charHeight(byte textSize);
+    word charWidth(byte fontSize);
+    word charHeight(byte fontSize);
 
   protected:
-    void printPrepare(word x, word y, int color, int textSize);
+    void printPrepare(word x, word y, int color, byte fontSize);
 
   protected:
     SensorWidget *m_first_sensor;

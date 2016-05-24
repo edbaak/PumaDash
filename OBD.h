@@ -290,15 +290,19 @@ class OBDData
     uint8_t pid();
     String label();
     String subLabel();
-    virtual String toString();
-    virtual word color();
+    word color();
     byte valueLength();
-    virtual OBD_DATA_CONVERSION dataConversion() {
-      return m_conversion;
-    }
-    virtual void setValue(uint32_t timeStamp, uint8_t *data);
+    OBD_DATA_CONVERSION dataConversion();
+    void setValue(uint32_t timeStamp, uint8_t *data);
+
+    String toString();
+    byte toByte();
+    word toWord();
+    int toInt();
+    long toLong();
+
 #ifdef LOOPBACK_MODE
-    virtual void simulateData(CAN_Frame *message);
+    void simulateData(CAN_Frame *message);
 #endif
 
   protected:

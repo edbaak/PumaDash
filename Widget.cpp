@@ -133,6 +133,8 @@ void SensorWidget::update(OBDData *sensor)
 RpmDialWidget::RpmDialWidget(PumaDisplay *display, word pid, byte fontSize, word x, word y, word radius) : SensorWidget(display, pid, fontSize, x, y)
 {
   m_radius = radius;
+  drawRpmDial();
+  update(0);
 }
 
 // x = display_x_mid, y = maxHeight() - 100
@@ -180,7 +182,7 @@ void RpmDialWidget::update(OBDData *sensor)
   if (sensor == 0)
     updateRpm(0);
   else
-    updateRpm(sensor->toString().toInt());
+    updateRpm(sensor->toWord());
 }
 
 void RpmDialWidget::updateRpm(word rpm)
@@ -218,6 +220,7 @@ PitchAndRollWidget::PitchAndRollWidget(PumaDisplay *display, word pid, byte font
 {
   m_pitchMode = pitchMode;
   m_interleave = interleave;
+  update(0);
 }
 
 void PitchAndRollWidget::update(OBDData *sensor)
@@ -225,30 +228,26 @@ void PitchAndRollWidget::update(OBDData *sensor)
   if (sensor == 0)
     updateAngle(0);
   else
-    updateAngle(sensor->toString().toInt());
+    updateAngle(sensor->toInt());
 }
 
 void PitchAndRollWidget::updateAngle(int angle)
 {
   // update the static display items
-  if (m_pitchMode) {
-    m_display->gfx_Line(m_x, m_y, m_x, m_y + m_interleave * 18, PUMA_LABEL_COLOR);
-  } else {
-    m_display->gfx_Line(m_x, m_y, m_x + m_interleave * 18, m_y, PUMA_LABEL_COLOR);
-  }
-
   word y_ = m_y;
   word x_ = m_x;
-  for (int i = -9; i <= 9; i++) {
+  for (int i = -8; i <= 8; i++) {
     int w = 2;
-    if (i == 0  || abs(i) == 9)
-      w = 8;
-    else if (abs(i) == 2 || abs(i) == 4 || abs(i) == 6 || abs(i) == 8)
+    if (abs(i) == 2 || abs(i) == 4 || abs(i) == 6 || abs(i) == 8)
       w = 5;
-    if (m_pitchMode)
-      m_display->gfx_Line(m_x, y_, m_x + w, y_, PUMA_LABEL_COLOR);
-    else
-      m_display->gfx_Line(x_, m_y - w, x_, m_y, PUMA_LABEL_COLOR);
+    if (i == 0) {
+      m_display->gfx_Circle(x_, y_, 4, PUMA_LABEL_COLOR);
+    } else {
+      if (m_pitchMode)
+        m_display->gfx_Line(m_x, y_, m_x + w, y_, PUMA_LABEL_COLOR);
+      else
+        m_display->gfx_Line(x_, m_y - w, x_, m_y, PUMA_LABEL_COLOR);
+    }
     x_ += m_interleave;
     y_ += m_interleave;
   }
@@ -260,14 +259,14 @@ void PitchAndRollWidget::updateAngle(int angle)
     color = PUMA_WARNING_COLOR;
 
   if (m_pitchMode)
-    m_display->activeScreen()->printValue(String(abs(angle)), m_x - 1, m_y + m_interleave * 18 + 1, color, 2);
+    m_display->activeScreen()->printValue(String(abs(angle)), m_x - 1, m_y + m_interleave * 16 + 1, color, 2);
   else
-    m_display->activeScreen()->printValue(String(abs(angle)), m_x + m_interleave * 18 + 4, m_y - 13, color, 2);
+    m_display->activeScreen()->printValue(String(abs(angle)), m_x + m_interleave * 16 + 4, m_y - 13, color, 2);
 
-  if (angle > 45)
-    angle = 45;
-  else if (angle < -45)
-    angle = -45;
+  if (angle > 40)
+    angle = 40;
+  else if (angle < -40)
+    angle = -40;
 
   float f = angle;
   f = f * m_interleave / 5.0;
@@ -284,10 +283,10 @@ void PitchAndRollWidget::updateAngle(int angle)
 
   if (m_pitchMode) {
     x_last = m_x + 10;
-    y_last = m_y + m_interleave * 9 - round(f);
+    y_last = m_y + m_interleave * 8 - round(f);
     m_display->gfx_TriangleFilled(x_last, y_last, x_last + 20, y_last - 5, x_last + 20, y_last + 5, color);
   } else {
-    x_last = m_x + m_interleave * 9 + round(f);
+    x_last = m_x + m_interleave * 8 + round(f);
     y_last = m_y - 10;
     m_display->gfx_TriangleFilled(x_last, y_last, x_last - 5, y_last - 20, x_last + 5, y_last - 20, color);
   }
@@ -299,6 +298,7 @@ void PitchAndRollWidget::updateAngle(int angle)
 
 CompassWidget::CompassWidget(PumaDisplay *display, word pid, byte fontSize, word x, word y) : SensorWidget(display, pid, fontSize, x, y)
 {
+  update(0);
 }
 
 void CompassWidget::update(OBDData *sensor)
@@ -306,7 +306,7 @@ void CompassWidget::update(OBDData *sensor)
   if (sensor == 0)
     updateHeading(0);
   else
-    updateHeading(sensor->toString().toLong());
+    updateHeading(sensor->toWord());
 }
 
 void CompassWidget::updateHeading(word heading)
@@ -350,39 +350,54 @@ void CompassWidget::updateHeading(word heading)
 #define TPMS_X2_OFFSET 85
 #define TPMS_Y2_OFFSET 30
 
-TpmsWidget::TpmsWidget(PumaDisplay *display, word pid, byte fontSize, word x, word y) : SensorWidget(display, pid, fontSize, x, y)
+TpmsWidget::TpmsWidget(PumaDisplay *display, word pid, TPMS_MODE mode, byte fontSize, word x, word y) : SensorWidget(display, pid, fontSize, x, y)
 {
+  m_mode = mode;
+  update(0);
 }
 
 void TpmsWidget::update(OBDData *sensor)
 {
-  Serial.println("UpdateTpms widget");
+  if (m_mode == TPMS_PRESSURE) {
+    if (sensor == 0)
+      updatePressure("--");
+    else
+      updatePressure(sensor->toString());
+  }
+  else
+  {
+    if (sensor == 0)
+      updateTemperature("--");
+    else
+      updateTemperature(sensor->toString());
+
+  }
 }
 
-void TpmsWidget::updatePressure(byte tireLocation)
+void TpmsWidget::updatePressure(String pressure)
 {
   m_display->gfx_Line(m_x + TPMS_X1_OFFSET, m_y + TPMS_Y1_OFFSET , m_x + TPMS_X2_OFFSET, m_y + TPMS_Y2_OFFSET, PUMA_LABEL_COLOR);
 
   word x1 = m_x + TPMS_X1_OFFSET / 2;
   word y2 = m_y + TPMS_Y2_OFFSET;
   int color = PUMA_NORMAL_COLOR;
-  if (m_display->m_tpms->tirePressureAlarm(tireLocation))
-    color = PUMA_ALARM_COLOR;
-  else if (m_display->m_tpms->tirePressureWarning(tireLocation))
-    color = PUMA_WARNING_COLOR;
-  m_display->activeScreen()->printValue(String(m_display->m_tpms->tirePressure(tireLocation)), x1, y2, color, 2);
+  //  if (m_display->m_tpms->tirePressureAlarm(tireLocation))
+  //    color = PUMA_ALARM_COLOR;
+  //  else if (m_display->m_tpms->tirePressureWarning(tireLocation))
+  //    color = PUMA_WARNING_COLOR;
+  m_display->activeScreen()->printValue(pressure, x1, y2, color, m_fontSize);
 }
 
-void TpmsWidget::updateTemperature(byte tireLocation)
+void TpmsWidget::updateTemperature(String temperature)
 {
   int color = PUMA_NORMAL_COLOR;
   word x2 = m_x + TPMS_X2_OFFSET;
   word y1 = m_y + TPMS_Y1_OFFSET - 20;
-  if (m_display->m_tpms->tireTemperatureAlarm(tireLocation))
-    color = PUMA_ALARM_COLOR;
-  else if (m_display->m_tpms->tireTemperatureWarning(tireLocation))
-    color = PUMA_WARNING_COLOR;
-  m_display->activeScreen()->printValue(String(m_display->m_tpms->tireTemperature(tireLocation)), x2, y1, color, 2);
+  //  if (m_display->m_tpms->tireTemperatureAlarm(tireLocation))
+  //    color = PUMA_ALARM_COLOR;
+  //  else if (m_display->m_tpms->tireTemperatureWarning(tireLocation))
+  //    color = PUMA_WARNING_COLOR;
+  m_display->activeScreen()->printValue(temperature, x2, y1, color, m_fontSize);
 }
 
 // ******************************************************************************************************

@@ -149,19 +149,19 @@ void BaseScreen::init()
   }
 }
 
-word BaseScreen::charWidth(byte textSize)
+word BaseScreen::charWidth(byte fontSize)
 {
-  textSize-=1;
-  if (textSize < MAX_CHAR_SIZE)
-    return m_char_width[textSize];
+  fontSize-=1;
+  if (fontSize < MAX_CHAR_SIZE)
+    return m_char_width[fontSize];
   return 10;  
 }
 
-word BaseScreen::charHeight(byte textSize)
+word BaseScreen::charHeight(byte fontSize)
 {
-  textSize-=1;
-  if (textSize < MAX_CHAR_SIZE)
-    return m_char_height[textSize];
+  fontSize-=1;
+  if (fontSize < MAX_CHAR_SIZE)
+    return m_char_height[fontSize];
   return 10;  
 }
 
@@ -216,34 +216,34 @@ word BaseScreen::maxHeight()
   return display_max_y + 1;
 }
 
-void BaseScreen::printPrepare(word x, word y, int color, int textSize)
+void BaseScreen::printPrepare(word x, word y, int color, byte fontSize)
 {
   m_display->gfx_MoveTo(x, y);
-  m_display->txt_Width(textSize);
-  m_display->txt_Height(textSize);
+  m_display->txt_Width(fontSize);
+  m_display->txt_Height(fontSize);
   m_display->txt_FGcolour(color);
 }
 
-void BaseScreen::printLabel(String label, word x, word y, int color, int textSize)
+void BaseScreen::printLabel(String label, word x, word y, int color, byte fontSize)
 {
-  printPrepare(x, y, color, textSize);
+  printPrepare(x, y, color, fontSize);
   m_display->print(label);
 }
 
-void BaseScreen::printSubLabel(String subLabel, word x, word y, int color, int textSize)
+void BaseScreen::printSubLabel(String subLabel, word x, word y, int color, byte fontSize)
 {
-  printPrepare(x, y, color, textSize);
+  printPrepare(x, y, color, fontSize);
   m_display->print(subLabel);
 }
 
-void BaseScreen::printValue(String value, word x, word y, int color, int textSize)
+void BaseScreen::printValue(String value, byte textLength, word x, word y, int color, byte fontSize)
 {
   // TODO: This can be done better
   byte fixedStringLength = 1;
 
   while (value.length() < fixedStringLength)
     value = " " + value;
-  printPrepare(x, y, color, textSize);
+  printPrepare(x, y, color, fontSize);
   m_display->print(value);
 }
 
@@ -262,22 +262,30 @@ void Screen0::init()
   // Only create and add sensor objects the first time we call init.
   if (m_first_sensor == 0) {
     printLabel("Position", 100, 3, PUMA_LABEL_COLOR);
-    addSensor(new PitchAndRollWidget(m_display, PID_PITCH, PUMA_LABEL_SIZE, 10, 8, true, 7 ));
-    findSensor(PID_PITCH)->update(0);
-    addSensor(new PitchAndRollWidget(m_display, PID_ROLL, PUMA_LABEL_SIZE, 46, 149, false, 10 ));
-    findSensor(PID_ROLL)->update(0);
-    addSensor(new CompassWidget(m_display, PID_HEADING, PUMA_LABEL_SIZE, 100, 100)); // TODO: set at correct x,y position
-    findSensor(PID_HEADING)->update(0);
+    addSensor(new PitchAndRollWidget(m_display, PID_PUMA_PITCH, PUMA_LABEL_SIZE, 10, 8, true, 7 ));
+    addSensor(new PitchAndRollWidget(m_display, PID_PUMA_ROLL, PUMA_LABEL_SIZE, 46, 149, false, 10 ));
+    addSensor(new CompassWidget(m_display, PID_PUMA_HEADING, PUMA_LABEL_SIZE, 100, 100)); // TODO: set at correct x,y position
     
 //    Table t1(m_display, "TPMS", Table::TOP_BORDER | Table::SHOW_GRID, 2, 3,
 //             left_border, left_divider_line,
 //             top_border, display_max_y / 2);
-//    addSensor(new TpmsWidget(m_display, PID_TPMS_FL, 2, t1.cellX(0), t1.cellY(0)));
-//    addSensor(new TpmsWidget(m_display, PID_TPMS_FR, 2, t1.cellX(1), t1.cellY(0)));
-//    addSensor(new TpmsWidget(m_display, PID_TPMS_RL, 2, t1.cellX(0), t1.cellY(1)));
-//    addSensor(new TpmsWidget(m_display, PID_TPMS_RR, 2, t1.cellX(1), t1.cellY(1)));
-//    addSensor(new TpmsWidget(m_display, PID_TPMS_TL, 2, t1.cellX(0), t1.cellY(2)));
-//    addSensor(new TpmsWidget(m_display, PID_TPMS_TR, 2, t1.cellX(1), t1.cellY(2)));
+//    addSensor(new TpmsWidget(m_display, PID_PUMA_TPMS_FL_PRESS, 2, t1.cellX(0), t1.cellY(0)));
+//    addSensor(new TpmsWidget(m_display, PID_PUMA_TPMS_FL_TEMP, 2, t1.cellX(0), t1.cellY(0)));
+
+//    addSensor(new TpmsWidget(m_display, PID_PUMA_TPMS_FR_PRESS, 2, t1.cellX(1), t1.cellY(0)));
+//    addSensor(new TpmsWidget(m_display, PID_PUMA_TPMS_FR_TEMP, 2, t1.cellX(1), t1.cellY(0)));
+
+//    addSensor(new TpmsWidget(m_display, PID_PUMA_TPMS_RL_PRESS, 2, t1.cellX(0), t1.cellY(1)));
+//    addSensor(new TpmsWidget(m_display, PID_PUMA_TPMS_RL_TEMP, 2, t1.cellX(0), t1.cellY(1)));
+
+//    addSensor(new TpmsWidget(m_display, PID_PUMA_TPMS_RR_PRESS, 2, t1.cellX(1), t1.cellY(1)));
+//    addSensor(new TpmsWidget(m_display, PID_PUMA_TPMS_RR_TEMP, 2, t1.cellX(1), t1.cellY(1)));
+
+//    addSensor(new TpmsWidget(m_display, PID_PUMA_TPMS_TL_PRESS, 2, t1.cellX(0), t1.cellY(2)));
+//    addSensor(new TpmsWidget(m_display, PID_PUMA_TPMS_TL_TEMP, 2, t1.cellX(0), t1.cellY(2)));
+
+//    addSensor(new TpmsWidget(m_display, PID_PUMA_TPMS_TR_PRESS, 2, t1.cellX(1), t1.cellY(2)));
+//    addSensor(new TpmsWidget(m_display, PID_PUMA_TPMS_TR_TEMP, 2, t1.cellX(1), t1.cellY(2)));
   }
 }
 

@@ -46,20 +46,27 @@
 #define PUMA_NORMAL_COLOR LIGHTGREEN  // FG color for data that is in the normal/safe operating zone
 #define RPM_RADIUS 110                // Size of the Rpm dial
 
-// Internally simulated PID's, i.e. not part of the OBD2 standard and unknown to the vehicle ECU
-#define PID_PITCH            0xFF01
-#define PID_ROLL             0xFF02
-#define PID_HEADING          0xFF03
-#define PID_TPMS_FL          0xFF04
-#define PID_TPMS_FR          0xFF05
-#define PID_TPMS_RL          0xFF06
-#define PID_TPMS_RR          0xFF07
-#define PID_TPMS_TL          0xFF08
-#define PID_TPMS_TR          0xFF09
-#define PID_CC_SPEED         0xFF0A
-#define PID_CC_MODE          0xFF0B
-#define PID_CC_ACCELERATOR   0xFF0C
-#define PID_DTC              0xFF0D
+// Internally simulated PUMA Dash specific PID's, i.e. not part of the OBD2 standard and unknown to the vehicle ECU.
+// These PID's are NOT transmitted on the CAN bus
+#define PID_PUMA_PITCH            0xFF01
+#define PID_PUMA_ROLL             0xFF02
+#define PID_PUMA_HEADING          0xFF03
+#define PID_PUMA_TPMS_FL_PRESS    0xFF04
+#define PID_PUMA_TPMS_FL_TEMP     0xFF05
+#define PID_PUMA_TPMS_FR_PRESS    0xFF06
+#define PID_PUMA_TPMS_FR_TEMP     0xFF07
+#define PID_PUMA_TPMS_RL_PRESS    0xFF08
+#define PID_PUMA_TPMS_RL_TEMP     0xFF09
+#define PID_PUMA_TPMS_RR_PRESS    0xFF0A
+#define PID_PUMA_TPMS_RR_TEMP     0xFF0B
+#define PID_PUMA_TPMS_TL_PRESS    0xFF0C
+#define PID_PUMA_TPMS_TL_TEMP     0xFF0D
+#define PID_PUMA_TPMS_TR_PRESS    0xFF0E
+#define PID_PUMA_TPMS_TR_TEMP     0xFF0F
+#define PID_PUMA_CC_SPEED         0xFF10
+#define PID_PUMA_CC_MODE          0xFF11
+#define PID_PUMA_CC_ACCELERATOR   0xFF12
+#define PID_PUMA_DTC              0xFF13
 
 // Mega board PIN definitions
 #define PIN_MP2515_RX_INTERRUPT 2

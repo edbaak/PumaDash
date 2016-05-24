@@ -112,10 +112,20 @@ class CompassWidget : public SensorWidget
 class TpmsWidget : public SensorWidget
 {
   public:
-    TpmsWidget(PumaDisplay *display, word pid, byte fontSize, word x, word y);
-    void updatePressure(byte tireLocation);
-    void updateTemperature(byte tireLocation);
+    typedef enum TPMS_MODE {
+      TPMS_PRESSURE,
+      TPMS_TEMPERATURE
+    } TPMS_MODE;
+
+    TpmsWidget(PumaDisplay *display, word pid, TPMS_MODE mode, byte fontSize, word x, word y);
     virtual void update(OBDData *sensor);
+
+  protected:
+    void updatePressure(String pressure);
+    void updateTemperature(String temperature);
+
+  private:
+    TPMS_MODE m_mode;
 };
 
 class ListWidget : public SensorWidget
@@ -124,7 +134,7 @@ class ListWidget : public SensorWidget
     ListWidget(PumaDisplay *display, String title, word pid, byte fontSize, word x1, word y1, word x2, word y2);
     void appendLine(String line);
     virtual void update(OBDData *sensor);
-        
+
   private:
     String m_title;
     word m_x2;
