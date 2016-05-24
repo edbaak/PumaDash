@@ -64,6 +64,7 @@ class SensorWidget
 {
   public:
     SensorWidget(PumaDisplay *display, word pid, byte fontSize, word x, word y);
+    virtual void update(OBDData *sensor);
 
   protected:
     PumaDisplay *m_display;
@@ -82,6 +83,7 @@ class RpmDialWidget : public SensorWidget
     RpmDialWidget(PumaDisplay *display, word pid, byte fontSize, word x, word y, word radius);
     void drawRpmDial();
     void updateRpm(word rpm);
+    virtual void update(OBDData *sensor);
 
   private:
     word m_radius;
@@ -92,6 +94,7 @@ class PitchAndRollWidget : public SensorWidget
   public:
     PitchAndRollWidget(PumaDisplay *display, word pid, byte fontSize, word x, word y, bool pitchMode, byte interleave);
     void updateAngle(int angle);
+    virtual void update(OBDData *sensor);
 
   private:
     bool m_pitchMode;
@@ -103,6 +106,7 @@ class CompassWidget : public SensorWidget
   public:
     CompassWidget(PumaDisplay *display, word pid, byte fontSize, word x, word y);
     void updateHeading(word heading);
+    virtual void update(OBDData *sensor);
 };
 
 class TpmsWidget : public SensorWidget
@@ -111,6 +115,7 @@ class TpmsWidget : public SensorWidget
     TpmsWidget(PumaDisplay *display, word pid, byte fontSize, word x, word y);
     void updatePressure(byte tireLocation);
     void updateTemperature(byte tireLocation);
+    virtual void update(OBDData *sensor);
 };
 
 class ListWidget : public SensorWidget
@@ -118,7 +123,8 @@ class ListWidget : public SensorWidget
   public:
     ListWidget(PumaDisplay *display, String title, word pid, byte fontSize, word x1, word y1, word x2, word y2);
     void appendLine(String line);
-    
+    virtual void update(OBDData *sensor);
+        
   private:
     String m_title;
     word m_x2;
@@ -126,3 +132,6 @@ class ListWidget : public SensorWidget
 };
 
 #endif
+
+
+

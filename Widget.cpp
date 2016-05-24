@@ -102,6 +102,29 @@ SensorWidget::SensorWidget(PumaDisplay *display, word pid, byte fontSize, word x
   m_next = 0;
 }
 
+void SensorWidget::update(OBDData *sensor)
+{
+  if (sensor == 0) return;
+
+  byte size = m_fontSize;
+  word x1 = m_x;
+  word y1 = m_y;
+  // TODO: optimize by only repainting label and sublabel when needed.
+  if (sensor->label() != "") {
+    m_display->activeScreen()->printLabel(sensor->label(), x1, y1, PUMA_LABEL_COLOR, 1);
+    x1 += m_display->activeScreen()->charWidth(PUMA_LABEL_SIZE) * 2;
+    y1 += m_display->activeScreen()->charHeight(PUMA_LABEL_SIZE);
+  }
+
+  m_display->activeScreen()->printValue(sensor->toString(), x1, y1, sensor->color(), size);
+
+  if (sensor->subLabel() != "") {
+    x1 = x1 + (m_display->activeScreen()->charWidth(1) / 2) + (m_display->activeScreen()->charWidth(size) * sensor->valueLength());
+    y1 = y1 + m_display->activeScreen()->charHeight(size) - m_display->activeScreen()->charHeight(1);
+    m_display->activeScreen()->printLabel(sensor->subLabel(), x1, y1, PUMA_LABEL_COLOR, 1);
+  }
+}
+
 
 // ******************************************************************************************************
 //                                              RpmDialWidget
@@ -152,6 +175,14 @@ void RpmDialWidget::drawRpmDial()
   m_display->activeScreen()->printLabel("6", x_pos[6] + 9, y_pos[6] - 5, PUMA_LABEL_COLOR, 2);
 }
 
+void RpmDialWidget::update(OBDData *sensor)
+{
+  if (sensor == 0)
+    updateRpm(0);
+  else
+    updateRpm(sensor->toString().toInt());
+}
+
 void RpmDialWidget::updateRpm(word rpm)
 {
   word color = PUMA_NORMAL_COLOR;
@@ -187,6 +218,14 @@ PitchAndRollWidget::PitchAndRollWidget(PumaDisplay *display, word pid, byte font
 {
   m_pitchMode = pitchMode;
   m_interleave = interleave;
+}
+
+void PitchAndRollWidget::update(OBDData *sensor)
+{
+  if (sensor == 0)
+    updateAngle(0);
+  else
+    updateAngle(sensor->toString().toInt());
 }
 
 void PitchAndRollWidget::updateAngle(int angle)
@@ -262,6 +301,14 @@ CompassWidget::CompassWidget(PumaDisplay *display, word pid, byte fontSize, word
 {
 }
 
+void CompassWidget::update(OBDData *sensor)
+{
+  if (sensor == 0)
+    updateHeading(0);
+  else
+    updateHeading(sensor->toString().toLong());
+}
+
 void CompassWidget::updateHeading(word heading)
 {
   static long int old_heading = -1;
@@ -270,7 +317,7 @@ void CompassWidget::updateHeading(word heading)
 
     m_display->txt_Xgap(2);
     char hd[5];
-    sprintf(hd, "%0d3", heading);
+    sprintf(hd, "%03d", heading);
     m_display->activeScreen()->printValue(hd, 65, 40, PUMA_NORMAL_COLOR, 6);
     m_display->txt_Xgap(0);
 
@@ -307,6 +354,11 @@ TpmsWidget::TpmsWidget(PumaDisplay *display, word pid, byte fontSize, word x, wo
 {
 }
 
+void TpmsWidget::update(OBDData *sensor)
+{
+  Serial.println("UpdateTpms widget");
+}
+
 void TpmsWidget::updatePressure(byte tireLocation)
 {
   m_display->gfx_Line(m_x + TPMS_X1_OFFSET, m_y + TPMS_Y1_OFFSET , m_x + TPMS_X2_OFFSET, m_y + TPMS_Y2_OFFSET, PUMA_LABEL_COLOR);
@@ -339,12 +391,21 @@ void TpmsWidget::updateTemperature(byte tireLocation)
 
 ListWidget::ListWidget(PumaDisplay *display, String title, word pid, byte fontSize, word x1, word y1, word x2, word y2) : SensorWidget(display, pid, fontSize, x1, y1)
 {
-  m_title = title; 
+  m_title = title;
   m_x2 = x2;
   m_y2 = y2;
 }
 
+void ListWidget::update(OBDData *sensor)
+{
+  Serial.println("Update list widget");
+}
+
 void ListWidget::appendLine(String line)
 {
+  line = line;
 }
+
+
+
 
