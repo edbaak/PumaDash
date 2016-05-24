@@ -51,7 +51,7 @@ PumaOBD::PumaOBD()
   addDataObject(new OBDData(PID_SUPPORTED_PID_81_A0, "", "", "", 0, ULONG_NO_CONVERSION, 0, 0, 0));
 #else
   addDataObject(new OBDData(PID_RPM, "", "%4d", "Rpm", 100, WORD_DIV4, 0, 6000, 300));
-  addDataObject(new OBDData(PID_SPEED, "", "%3d", "Km/h", 100, BYTE_NO_CONVERSION, 0, 115, 3));
+  addDataObject(new OBDData(PID_SPEED, "", "%3d", "Km/h", 250, BYTE_NO_CONVERSION, 0, 115, 3));
 
   addDataObject(new OBDData(PID_COOLANT_TEMP, "Coolant", "%3d", "C", 3000, INT_MINUS40, -25, 130, 4));
   addDataObject(new OBDData(PID_INTAKE_AIR_TEMP, "Intake Air", "%3d", "C", 5000, INT_MINUS40, 10, 50, 5));
@@ -613,5 +613,8 @@ void OBDData::simulateData(CAN_Frame *message)
   }
 }
 #endif
+
+
+
 
 
