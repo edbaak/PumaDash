@@ -46,22 +46,16 @@ CruiseCtrl g_speed;                       // Speed Control and deals with gearbo
 PumaOBD g_obd;                            // On Board Diagnostics for the Vehicle
 
 void setup() {
+  g_display.reset(0); // Start with resetting the Display. Then do activities that don't require the display so that we use the recommended 5 seconds delay more usefully.
+
+  Serial.begin(DISPLAY_SPEED);  
   pinMode(PIN_CAN_BOARD_LED1, OUTPUT);
   pinMode(PIN_CAN_BOARD_LED2, OUTPUT);
-  
-  Serial.begin(DISPLAY_SPEED);
-//  Serial.println("---------------------");
-//  long m_simValue = 0x112233FF;
-//  Serial.println(m_simValue, HEX);
-//  Serial.println(m_simValue & 0xFF, HEX);
-//  Serial.println(m_simValue >> 8 & 0xFF, HEX);
-//  Serial.println(m_simValue >> 16 & 0xFF, HEX);
-//  Serial.println(uint8_t(m_simValue >> 24 & 0xFF), HEX);
-//  Serial.println("---------------------");
 
+  selfTest();
   initLogging();
   g_obd.setup();
-  g_display.setup();
+  g_display.setup(); // In here we'll finalize the 5 second display reset delay.
   attachInterrupt(digitalPinToInterrupt(PIN_MP2515_RX_INTERRUPT), canRxHandler, FALLING);
 }
 

@@ -31,8 +31,6 @@
 #include <SPI.h>
 #include "CAN.h"
 
-class PumaDisplay;
-
 // ***************************************************************
 // Mode 01h = Show Current data
 // Mode 02h = Show Freeze frame data
@@ -340,12 +338,11 @@ class PumaOBD
 
     void readRxBuffers(); // Interupt driven
 
+  protected:
     void addDataObject(OBDData *obj);
     OBDData *dataObject(uint8_t PID);
 
-  protected:
-    bool readMessage();
-    bool processMessage(CAN_Frame message);
+    void processMessage(CAN_Frame message);
     void requestPID(uint16_t pid);
     void requestSensorData(OBDData *sensor);
 

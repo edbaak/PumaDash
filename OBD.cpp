@@ -21,7 +21,6 @@
 #include "Utils.h"
 #include "OBD.h"
 #include "CAN.h"
-#include <SD.h>
 #include <Diablo_Const4D.h>
 #include "Display.h"
 
@@ -49,19 +48,19 @@ PumaOBD::PumaOBD()
   addDataObject(new OBDData(PID_SUPPORTED_PID_61_80, "", "", "", 0, ULONG_NO_CONVERSION, 0, 0, 0));
   addDataObject(new OBDData(PID_SUPPORTED_PID_81_A0, "", "", "", 0, ULONG_NO_CONVERSION, 0, 0, 0));
 #else
-//  addDataObject(new OBDData(PID_RPM, "", "%4d", "Rpm", 100, WORD_DIV4, 0, 6000, 300));
-//  addDataObject(new OBDData(PID_SPEED, "", "%3d", "Km/h", 250, BYTE_NO_CONVERSION, 0, 115, 3));
-//
-//  addDataObject(new OBDData(PID_COOLANT_TEMP, "Coolant", "%3d", "C", 3000, INT_MINUS40, -25, 130, 4));
-//  addDataObject(new OBDData(PID_INTAKE_AIR_TEMP, "Intake Air", "%3d", "C", 5000, INT_MINUS40, 10, 50, 5));
-//  addDataObject(new OBDData(PID_AMBIENT_AIR_TEMP, "Ambient Air", "%3d", "C", 5000, INT_MINUS40, 10, 50, 5));
-//  //  addDataObject(new OBDData(PID_ENGINE_OIL_TEMP, "Engine Oil", "%3d", "C", 2000, INT_MINUS40, 0, 150, 4));
-//
-//  addDataObject(new OBDData(PID_BAROMETRIC_PRESSURE, "Air", "%4d", "mBar", 5000, BYTE_TIMES10, 950, 1150, 10));
-//  addDataObject(new OBDData(PID_FUEL_PRESSURE, "Fuel rail", "%4d", "kPa", 5000, BYTE_TIMES3, 0, 765, 30));
-//
-//  addDataObject(new OBDData(PID_FUEL_LEVEL, "Tank Level", "%3d", "%", 3000, BYTE_PERCENTAGE, 0, 100, 2));
-//  addDataObject(new OBDData(PID_ENGINE_FUEL_RATE, "Fuel Rate", "%3.1f", "L/hr", 3000, WORD_DIV20, 0, 30, 1)); // L/h
+  //  addDataObject(new OBDData(PID_RPM, "", "%4d", "Rpm", 100, WORD_DIV4, 0, 6000, 300));
+  //  addDataObject(new OBDData(PID_SPEED, "", "%3d", "Km/h", 250, BYTE_NO_CONVERSION, 0, 115, 3));
+  //
+  //  addDataObject(new OBDData(PID_COOLANT_TEMP, "Coolant", "%3d", "C", 3000, INT_MINUS40, -25, 130, 4));
+  //  addDataObject(new OBDData(PID_INTAKE_AIR_TEMP, "Intake Air", "%3d", "C", 5000, INT_MINUS40, 10, 50, 5));
+  //  addDataObject(new OBDData(PID_AMBIENT_AIR_TEMP, "Ambient Air", "%3d", "C", 5000, INT_MINUS40, 10, 50, 5));
+  //  //  addDataObject(new OBDData(PID_ENGINE_OIL_TEMP, "Engine Oil", "%3d", "C", 2000, INT_MINUS40, 0, 150, 4));
+  //
+  //  addDataObject(new OBDData(PID_BAROMETRIC_PRESSURE, "Air", "%4d", "mBar", 5000, BYTE_TIMES10, 950, 1150, 10));
+  //  addDataObject(new OBDData(PID_FUEL_PRESSURE, "Fuel rail", "%4d", "kPa", 5000, BYTE_TIMES3, 0, 765, 30));
+  //
+  //  addDataObject(new OBDData(PID_FUEL_LEVEL, "Tank Level", "%3d", "%", 3000, BYTE_PERCENTAGE, 0, 100, 2));
+  //  addDataObject(new OBDData(PID_ENGINE_FUEL_RATE, "Fuel Rate", "%3.1f", "L/hr", 3000, WORD_DIV20, 0, 30, 1)); // L/h
 
   //  addDataObject(new OBDFloatValue(PID_CONTROL_MODULE_VOLTAGE, "Battery Voltage", 5000, WORD_DIV1000 // V
   //  addDataObject(new OBDByteValue(PID_CALCULATED_ENGINE_LOAD, "Engine Load", 1000, BYTE_PERCENTAGE (word * 100 / 255)
@@ -227,7 +226,7 @@ void PumaOBD::requestSensorData(OBDData *sensor)
     message.m_data[1] = 0x41; // mode 1 = show current data, mode 2 = show freeze frame
     message.m_data[2] = sensor->pid(); // The pid to which the simulated data applies
     sensor->simulateData(&message);
-    
+
     // We send the simulated data onto the CAN bus. Since it is in loopback mode, the data will echo back to the RX and processed as if it was send by someone else.
     m_CAN.write(message);
 #else
@@ -238,7 +237,7 @@ void PumaOBD::requestSensorData(OBDData *sensor)
     message.m_data[0] = 0x02; // two valid bytes with data following
     message.m_data[1] = 0x01; // mode 1 = show current data, mode 2 = show freeze frame
     message.m_data[2] = sensor->pid();  // the requested pid
-    
+
     m_CAN.write(message);
 #endif
   }
@@ -259,61 +258,32 @@ void PumaOBD::readRxBuffers()
 void PumaOBD::readMessages()
 {
   // Process messages in the RX FIFO buffer
-  while (readMessage()) {}
-}
+  while (m_rxFIFO_tail != m_rxFIFO_head) {
 
-bool PumaOBD::readMessage()
-{
-  if (m_rxFIFO_tail == m_rxFIFO_head)
-    return false;
-
-  if (m_rxFIFO_count > 10) {
-    // TODO: Add this as a warning on the display
-    Serial.println("WARNING: RX FIFO is getting full: " + String(m_rxFIFO_count));
-  }
-
-  if (m_rxFIFO[m_rxFIFO_tail].m_id == 0x7E8) {
-    processMessage(m_rxFIFO[m_rxFIFO_tail]);
+    if (m_rxFIFO_count > 10) {
+      // TODO: Add this as a warning on the display
+      Serial.println("WARNING: RX FIFO is getting full: " + String(m_rxFIFO_count));
+    }
 
 #ifdef RAW_LOGGING
-    char buf[150];
-    sprintf(buf, "%06d, %04x, %d, %d, %d, %02X, %02X, %02X, %02X, %02X, %02X, %02X, %02X",
-            m_rxFIFO[m_rxFIFO_tail].m_timeStamp,
-            m_rxFIFO[m_rxFIFO_tail].m_id,
-            m_rxFIFO[m_rxFIFO_tail].m_rtr,
-            m_rxFIFO[m_rxFIFO_tail].m_extended,
-            m_rxFIFO[m_rxFIFO_tail].m_length,
-            m_rxFIFO[m_rxFIFO_tail].m_data[0],
-            m_rxFIFO[m_rxFIFO_tail].m_data[1],
-            m_rxFIFO[m_rxFIFO_tail].m_data[2],
-            m_rxFIFO[m_rxFIFO_tail].m_data[3],
-            m_rxFIFO[m_rxFIFO_tail].m_data[4],
-            m_rxFIFO[m_rxFIFO_tail].m_data[5],
-            m_rxFIFO[m_rxFIFO_tail].m_data[6],
-            m_rxFIFO[m_rxFIFO_tail].m_data[7]);
-    logRawData(buf);
+    logRawData(&m_rxFIFO[m_rxFIFO_tail]);
 #endif
 
-#ifdef OBD_DEBUG
-    Serial.print(m_rxFIFO[m_rxFIFO_tail].m_id, HEX);
-    Serial.print(", ");
-    Serial.println(buf);
-#endif
-
-  } else {
+    if (m_rxFIFO[m_rxFIFO_tail].m_id == 0x7E8) {
+      processMessage(m_rxFIFO[m_rxFIFO_tail]);
+    } else {
 #ifdef PID_DISCOVERY_MODE
-    addUnhandledPID(m_rxFIFO[m_rxFIFO_tail].m_id);
+      addUnhandledPID(m_rxFIFO[m_rxFIFO_tail].m_id);
 #endif
+    }
+
+    if (m_rxFIFO_count > 0) m_rxFIFO_count--;
+    m_rxFIFO_tail++;
+    if (m_rxFIFO_tail >= MAX_RX_FIFO) m_rxFIFO_tail = 0;
   }
-
-  if (m_rxFIFO_count > 0) m_rxFIFO_count--;
-  m_rxFIFO_tail++;
-  if (m_rxFIFO_tail >= MAX_RX_FIFO) m_rxFIFO_tail = 0;
-
-  return true;
 }
 
-bool PumaOBD::processMessage(CAN_Frame message)
+void PumaOBD::processMessage(CAN_Frame message)
 {
   uint16_t pid = message.m_id;
   uint8_t *data = &message.m_data[0];
@@ -325,15 +295,11 @@ bool PumaOBD::processMessage(CAN_Frame message)
     OBDData *object = dataObject(pid);
     if (object) {
       object->setValue(message.m_timeStamp, data);
-
-#ifdef OBD_LOGGING
-      logObdData(v2s("%04X ", pid) + object->toString());
-#endif
+      logObdData(v2s("%6d", message.m_timeStamp) +
+                 v2s(" %04X ", pid) +
+                 object->toString());
     }
-    return true;
   }
-
-  return false;
 }
 
 #ifdef PID_DISCOVERY_MODE
@@ -524,7 +490,7 @@ void OBDData::setValue(uint32_t timeStamp, uint8_t *data)
 {
   m_updateRequested = 0;
   m_timeStamp = timeStamp;
-  
+
   long old_value = m_value;
   m_value = *data;
 
@@ -579,7 +545,7 @@ void OBDData::setValue(uint32_t timeStamp, uint8_t *data)
 }
 
 #ifdef LOOPBACK_MODE
-void OBDData::simulateData(CAN_Frame *message)
+void OBDData::simulateData(CAN_Frame * message)
 {
   if (m_simIncrease) {
     m_simValue += m_simStepValue;
@@ -649,7 +615,7 @@ void OBDData::simulateData(CAN_Frame *message)
       break;
   }
 
-// In case the sensor data is not coming from the CAN bus, we set the value directly, which then will cause the display to be updated.
+  // In case the sensor data is not coming from the CAN bus, we set the value directly, which then will cause the display to be updated.
   if (message == &_tmp_message) {
     setValue(millis(), &message->m_data[3]);
   }

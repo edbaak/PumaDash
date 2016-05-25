@@ -20,6 +20,7 @@
 #include "Utils.h"
 #include <SD.h>
 #include "Display.h"
+#include "CAN.h"
 
 String g_logFileName = "";
 
@@ -28,7 +29,7 @@ String v2s(char* format, int value)
   char s[10];
   sprintf(s, format, value);
   String ret(s);
-  return ret;   
+  return ret;
 }
 
 String v2s(char* format, byte value)
@@ -36,7 +37,7 @@ String v2s(char* format, byte value)
   char s[10];
   sprintf(s, format, value);
   String ret(s);
-  return ret;   
+  return ret;
 }
 
 String v2s(char* format, word value)
@@ -44,7 +45,14 @@ String v2s(char* format, word value)
   char s[10];
   sprintf(s, format, value);
   String ret(s);
-  return ret;   
+  return ret;
+}
+
+String v2s(char* format, unsigned long value)
+{
+  // TODO: should use format :-)
+  String s(value);
+  return s;
 }
 
 void uniqueLogFileName()
@@ -60,27 +68,15 @@ void uniqueLogFileName()
     dataFile.close();
   }
 
-  // Convert into a string
-  char s[10];
-//  sprintf(s, "/%d_%04d", LOGFILE_PREFIX, num);
   g_logFileName = v2s("/%4d", LOGFILE_PREFIX) + v2s("%04d", num);
 
   // If the file already exists i.e. we have indeed done some logging, we want to increment
   // the number and save it for next round
-  if (SD.exists(g_logFileName + ".TXT")) {
+  if (SD.exists(g_logFileName + ".RAW") || SD.exists(g_logFileName + ".OBD")) {
     if (num < 9999) num++; // if reaching max we'll keep pumping into that file. This should never happen.
-    
     g_logFileName = v2s("/%4d", LOGFILE_PREFIX) + v2s("%04d", num);
-//    sprintf(s, "/%d_%04d", LOGFILE_PREFIX, num);
-    // If the next sequential file also exists, we may have looped through all 9999 files, and we start
-    // again at 0. In which case we need to delete the old file first.
-    if (SD.exists(g_logFileName + ".TXT")) {
-      SD.remove(g_logFileName + ".TXT");
-    }
-  } else {
-    Serial.println("File doesn't exist yet");
   }
-  
+
   dataFile = SD.open("/OBD.CFG", FILE_WRITE);
   if (dataFile) {
     dataFile.write(version);
@@ -91,9 +87,8 @@ void uniqueLogFileName()
 
 void initLogging()
 {
-  // Init pins for the two leds on the CAN board
-  pinMode(PIN_CAN_BOARD_LED1, OUTPUT);
-  pinMode(PIN_CAN_BOARD_LED2, OUTPUT);
+  // Start with an empty string so we always start on a new line.
+  Serial.println("");
 
   // Initialize SD card
   // make sure that the default chip select pin is set to
@@ -110,6 +105,29 @@ void initLogging()
   }
 }
 
+void logRawData(CAN_Frame *message)
+{
+  if (message == 0)
+    return;
+
+  char buf[150];
+  sprintf(buf, "%06d, %04x, %d, %d, %d, %02X, %02X, %02X, %02X, %02X, %02X, %02X, %02X",
+          message->m_timeStamp,
+          message->m_id,
+          message->m_rtr,
+          message->m_extended,
+          message->m_length,
+          message->m_data[0],
+          message->m_data[1],
+          message->m_data[2],
+          message->m_data[3],
+          message->m_data[4],
+          message->m_data[5],
+          message->m_data[6],
+          message->m_data[7]);
+  logRawData(buf);
+}
+
 // Simple helper function to write a string to a logging file
 void logRawData(char *s)
 {
@@ -118,8 +136,6 @@ void logRawData(char *s)
 
   File dataFile = SD.open(g_logFileName + ".RAW", FILE_WRITE);
   if (dataFile) {
-    dataFile.print(millis());
-    dataFile.print(" ");
     dataFile.println(s);
     dataFile.close();   //close file
   } else {
@@ -142,6 +158,17 @@ void logObdData(String s)
 }
 
 
+// *************************************************************************************************
+//                                  SELF TEST
+
+void selfTest()
+{
+  Serial.println("**************************************");
+  Serial.println("Start Self Test");
+  // Do actual tests here...
+  Serial.println("Self Test Done ");
+  Serial.println("**************************************");
+}
 
 
 

@@ -117,7 +117,7 @@ class PumaDisplay : public Diablo_Serial_4DLib
     PumaDisplay(Stream * virtualPort);
     void setup();
     void processTouchEvents();
-    void reset();
+    void reset(word ms = DISPLAY_RESET_MS);
 
     BaseScreen *activeScreen();
     void updateSensor(OBDData *sensor);

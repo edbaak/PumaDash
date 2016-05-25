@@ -26,9 +26,12 @@
 #include "WProgram.h" // for Arduino 23
 #endif
 
+class CAN_Frame;
+
 // Operational settings
 #define LOGFILE_PREFIX 1605     // Prefix for SD card logging file names, i.e. 16050001.OBD
 #define DISPLAY_SPEED 115200    // The baudrate at which we're running the 4D display
+#define DISPLAY_RESET_MS 5000   // Wait time after a display reset
 //#define RAW_LOGGING           // Saves RAW OBD data in a file on SD card
 //#define OBD_LOGGING           // Saves Processed OBD data in a file on SD card
 
@@ -91,11 +94,15 @@
 String v2s(char* format, int value);
 String v2s(char* format, byte value);
 String v2s(char* format, word value);
+String v2s(char* format, unsigned long value);
 
 void uniqueLogFileName();
 void initLogging();
 void logRawData(char *s);
+void logRawData(CAN_Frame *message);
 void logObdData(String s);
+
+void selfTest();
 
 #endif
 

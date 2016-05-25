@@ -97,12 +97,29 @@ void PumaDisplay::updateSensor(OBDData *sensor)
   activeScreen()->updateSensor(sensor);
 }
 
-void PumaDisplay::reset()
+void PumaDisplay::reset(word ms)
 {
+  static unsigned long display_startup_delay_timer = 0;
+  if (display_startup_delay_timer != 0) {
+    // If we get in here we've called reset before with a ms of 0, indicating that we want a reset but but wanted to postpone a delay whilst doing other - more usefull - stuff.
+    // Now that we're back, we can calculate how much of the recommended 5000 ms is left to delay.
+    long new_ms = ms - (millis() - display_startup_delay_timer);
+    display_startup_delay_timer = 0; // Make sure the next reset is handled normally
+    if (new_ms > 0) {
+      Serial.println("Display reset. Waiting " + v2s("%d", word(new_ms)) + " ms");
+      delay(word(new_ms));
+    }
+    return;
+  }
+
   digitalWrite(PIN_DISPLAY_RESET, 1);  // Reset the Display via D4
   delay(100);
   digitalWrite(PIN_DISPLAY_RESET, 0);  // unReset the Display via D4
-  delay(5000);
+
+  if (ms == 0)
+    display_startup_delay_timer = millis();
+  else
+    delay(ms);
 }
 
 // ******************************************************************************************************
@@ -144,8 +161,8 @@ void BaseScreen::init()
   bottom_border = display_max_y - top_border;
 
   for (byte i = 0; i < MAX_CHAR_SIZE; i++) {
-    m_display->txt_Width(i+1);
-    m_display->txt_Height(i+1);
+    m_display->txt_Width(i + 1);
+    m_display->txt_Height(i + 1);
     m_char_width[i] = m_display->charwidth('0');
     m_char_height[i] = m_display->charheight('0');
   }
@@ -153,18 +170,18 @@ void BaseScreen::init()
 
 word BaseScreen::charWidth(byte fontSize)
 {
-  fontSize-=1;
+  fontSize -= 1;
   if (fontSize < MAX_CHAR_SIZE)
     return m_char_width[fontSize];
-  return 10;  
+  return 10;
 }
 
 word BaseScreen::charHeight(byte fontSize)
 {
-  fontSize-=1;
+  fontSize -= 1;
   if (fontSize < MAX_CHAR_SIZE)
     return m_char_height[fontSize];
-  return 10;  
+  return 10;
 }
 
 void BaseScreen::addSensor(SensorWidget *sensor)
@@ -202,7 +219,7 @@ void BaseScreen::updateSensor(OBDData *sensor)
   if (tmp)
     tmp->update(sensor);
 }
-  
+
 bool BaseScreen::touchPressed()
 {
   int j = m_display->touch_Get(TOUCH_STATUS) ;
@@ -268,7 +285,7 @@ void Screen0::init()
     addSensor(new PitchAndRollWidget(PID_PUMA_PITCH, PUMA_SENSOR_DATA_FONT_SIZE, 10, 8, true, 7 ));
     addSensor(new PitchAndRollWidget(PID_PUMA_ROLL, PUMA_SENSOR_DATA_FONT_SIZE, 50, 149, false, 10 ));
     addSensor(new CompassWidget(PID_PUMA_HEADING, PUMA_HEADING_FONT_SIZE, 100, 100)); // TODO: set at correct x,y position
-    
+
     Table t1("TPMS", Table::TOP_BORDER | Table::SHOW_GRID, 2, 3,
              left_border, left_divider_line,
              top_border, display_max_y / 2);
@@ -308,7 +325,7 @@ Screen1::Screen1() : BaseScreen()
 void Screen1::init()
 {
   BaseScreen::init();
-  
+
   left_divider_line = 135;
   right_divider_line = maxWidth() - left_divider_line;
   bottom_divider = maxHeight() - 130;
@@ -377,11 +394,11 @@ void Screen2::init()
 
   // Only create and add sensor objects the first time we call init.
   if (m_first_sensor == 0) {
- //   printLabel("Speed Control", 80, 30, PUMA_LABEL_COLOR);
-//    addSensor(new SensorWidget(PID_CC_SPEED, 4, mid_separator_line, 50));        // Km/h
-//    addSensor(new SensorWidget(PID_CC_MODE, 2, left_border, 100));         // Mode: OFF, ARMED, ON
-//    addSensor(new SensorWidget(PID_CC_ACCELERATOR, 2, left_border + 150, 100));  // Throttle: 50%
-//    addSensor(new ListWidget("On-Board Diagnostics", PID_DTC, 3, left_border, 120, display_max_x, display_max_y));
+    //   printLabel("Speed Control", 80, 30, PUMA_LABEL_COLOR);
+    //    addSensor(new SensorWidget(PID_CC_SPEED, 4, mid_separator_line, 50));        // Km/h
+    //    addSensor(new SensorWidget(PID_CC_MODE, 2, left_border, 100));         // Mode: OFF, ARMED, ON
+    //    addSensor(new SensorWidget(PID_CC_ACCELERATOR, 2, left_border + 150, 100));  // Throttle: 50%
+    //    addSensor(new ListWidget("On-Board Diagnostics", PID_DTC, 3, left_border, 120, display_max_x, display_max_y));
   }
 }
 
