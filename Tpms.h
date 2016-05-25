@@ -40,7 +40,6 @@ class Tpms
 {
   public:
     Tpms();
-    void setup(PumaDisplay *display);
     void update();
         
   private:

@@ -39,6 +39,8 @@ class PumaDisplay;
 class SensorWidget;
 #define MAX_CHAR_SIZE 10
 
+PumaDisplay* Display();
+
 class BaseScreen
 {
   public:

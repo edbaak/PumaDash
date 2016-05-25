@@ -37,7 +37,6 @@ PumaOBD::PumaOBD()
   m_first = 0;
   m_last = 0;
   m_current = 0;
-  m_display = 0;
 
   m_rxFIFO_head = 0;
   m_rxFIFO_tail = 0;
@@ -172,10 +171,8 @@ OBDData *PumaOBD::iterateDataObject(bool needsUpdate)
   return 0;
 }
 
-void PumaOBD::setup(PumaDisplay *display)
+void PumaOBD::setup()
 {
-  m_display = display;
-
   // Switch Pin 10-13 to INPUT mode so they are high impedance, floating. That way we can hardwire Pins 50-53 onto them, so that we can use the CAN-Board on a Mega.
   // Connect pin 53 to 10 == CS (Chip Select)
   // Connect Pin 52 to 13 == SCK (Clock)
@@ -323,26 +320,15 @@ bool PumaOBD::processMessage(CAN_Frame message)
     data = &message.m_data[3];
 
     OBDData *object = dataObject(pid);
-    if (object)
+    if (object) {
       object->setValue(message.m_timeStamp, data);
+      Display()->updateSensor(object);
 
-    if (object != &m_invalidPID) {
-#ifndef PID_DISCOVERY_MODE
-      m_display->updateSensor(object);
-#endif
-
-      bool log_data = false;
 #ifdef OBD_LOGGING
-      log_data = true;
+      logObdData(v2s("%04X ", pid) + object->toString());
 #endif
-#ifdef PID_DISCOVERY_MODE
-      log_data = true;
-#endif
-      if (log_data) {
-        logObdData(v2s("%04X ", pid) + object->toString());
-      }
-      return true;
     }
+    return true;
   }
 
   return false;

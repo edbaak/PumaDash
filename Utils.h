@@ -49,7 +49,7 @@
 #define RPM_RADIUS 110                // Size of the Rpm dial
 
 // PUMA Dash specific PID's, i.e. not part of the OBD2 standard and unknown to the vehicle ECU.
-// These PID's are NOT transmitted on the CAN bus
+// These PID's are 'extensions' to the OBD standard and are NOT transmitted on the CAN bus
 #define PID_PUMA_PITCH            0xFF01
 #define PID_PUMA_ROLL             0xFF02
 #define PID_PUMA_HEADING          0xFF03

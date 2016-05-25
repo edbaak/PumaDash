@@ -33,14 +33,12 @@ class Position
 {
   public:
     Position();
-    void setup(PumaDisplay *display);
     void update();
         
   private:
     OBDData *gps_Compass;
     OBDData *gps_Pitch;
     OBDData *gps_Roll;
-    PumaDisplay *m_display;
 };
 
 #endif

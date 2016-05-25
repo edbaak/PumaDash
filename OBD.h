@@ -334,7 +334,7 @@ class PumaOBD
 {
   public:
     PumaOBD();
-    void setup(PumaDisplay *display);
+    void setup();
     void readMessages();
     void requestObdUpdates();
 
@@ -357,7 +357,6 @@ class PumaOBD
 
   private:
     PumaCAN m_CAN;
-    PumaDisplay *m_display;
     CAN_Frame m_rxFIFO[MAX_RX_FIFO];
     byte m_rxFIFO_head;
     byte m_rxFIFO_tail;

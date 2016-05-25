@@ -18,6 +18,7 @@
 */
 
 #include "Utils.h"
+#include "Display.h"
 #include "Tpms.h"
 
 #if (ARDUINO >= 100)
@@ -83,22 +84,23 @@ void Tpms::update()
 // TODO: Get data from HW sensor
 #endif // LOOPBACK_MODE
 
-  m_display->updateSensor(m_FL_Pressure);
-  m_display->updateSensor(m_FR_Pressure);
-  m_display->updateSensor(m_RL_Pressure);
-  m_display->updateSensor(m_RR_Pressure);
-  m_display->updateSensor(m_TL_Pressure);
-  m_display->updateSensor(m_TR_Pressure);
+  Display()->updateSensor(m_FL_Pressure);
+  Display()->updateSensor(m_FR_Pressure);
+  Display()->updateSensor(m_RL_Pressure);
+  Display()->updateSensor(m_RR_Pressure);
+  Display()->updateSensor(m_TL_Pressure);
+  Display()->updateSensor(m_TR_Pressure);
 
-  m_display->updateSensor(m_FL_Temperature);
-  m_display->updateSensor(m_FR_Temperature);
-  m_display->updateSensor(m_RL_Temperature);
-  m_display->updateSensor(m_RR_Temperature);
-  m_display->updateSensor(m_TL_Temperature);
-  m_display->updateSensor(m_TR_Temperature);
+  Display()->updateSensor(m_FL_Temperature);
+  Display()->updateSensor(m_FR_Temperature);
+  Display()->updateSensor(m_RL_Temperature);
+  Display()->updateSensor(m_RR_Temperature);
+  Display()->updateSensor(m_TL_Temperature);
+  Display()->updateSensor(m_TR_Temperature);
 }
 
-bool Tpms::tirePressureWarning(byte tirePosition)
+/*
+ bool Tpms::tirePressureWarning(byte tirePosition)
 {
   if (tirePosition < MAX_TIRES &&
       m_tirePressures[tirePosition] <= m_tirePressureWarningLevel &&
@@ -131,7 +133,7 @@ bool Tpms::tireTemperatureAlarm(byte tirePosition)
       return true;
   return false;
 }
-
+*/
 
 
 

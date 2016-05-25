@@ -28,11 +28,6 @@ Position::Position()
   gps_Roll = new OBDData(PID_PUMA_ROLL, "Roll", "%2i", "", 1000, INT_NO_CONVERSION, -40, 40, 3);
 }
 
-void Position::setup(PumaDisplay *display)
-{
-  m_display = display;
-}
-
 void Position::update()
 {
 #ifdef LOOPBACK_MODE
@@ -43,9 +38,9 @@ void Position::update()
 // TODO: Get data from HW sensor
 #endif // LOOPBACK_MODE
 
-  m_display->updateSensor(gps_Compass);
-  m_display->updateSensor(gps_Pitch);
-  m_display->updateSensor(gps_Roll);
+  Display()->updateSensor(gps_Compass);
+  Display()->updateSensor(gps_Pitch);
+  Display()->updateSensor(gps_Roll);
 }
 
 

@@ -41,12 +41,11 @@ class Table
       SHOW_GRID = 0x10
     } BORDER_LINES;
 
-    Table(PumaDisplay *display, String title, word borderLines, byte columns, byte rows, word minX, word maxX, word minY, word maxY);
+    Table(String title, word borderLines, byte columns, byte rows, word minX, word maxX, word minY, word maxY);
     word cellX(byte column);
     word cellY(byte row);
 
   private:
-    PumaDisplay *m_display;
     String m_title;
     word m_title_height;
     word m_border_lines;
@@ -63,11 +62,10 @@ class Table
 class SensorWidget
 {
   public:
-    SensorWidget(PumaDisplay *display, word pid, byte fontSize, word x, word y);
+    SensorWidget(word pid, byte fontSize, word x, word y);
     virtual void update(OBDData *sensor);
 
   protected:
-    PumaDisplay *m_display;
     friend class BaseScreen;
     word m_pid;
     byte m_fontSize;
@@ -80,7 +78,7 @@ class SensorWidget
 class RpmDialWidget : public SensorWidget
 {
   public:
-    RpmDialWidget(PumaDisplay *display, word pid, byte fontSize, word x, word y, word radius);
+    RpmDialWidget(word pid, byte fontSize, word x, word y, word radius);
     void drawRpmDial();
     void updateRpm(word rpm);
     virtual void update(OBDData *sensor);
@@ -92,7 +90,7 @@ class RpmDialWidget : public SensorWidget
 class PitchAndRollWidget : public SensorWidget
 {
   public:
-    PitchAndRollWidget(PumaDisplay *display, word pid, byte fontSize, word x, word y, bool pitchMode, byte interleave);
+    PitchAndRollWidget(word pid, byte fontSize, word x, word y, bool pitchMode, byte interleave);
     void updateAngle(int angle);
     virtual void update(OBDData *sensor);
 
@@ -104,7 +102,7 @@ class PitchAndRollWidget : public SensorWidget
 class CompassWidget : public SensorWidget
 {
   public:
-    CompassWidget(PumaDisplay *display, word pid, byte fontSize, word x, word y);
+    CompassWidget(word pid, byte fontSize, word x, word y);
     void updateHeading(word heading);
     virtual void update(OBDData *sensor);
 };
@@ -117,7 +115,7 @@ class TpmsWidget : public SensorWidget
       TPMS_TEMPERATURE
     } TPMS_MODE;
 
-    TpmsWidget(PumaDisplay *display, word pid, TPMS_MODE mode, byte fontSize, word x, word y);
+    TpmsWidget(word pid, TPMS_MODE mode, byte fontSize, word x, word y);
     virtual void update(OBDData *sensor);
 
   protected:
@@ -131,7 +129,7 @@ class TpmsWidget : public SensorWidget
 class ListWidget : public SensorWidget
 {
   public:
-    ListWidget(PumaDisplay *display, String title, word pid, byte fontSize, word x1, word y1, word x2, word y2);
+    ListWidget(String title, word pid, byte fontSize, word x1, word y1, word x2, word y2);
     void appendLine(String line);
     virtual void update(OBDData *sensor);
 

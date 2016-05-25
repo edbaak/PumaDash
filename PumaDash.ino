@@ -23,24 +23,27 @@
 #include "WProgram.h" // for Arduino 23
 #endif
 
-#include "Utils.h"
+// Third party libraries
 #include <SPI.h>
-#include "CAN.h"
-#include "OBD.h"
 #include <SD.h>
 #include <Bounce2.h>
+#include <Diablo_Const4D.h>
+#include <Diablo_Serial_4DLib.h>
+
+// Puma code
+#include "Utils.h"
+#include "CAN.h"
+#include "OBD.h"
 #include "Tpms.h"
 #include "Position.h"
 #include "Speed.h"
-#include <Diablo_Const4D.h>
-#include <Diablo_Serial_4DLib.h>
 #include "Display.h"
 
-Position g_position;                     // GPS position & pitch and roll of vehicle
+PumaDisplay g_display(&DISPLAY_SERIAL1);  // Puma display driver. We need to create this beast first, so we can use a global reference to it throughout the code.
+Position g_position;                      // GPS position & pitch and roll of vehicle
 Tpms g_tpms;                              // Tire Pressure Monitoring
 CruiseCtrl g_speed;                       // Speed Control and deals with gearbox ratios etc to calculate gear shifts
 PumaOBD g_obd;                            // On Board Diagnostics for the Vehicle
-PumaDisplay g_display(&DISPLAY_SERIAL1);  // Basic display driver
 
 void setup() {
   pinMode(PIN_CAN_BOARD_LED1, OUTPUT);
@@ -49,9 +52,7 @@ void setup() {
   Serial.begin(DISPLAY_SPEED);
   
   initLogging();
-  g_position.setup(&g_display);
-  g_tpms.setup(&g_display);
-  g_obd.setup(&g_display);
+  g_obd.setup();
   g_display.setup(&g_position, &g_tpms, &g_speed, &g_obd);
   attachInterrupt(digitalPinToInterrupt(PIN_MP2515_RX_INTERRUPT), canRxHandler, FALLING);
 }
