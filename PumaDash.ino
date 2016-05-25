@@ -53,7 +53,7 @@ void setup() {
   
   initLogging();
   g_obd.setup();
-  g_display.setup(&g_position, &g_tpms, &g_speed, &g_obd);
+  g_display.setup();
   attachInterrupt(digitalPinToInterrupt(PIN_MP2515_RX_INTERRUPT), canRxHandler, FALLING);
 }
 

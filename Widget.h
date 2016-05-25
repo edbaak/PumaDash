@@ -27,6 +27,7 @@
 #endif
 
 #include "Display.h"
+#include "OBD.h"
 
 class Table
 {

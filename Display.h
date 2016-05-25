@@ -30,9 +30,6 @@
 #include <Diablo_Const4D.h>
 #include <Diablo_Serial_4DLib.h>
 #include <string.h>
-#include "Tpms.h"
-#include "Position.h"
-#include "Speed.h"
 #include "OBD.h"
 
 class PumaDisplay;
@@ -118,7 +115,7 @@ class PumaDisplay : public Diablo_Serial_4DLib
 {
   public:
     PumaDisplay(Stream * virtualPort);
-    void setup(Position *pos, Tpms *tpms, CruiseCtrl *speed, PumaOBD *obd);
+    void setup();
     void processTouchEvents();
     void reset();
 
@@ -137,12 +134,6 @@ class PumaDisplay : public Diablo_Serial_4DLib
 
     friend class Screen2;
     Screen2 m_screen2;    // Visual elements of the 'Right' display
-
-    Position *m_position;
-    friend class TpmsWidget;
-    Tpms *m_tpms;
-    CruiseCtrl *m_speed;
-    PumaOBD *m_obd;
 };
 
 #endif
