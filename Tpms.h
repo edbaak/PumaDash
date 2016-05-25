@@ -33,41 +33,39 @@
 #endif
 
 #include "Utils.h"
+#include "OBD.h"
 #include <string.h>
-
-#define FRONT_LEFT 0
-#define FRONT_RIGHT 1
-#define REAR_LEFT 2
-#define REAR_RIGHT 3
-#define TRAILER_LEFT 4
-#define TRAILER_RIGHT 5
-#define VEHICLE_SPARE 6
-#define TRAILER_SPARE 7
-
-#define MAX_TIRES 6
  
 class Tpms
 {
   public:
     Tpms();
+    void setup(PumaDisplay *display);
     void update();
-    
-    byte tirePressure(byte tirePosition);
-    bool tirePressureWarning(byte tirePosition);
-    bool tirePressureAlarm(byte tirePosition);
-    
-    byte tireTemperature(byte tirePosition);
-    bool tireTemperatureWarning(byte tirePosition);
-    bool tireTemperatureAlarm(byte tirePosition);
-  
+        
   private:
-    word m_tirePressures[6];
-    word m_tireTemperatures[6];
+    OBDData *m_FL_Pressure;
+    OBDData *m_FL_Temperature;
+    
+    OBDData *m_FR_Pressure;
+    OBDData *m_FR_Temperature;
+    
+    OBDData *m_RL_Pressure;
+    OBDData *m_RL_Temperature;
+    
+    OBDData *m_RR_Pressure;
+    OBDData *m_RR_Temperature;
+    
+    OBDData *m_TL_Pressure;
+    OBDData *m_TL_Temperature;
+    
+    OBDData *m_TR_Pressure;
+    OBDData *m_TR_Temperature;
+  
     word m_tirePressureWarningLevel;
     word m_tirePressureAlarmLevel;  
     word m_tireTemperatureWarningLevel;
     word m_tireTemperatureAlarmLevel;  
-    
 };
 
 #endif

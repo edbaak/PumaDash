@@ -106,7 +106,6 @@ void SensorWidget::update(OBDData *sensor)
 {
   if (sensor == 0) return;
 
-  byte size = m_fontSize;
   word x1 = m_x;
   word y1 = m_y;
   // TODO: optimize by only repainting label and sublabel when needed.
@@ -116,11 +115,11 @@ void SensorWidget::update(OBDData *sensor)
     y1 += m_display->activeScreen()->charHeight(PUMA_LABEL_SIZE);
   }
 
-  m_display->activeScreen()->printValue(sensor->toString(), x1, y1, sensor->color(), size);
+  m_display->activeScreen()->printValue(sensor->toString(), sensor->stringLength(), x1, y1, sensor->color(), m_fontSize);
 
   if (sensor->subLabel() != "") {
-    x1 = x1 + (m_display->activeScreen()->charWidth(1) / 2) + (m_display->activeScreen()->charWidth(size) * sensor->valueLength());
-    y1 = y1 + m_display->activeScreen()->charHeight(size) - m_display->activeScreen()->charHeight(1);
+    x1 = x1 + (m_display->activeScreen()->charWidth(1) / 2) + (m_display->activeScreen()->charWidth(m_fontSize) * sensor->stringLength());
+    y1 = y1 + m_display->activeScreen()->charHeight(m_fontSize) - m_display->activeScreen()->charHeight(1);
     m_display->activeScreen()->printLabel(sensor->subLabel(), x1, y1, PUMA_LABEL_COLOR, 1);
   }
 }
@@ -208,7 +207,7 @@ void RpmDialWidget::updateRpm(word rpm)
   m_display->gfx_TriangleFilled(x_pos[0], y_pos[0], x_pos[1], y_pos[1], x_pos[2], y_pos[2], color);
 
   // TODO: fix print position
-  m_display->activeScreen()->printValue(String(rpm), m_x - 58, m_y - 95, color, 3);
+  m_display->activeScreen()->printValue(String(rpm), 3, m_x - 58, m_y - 95, color, 3);
 }
 
 
@@ -259,9 +258,9 @@ void PitchAndRollWidget::updateAngle(int angle)
     color = PUMA_WARNING_COLOR;
 
   if (m_pitchMode)
-    m_display->activeScreen()->printValue(String(abs(angle)), m_x - 1, m_y + m_interleave * 16 + 1, color, 2);
+    m_display->activeScreen()->printValue(String(abs(angle)), 3, m_x - 1, m_y + m_interleave * 16 + 1, color, 2);
   else
-    m_display->activeScreen()->printValue(String(abs(angle)), m_x + m_interleave * 16 + 4, m_y - 13, color, 2);
+    m_display->activeScreen()->printValue(String(abs(angle)), 3, m_x + m_interleave * 16 + 4, m_y - 13, color, 2);
 
   if (angle > 40)
     angle = 40;
@@ -318,7 +317,7 @@ void CompassWidget::updateHeading(word heading)
     m_display->txt_Xgap(2);
     char hd[5];
     sprintf(hd, "%03d", heading);
-    m_display->activeScreen()->printValue(hd, 65, 40, PUMA_NORMAL_COLOR, 6);
+    m_display->activeScreen()->printValue(hd, 3, 65, 40, PUMA_NORMAL_COLOR, 6);
     m_display->txt_Xgap(0);
 
     heading += 270;
@@ -385,7 +384,7 @@ void TpmsWidget::updatePressure(String pressure)
   //    color = PUMA_ALARM_COLOR;
   //  else if (m_display->m_tpms->tirePressureWarning(tireLocation))
   //    color = PUMA_WARNING_COLOR;
-  m_display->activeScreen()->printValue(pressure, x1, y2, color, m_fontSize);
+  m_display->activeScreen()->printValue(pressure, 2, x1, y2, color, m_fontSize);
 }
 
 void TpmsWidget::updateTemperature(String temperature)
@@ -397,7 +396,7 @@ void TpmsWidget::updateTemperature(String temperature)
   //    color = PUMA_ALARM_COLOR;
   //  else if (m_display->m_tpms->tireTemperatureWarning(tireLocation))
   //    color = PUMA_WARNING_COLOR;
-  m_display->activeScreen()->printValue(temperature, x2, y1, color, m_fontSize);
+  m_display->activeScreen()->printValue(temperature, 2, x2, y1, color, m_fontSize);
 }
 
 // ******************************************************************************************************

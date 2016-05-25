@@ -26,18 +26,20 @@
 #include "WProgram.h" // for Arduino 23
 #endif
 
+// Operational settings
 #define LOGFILE_PREFIX 1605     // Prefix for SD card logging file names, i.e. 16050001.OBD
 #define DISPLAY_SPEED 115200    // The baudrate at which we're running the 4D display
-//#define LOOPBACK_MODE           // CAN loopback mode. Messages transmitted are looped back to the CAN receiver, which helps with debugging.
-//#define VEHICLEDASH_DEBUG     // TODO: only used in Tpms and Position to simulate data
-//#define OBD_DEBUG             // Prints out raw OBD RX data to Serial
 //#define RAW_LOGGING           // Saves RAW OBD data in a file on SD card
 //#define OBD_LOGGING           // Saves Processed OBD data in a file on SD card
-//#define CAN_DEBUG 1           // Low level CAN debugging
 
+// Debugging modes
+#define LOOPBACK_MODE           // CAN loopback mode. Messages transmitted are looped back to the CAN receiver, which helps with debugging.
+//#define OBD_DEBUG             // Prints out raw OBD RX data to Serial
+//#define CAN_DEBUG 1           // Low level CAN debugging
 //#define PID_DISCOVERY_MODE    // To discover new unknown PIDS, enable RECORD_UNKNOWN_PIDS. NOTE: This will only work if RX Masking/Filtering is switched off
 #define MAX_UNKNOWN_PIDS 50     // Max number of unhandled PID's that we keep track of
 
+// Puma dashboard specific UI defines
 #define PUMA_LABEL_SIZE 1             // Font size for labels and subLabels
 #define PUMA_SENSOR_DATA_SIZE 2       // Font size for 'normal' sensor data (RPM, Speed, TPMS and a few more are shown bigger)
 #define PUMA_LABEL_COLOR WHITE        // FG color for label text
@@ -46,7 +48,7 @@
 #define PUMA_NORMAL_COLOR LIGHTGREEN  // FG color for data that is in the normal/safe operating zone
 #define RPM_RADIUS 110                // Size of the Rpm dial
 
-// Internally simulated PUMA Dash specific PID's, i.e. not part of the OBD2 standard and unknown to the vehicle ECU.
+// PUMA Dash specific PID's, i.e. not part of the OBD2 standard and unknown to the vehicle ECU.
 // These PID's are NOT transmitted on the CAN bus
 #define PID_PUMA_PITCH            0xFF01
 #define PID_PUMA_ROLL             0xFF02

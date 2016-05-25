@@ -27,21 +27,20 @@
 #endif
 
 #include "Utils.h"
+#include "OBD.h"
 
-class Direction
+class Position
 {
   public:
-    Direction();
+    Position();
+    void setup(PumaDisplay *display);
     void update();
-    
-    word compass();
-    word pitch();
-    word roll();
-    
+        
   private:
-    word gps_Compass;
-    int gps_Pitch;
-    int gps_Roll;
+    OBDData *gps_Compass;
+    OBDData *gps_Pitch;
+    OBDData *gps_Roll;
+    PumaDisplay *m_display;
 };
 
 #endif

@@ -55,7 +55,7 @@ class BaseScreen
 
     void printLabel(String label, word x, word y, int color, byte fontSize = 1);
     void printSubLabel(String subLabel, word x, word y, int color, byte fontSize = 1);
-    void printValue(String value, byte textLength, word x, word y, int color, byte fontSize = 1);
+    void printValue(String value, byte textLength, word x, word y, int color, byte fontSize);
 
     word maxWidth();
     word maxHeight();
@@ -116,7 +116,7 @@ class PumaDisplay : public Diablo_Serial_4DLib
 {
   public:
     PumaDisplay(Stream * virtualPort);
-    void setup(Direction *pos, Tpms *tpms, CruiseCtrl *speed, PumaOBD *obd);
+    void setup(Position *pos, Tpms *tpms, CruiseCtrl *speed, PumaOBD *obd);
     void processTouchEvents();
     void reset();
 
@@ -136,7 +136,7 @@ class PumaDisplay : public Diablo_Serial_4DLib
     friend class Screen2;
     Screen2 m_screen2;    // Visual elements of the 'Right' display
 
-    Direction *m_position;
+    Position *m_position;
     friend class TpmsWidget;
     Tpms *m_tpms;
     CruiseCtrl *m_speed;

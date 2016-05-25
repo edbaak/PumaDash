@@ -60,7 +60,6 @@ class CruiseCtrl
 {
   public:
   CruiseCtrl();
-//	Tcallback4D Callback4D ;
 				
 void switchOnCruiseControlRelay(bool on);
 void setAccelleration(int accelleration);

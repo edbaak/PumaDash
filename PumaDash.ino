@@ -36,7 +36,7 @@
 #include <Diablo_Serial_4DLib.h>
 #include "Display.h"
 
-Direction g_position;                     // GPS position & pitch and roll of vehicle
+Position g_position;                     // GPS position & pitch and roll of vehicle
 Tpms g_tpms;                              // Tire Pressure Monitoring
 CruiseCtrl g_speed;                       // Speed Control and deals with gearbox ratios etc to calculate gear shifts
 PumaOBD g_obd;                            // On Board Diagnostics for the Vehicle
@@ -49,6 +49,8 @@ void setup() {
   Serial.begin(DISPLAY_SPEED);
   
   initLogging();
+  g_position.setup(&g_display);
+  g_tpms.setup(&g_display);
   g_obd.setup(&g_display);
   g_display.setup(&g_position, &g_tpms, &g_speed, &g_obd);
   attachInterrupt(digitalPinToInterrupt(PIN_MP2515_RX_INTERRUPT), canRxHandler, FALLING);
@@ -74,7 +76,7 @@ void loop() {
 void canRxHandler() {
   // Use LED2 to indicate Interrupt activity.
   // The Led should be on for only a very short period, so visually this will be a fast flashing led with a low light intensity. 
-  // A flashing led is 'good' it means we have incoming data, and are not stuck in a dead-lock somewhere.
+  // A flashing led is 'good'. It means we have incoming data, and are not stuck in a dead-lock somewhere.
   digitalWrite(PIN_CAN_BOARD_LED2, HIGH);
   g_obd.readRxBuffers();
   digitalWrite(PIN_CAN_BOARD_LED2, LOW);

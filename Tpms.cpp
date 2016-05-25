@@ -28,10 +28,31 @@
 
 Tpms::Tpms()
 {
-  for (int i=0; i< MAX_TIRES; i++) {
-    m_tirePressures[i] = 40;
-    m_tireTemperatures[i] = 27;
-  }
+  #define MIN_PRESS 20
+  #define MAX_PRESS 45
+  #define PRESS_STEP 3
+  #define MIN_TEMP 10
+  #define MAX_TEMP 60
+  #define TEMP_STEP 3
+  
+    m_FL_Pressure = new OBDData(PID_PUMA_TPMS_FL_PRESS, "FL Pressure", "%2d", "PSI", 1000, WORD_NO_CONVERSION, MIN_PRESS, MAX_PRESS, PRESS_STEP);
+    OBDData *m_FL_Temperature = new OBDData(PID_PUMA_TPMS_FL_TEMP, "Temperature", "%2d", "C", 1000, WORD_NO_CONVERSION, MIN_TEMP, MAX_TEMP, TEMP_STEP);
+    
+    m_FR_Pressure = new OBDData(PID_PUMA_TPMS_FR_PRESS, "FR Pressure", "%2d", "PSI", 1000, WORD_NO_CONVERSION, MIN_PRESS, MAX_PRESS, PRESS_STEP);
+    OBDData *m_FR_Temperature = new OBDData(PID_PUMA_TPMS_FR_TEMP, "Temperature", "%2d", "C", 1000, WORD_NO_CONVERSION, MIN_TEMP, MAX_TEMP, TEMP_STEP);
+    
+    m_RL_Pressure = new OBDData(PID_PUMA_TPMS_RL_PRESS, "RL Pressure", "%2d", "PSI", 1000, WORD_NO_CONVERSION, MIN_PRESS, MAX_PRESS, PRESS_STEP);
+    OBDData *m_RL_Temperature = new OBDData(PID_PUMA_TPMS_RL_TEMP, "Temperature", "%2d", "C", 1000, WORD_NO_CONVERSION, MIN_TEMP, MAX_TEMP, TEMP_STEP);
+    
+    m_RR_Pressure = new OBDData(PID_PUMA_TPMS_RR_PRESS, "RR Pressure", "%2d", "PSI", 1000, WORD_NO_CONVERSION, MIN_PRESS, MAX_PRESS, PRESS_STEP);
+    OBDData *m_RR_Temperature = new OBDData(PID_PUMA_TPMS_RR_TEMP, "Temperature", "%2d", "C", 1000, WORD_NO_CONVERSION, MIN_TEMP, MAX_TEMP, TEMP_STEP);
+    
+    m_TL_Pressure = new OBDData(PID_PUMA_TPMS_TL_PRESS, "TL Pressure", "%2d", "PSI", 1000, WORD_NO_CONVERSION, MIN_PRESS, MAX_PRESS, PRESS_STEP);
+    OBDData *m_TL_Temperature = new OBDData(PID_PUMA_TPMS_TL_TEMP, "Temperature", "%2d", "C", 1000, WORD_NO_CONVERSION, MIN_TEMP, MAX_TEMP, TEMP_STEP);
+    
+    m_TR_Pressure = new OBDData(PID_PUMA_TPMS_TR_PRESS, "TR Pressure", "%2d", "PSI", 1000, WORD_NO_CONVERSION, MIN_PRESS, MAX_PRESS, PRESS_STEP);
+    OBDData *m_TR_Temperature = new OBDData(PID_PUMA_TPMS_TR_TEMP, "Temperature", "%2d", "C", 1000, WORD_NO_CONVERSION, MIN_TEMP, MAX_TEMP, TEMP_STEP);
+
   m_tirePressureWarningLevel = 30;
   m_tirePressureAlarmLevel = 24;  
   m_tireTemperatureWarningLevel = 35;
@@ -40,33 +61,41 @@ Tpms::Tpms()
 
 void Tpms::update()
 {
-  #ifdef VEHICLEDASH_DEBUG
-  static byte slowdown_counter = 0;
-  slowdown_counter++;
-  if (slowdown_counter == 20) {
-    slowdown_counter = 0;
-    if (m_tirePressures[0] > 28) {
-      for (int i = 0; i<4; i++)
-        m_tirePressures[i]--;
-    } else if (m_tirePressures[1] > 18)
-      m_tirePressures[1] --;
+#ifdef LOOPBACK_MODE
+  m_FL_Pressure->simulateData(0);
+  m_FL_Temperature->simulateData(0);
 
-    if (m_tirePressures[0] == 28) {
-      if (m_tireTemperatures[0] < 35) {
-        for (int i = 0; i<4; i++)
-          m_tireTemperatures[i]++;
-      } else if (m_tireTemperatures[1] < 50)
-          m_tireTemperatures[1]++;
-    }
-  }
-  #endif
-}
+  m_FR_Pressure->simulateData(0);
+  m_FR_Temperature->simulateData(0);
 
-byte Tpms::tirePressure(byte tirePosition)
-{
-  if (tirePosition < MAX_TIRES)
-    return m_tirePressures[tirePosition];
-  return 0;
+  m_RL_Pressure->simulateData(0);
+  m_RL_Temperature->simulateData(0);
+
+  m_RR_Pressure->simulateData(0);
+  m_RR_Temperature->simulateData(0);
+
+  m_TL_Pressure->simulateData(0);
+  m_TL_Temperature->simulateData(0);
+
+  m_TR_Pressure->simulateData(0);
+  m_TR_Temperature->simulateData(0);
+#else
+// TODO: Get data from HW sensor
+#endif // LOOPBACK_MODE
+
+  m_display->updateSensor(m_FL_Pressure);
+  m_display->updateSensor(m_FR_Pressure);
+  m_display->updateSensor(m_RL_Pressure);
+  m_display->updateSensor(m_RR_Pressure);
+  m_display->updateSensor(m_TL_Pressure);
+  m_display->updateSensor(m_TR_Pressure);
+
+  m_display->updateSensor(m_FL_Temperature);
+  m_display->updateSensor(m_FR_Temperature);
+  m_display->updateSensor(m_RL_Temperature);
+  m_display->updateSensor(m_RR_Temperature);
+  m_display->updateSensor(m_TL_Temperature);
+  m_display->updateSensor(m_TR_Temperature);
 }
 
 bool Tpms::tirePressureWarning(byte tirePosition)
@@ -84,13 +113,6 @@ bool Tpms::tirePressureAlarm(byte tirePosition)
       m_tirePressures[tirePosition] <= m_tirePressureAlarmLevel)
       return true;
   return false;
-}
-
-byte Tpms::tireTemperature(byte tirePosition)
-{
-  if (tirePosition < MAX_TIRES)
-    return m_tireTemperatures[tirePosition];
-  return 0;
 }
 
 bool Tpms::tireTemperatureWarning(byte tirePosition)

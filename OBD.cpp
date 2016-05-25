@@ -414,7 +414,7 @@ OBDData::OBDData(uint8_t pid, String label, String format, String subLabel, uint
   m_next = 0;
   m_value = 0;
 #ifdef LOOPBACK_MODE
-  m_simValue = min;
+  m_simValue = 0;
   m_simIncrease = true;
   m_simMinValue = min;
   m_simMaxValue = max;
@@ -461,12 +461,13 @@ word OBDData::color()
   return LIGHTGREEN;
 }
 
-OBD_DATA_CONVERSION OBDData::dataConversion() 
+OBD_DATA_CONVERSION OBDData::dataConversion()
 {
   return m_conversion;
 }
 
-byte OBDData::valueLength()
+// This returns the expected string length returned by toString, if the specified format could be applied correctly.
+byte OBDData::stringLength()
 {
   if (m_format.length() > 0 && m_format[0] == '%') {
     char l = m_format[1];
@@ -553,6 +554,8 @@ void OBDData::setValue(uint32_t timeStamp, uint8_t *data)
   }
 
   switch (m_conversion) {
+    case INT_NO_CONVERSION:
+      break;
     case INT_MINUS40:
       m_value -= 40;
       break;
@@ -591,8 +594,18 @@ void OBDData::simulateData(CAN_Frame *message)
     if (m_simValue <= m_simMinValue) m_simIncrease = true;
   }
 
+  // Special case: 'message == 0', which is used to simulate data for non OBD originating data, i.e. heading, roll, pitch, tpms, etc.
+  if (message == 0) {
+    m_value = m_simValue;
+    return;
+  }
+
   long tmp = 0;
   switch (m_conversion) {
+    case INT_NO_CONVERSION:
+      message->m_data[0] = 3;
+      message->m_data[3] = uint8_t(m_simValue);
+      break;
     case INT_MINUS40:
       message->m_data[0] = 3;
       message->m_data[3] = uint8_t(m_simValue + 40);

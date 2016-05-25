@@ -41,7 +41,7 @@ PumaDisplay::PumaDisplay(Stream *virtualPort) : Diablo_Serial_4DLib(virtualPort)
   pinMode(PIN_DISPLAY_RESET, OUTPUT);
 }
 
-void PumaDisplay::setup(Direction *pos, Tpms *tpms, CruiseCtrl *speed, PumaOBD *obd)
+void PumaDisplay::setup(Position *pos, Tpms *tpms, CruiseCtrl *speed, PumaOBD *obd)
 {
   reset();
 

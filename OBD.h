@@ -273,6 +273,7 @@ typedef enum OBD_DATA_CONVERSION {
   WORD_DIV4,
   WORD_DIV20,
   INT_MINUS40,
+  INT_NO_CONVERSION,
   BYTE_TIMES10,
   BYTE_TIMES3,
   ULONG_NO_CONVERSION
@@ -291,11 +292,11 @@ class OBDData
     String label();
     String subLabel();
     word color();
-    byte valueLength();
     OBD_DATA_CONVERSION dataConversion();
     void setValue(uint32_t timeStamp, uint8_t *data);
 
     String toString();
+    byte stringLength();
     byte toByte();
     word toWord();
     int toInt();

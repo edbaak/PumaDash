@@ -19,57 +19,34 @@
 
 #include "Utils.h"
 #include "Position.h"
+#include "Display.h"
 
-Direction::Direction()
+Position::Position()
 {
-  gps_Compass = 0;
-  gps_Pitch = 0;
-  gps_Roll = 0;
+  gps_Compass = new OBDData(PID_PUMA_HEADING, "Heading", "%03d", "", 1000, WORD_NO_CONVERSION, 0, 360, 5);
+  gps_Pitch = new OBDData(PID_PUMA_PITCH, "Pitch", "%2i", "", 1000, INT_NO_CONVERSION, -40, 40, 3);
+  gps_Roll = new OBDData(PID_PUMA_ROLL, "Roll", "%2i", "", 1000, INT_NO_CONVERSION, -40, 40, 3);
 }
 
-void Direction::update()
+void Position::setup(PumaDisplay *display)
 {
-#ifdef VEHICLEDASH_DEBUG
-  static byte slowdown_counter = 0;
-  slowdown_counter++;
-  if (slowdown_counter == 10) {
-    slowdown_counter = 0;
-    gps_Compass++;
-    if (gps_Compass > 360)
-      gps_Compass = 0;
-  }
-
-  static int debug_pitch_incrementer = 1;
-  gps_Pitch+= debug_pitch_incrementer;
-  if (gps_Pitch > 44)
-    debug_pitch_incrementer = -1;
-  else if (gps_Pitch < -44)
-    debug_pitch_incrementer = 1;
-
-  static int debug_roll_incrementer = 1;
-  gps_Roll+= debug_roll_incrementer;
-  if (gps_Roll > 44)
-    debug_roll_incrementer = -1;
-  else if (gps_Roll < -44)
-    debug_roll_incrementer = 1;
-#endif // VEHICLEDASH_DEBUG
+  m_display = display;
 }
 
-word Direction::compass()
+void Position::update()
 {
-  return gps_Compass;
-}
+#ifdef LOOPBACK_MODE
+  gps_Compass->simulateData(0);
+  gps_Pitch->simulateData(0);
+  gps_Roll->simulateData(0);
+#else
+// TODO: Get data from HW sensor
+#endif // LOOPBACK_MODE
 
-word Direction::pitch()
-{
-  return gps_Pitch;
+  m_display->updateSensor(gps_Compass);
+  m_display->updateSensor(gps_Pitch);
+  m_display->updateSensor(gps_Roll);
 }
-
-word Direction::roll()
-{
-  return gps_Roll;  
-}
-
 
 
 
