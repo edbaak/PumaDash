@@ -108,14 +108,14 @@ class CompassWidget : public SensorWidget
     virtual void update(OBDData *sensor);
 };
 
+typedef enum TPMS_MODE {
+  TPMS_PRESSURE,
+  TPMS_TEMPERATURE
+} TPMS_MODE;
+
 class TpmsWidget : public SensorWidget
 {
   public:
-    typedef enum TPMS_MODE {
-      TPMS_PRESSURE,
-      TPMS_TEMPERATURE
-    } TPMS_MODE;
-
     TpmsWidget(word pid, TPMS_MODE mode, byte fontSize, word x, word y);
     virtual void update(OBDData *sensor);
 

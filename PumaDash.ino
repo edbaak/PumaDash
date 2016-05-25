@@ -50,7 +50,15 @@ void setup() {
   pinMode(PIN_CAN_BOARD_LED2, OUTPUT);
   
   Serial.begin(DISPLAY_SPEED);
-  
+//  Serial.println("---------------------");
+//  long m_simValue = 0x112233FF;
+//  Serial.println(m_simValue, HEX);
+//  Serial.println(m_simValue & 0xFF, HEX);
+//  Serial.println(m_simValue >> 8 & 0xFF, HEX);
+//  Serial.println(m_simValue >> 16 & 0xFF, HEX);
+//  Serial.println(uint8_t(m_simValue >> 24 & 0xFF), HEX);
+//  Serial.println("---------------------");
+
   initLogging();
   g_obd.setup();
   g_display.setup();

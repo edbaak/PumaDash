@@ -238,7 +238,10 @@ void PitchAndRollWidget::updateAngle(int angle)
     if (abs(i) == 2 || abs(i) == 4 || abs(i) == 6 || abs(i) == 8)
       w = 5;
     if (i == 0) {
-      Display()->gfx_Circle(x_, y_, 4, PUMA_LABEL_COLOR);
+      if (m_pitchMode)
+        Display()->gfx_CircleFilled(m_x+4, y_, 3, PUMA_LABEL_COLOR);
+      else
+        Display()->gfx_CircleFilled(x_, m_y-4, 3, PUMA_LABEL_COLOR);
     } else {
       if (m_pitchMode)
         Display()->gfx_Line(m_x, y_, m_x + w, y_, PUMA_LABEL_COLOR);
@@ -256,9 +259,9 @@ void PitchAndRollWidget::updateAngle(int angle)
     color = PUMA_WARNING_COLOR;
 
   if (m_pitchMode)
-    Display()->activeScreen()->printValue(String(abs(angle)), 3, m_x - 1, m_y + m_interleave * 16 + 1, color, 2);
+    Display()->activeScreen()->printValue(String(abs(angle)), 3, m_x - 1, m_y + m_interleave * 16 + 3, color, m_fontSize);
   else
-    Display()->activeScreen()->printValue(String(abs(angle)), 3, m_x + m_interleave * 16 + 4, m_y - 13, color, 2);
+    Display()->activeScreen()->printValue(String(abs(angle)), 3, m_x + m_interleave * 16 + 4, m_y - 15, color, m_fontSize);
 
   if (angle > 40)
     angle = 40;
@@ -267,25 +270,28 @@ void PitchAndRollWidget::updateAngle(int angle)
 
   float f = angle;
   f = f * m_interleave / 5.0;
-  static word x_last = 0;
-  static word y_last = 0;
+  static word x_last_p = 0;
+  static word y_last_p = 0;
+  static word x_last_r = 0;
+  static word y_last_r = 0;
 
   // Reset display area
-  if (x_last != 0) {
-    if (m_pitchMode)
-      Display()->gfx_TriangleFilled(x_last, y_last, x_last + 20, y_last - 5, x_last + 20, y_last + 5, BLACK);
-    else
-      Display()->gfx_TriangleFilled(x_last, y_last, x_last - 5, y_last - 20, x_last + 5, y_last - 20, BLACK);
-  }
+    if (m_pitchMode) {
+      if (x_last_p != 0)
+        Display()->gfx_TriangleFilled(x_last_p, y_last_p, x_last_p + 20, y_last_p - 5, x_last_p + 20, y_last_p + 5, BLACK);
+    } else {
+      if (x_last_r != 0)
+        Display()->gfx_TriangleFilled(x_last_r, y_last_r, x_last_r - 5, y_last_r - 20, x_last_r + 5, y_last_r - 20, BLACK);
+    }
 
   if (m_pitchMode) {
-    x_last = m_x + 10;
-    y_last = m_y + m_interleave * 8 - round(f);
-    Display()->gfx_TriangleFilled(x_last, y_last, x_last + 20, y_last - 5, x_last + 20, y_last + 5, color);
+    x_last_p = m_x + 10;
+    y_last_p = m_y + m_interleave * 8 - round(f);
+    Display()->gfx_TriangleFilled(x_last_p, y_last_p, x_last_p + 20, y_last_p - 5, x_last_p + 20, y_last_p + 5, color);
   } else {
-    x_last = m_x + m_interleave * 8 + round(f);
-    y_last = m_y - 10;
-    Display()->gfx_TriangleFilled(x_last, y_last, x_last - 5, y_last - 20, x_last + 5, y_last - 20, color);
+    x_last_r = m_x + m_interleave * 8 + round(f);
+    y_last_r = m_y - 10;
+    Display()->gfx_TriangleFilled(x_last_r, y_last_r, x_last_r - 5, y_last_r - 20, x_last_r + 5, y_last_r - 20, color);
   }
 }
 
@@ -315,7 +321,7 @@ void CompassWidget::updateHeading(word heading)
     Display()->txt_Xgap(2);
     char hd[5];
     sprintf(hd, "%03d", heading);
-    Display()->activeScreen()->printValue(hd, 3, 65, 40, PUMA_NORMAL_COLOR, 6);
+    Display()->activeScreen()->printValue(hd, 3, 65, 40, PUMA_NORMAL_COLOR, m_fontSize);
     Display()->txt_Xgap(0);
 
     heading += 270;

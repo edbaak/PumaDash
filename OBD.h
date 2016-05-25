@@ -347,7 +347,7 @@ class PumaOBD
     bool readMessage();
     bool processMessage(CAN_Frame message);
     void requestPID(uint16_t pid);
-    void updateSensor(OBDData *sensor);
+    void requestSensorData(OBDData *sensor);
 
     OBDData m_invalidPID; // This object is used to return a valid pointer in case we don't support the PID
     OBDData *m_first;

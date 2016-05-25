@@ -49,19 +49,19 @@ PumaOBD::PumaOBD()
   addDataObject(new OBDData(PID_SUPPORTED_PID_61_80, "", "", "", 0, ULONG_NO_CONVERSION, 0, 0, 0));
   addDataObject(new OBDData(PID_SUPPORTED_PID_81_A0, "", "", "", 0, ULONG_NO_CONVERSION, 0, 0, 0));
 #else
-  addDataObject(new OBDData(PID_RPM, "", "%4d", "Rpm", 100, WORD_DIV4, 0, 6000, 300));
-  addDataObject(new OBDData(PID_SPEED, "", "%3d", "Km/h", 250, BYTE_NO_CONVERSION, 0, 115, 3));
-
-  addDataObject(new OBDData(PID_COOLANT_TEMP, "Coolant", "%3d", "C", 3000, INT_MINUS40, -25, 130, 4));
-  addDataObject(new OBDData(PID_INTAKE_AIR_TEMP, "Intake Air", "%3d", "C", 5000, INT_MINUS40, 10, 50, 5));
-  addDataObject(new OBDData(PID_AMBIENT_AIR_TEMP, "Ambient Air", "%3d", "C", 5000, INT_MINUS40, 10, 50, 5));
-  //  addDataObject(new OBDData(PID_ENGINE_OIL_TEMP, "Engine Oil", "%3d", "C", 2000, INT_MINUS40, 0, 150, 4));
-
-  addDataObject(new OBDData(PID_BAROMETRIC_PRESSURE, "Air", "%4d", "mBar", 5000, BYTE_TIMES10, 950, 1150, 10));
-  addDataObject(new OBDData(PID_FUEL_PRESSURE, "Fuel rail", "%4d", "kPa", 5000, BYTE_TIMES3, 0, 765, 30));
-
-  addDataObject(new OBDData(PID_FUEL_LEVEL, "Tank Level", "%3d", "%", 3000, BYTE_PERCENTAGE, 0, 100, 2));
-  addDataObject(new OBDData(PID_ENGINE_FUEL_RATE, "Fuel Rate", "%3.1f", "L/hr", 3000, WORD_DIV20, 0, 30, 1)); // L/h
+//  addDataObject(new OBDData(PID_RPM, "", "%4d", "Rpm", 100, WORD_DIV4, 0, 6000, 300));
+//  addDataObject(new OBDData(PID_SPEED, "", "%3d", "Km/h", 250, BYTE_NO_CONVERSION, 0, 115, 3));
+//
+//  addDataObject(new OBDData(PID_COOLANT_TEMP, "Coolant", "%3d", "C", 3000, INT_MINUS40, -25, 130, 4));
+//  addDataObject(new OBDData(PID_INTAKE_AIR_TEMP, "Intake Air", "%3d", "C", 5000, INT_MINUS40, 10, 50, 5));
+//  addDataObject(new OBDData(PID_AMBIENT_AIR_TEMP, "Ambient Air", "%3d", "C", 5000, INT_MINUS40, 10, 50, 5));
+//  //  addDataObject(new OBDData(PID_ENGINE_OIL_TEMP, "Engine Oil", "%3d", "C", 2000, INT_MINUS40, 0, 150, 4));
+//
+//  addDataObject(new OBDData(PID_BAROMETRIC_PRESSURE, "Air", "%4d", "mBar", 5000, BYTE_TIMES10, 950, 1150, 10));
+//  addDataObject(new OBDData(PID_FUEL_PRESSURE, "Fuel rail", "%4d", "kPa", 5000, BYTE_TIMES3, 0, 765, 30));
+//
+//  addDataObject(new OBDData(PID_FUEL_LEVEL, "Tank Level", "%3d", "%", 3000, BYTE_PERCENTAGE, 0, 100, 2));
+//  addDataObject(new OBDData(PID_ENGINE_FUEL_RATE, "Fuel Rate", "%3.1f", "L/hr", 3000, WORD_DIV20, 0, 30, 1)); // L/h
 
   //  addDataObject(new OBDFloatValue(PID_CONTROL_MODULE_VOLTAGE, "Battery Voltage", 5000, WORD_DIV1000 // V
   //  addDataObject(new OBDByteValue(PID_CALCULATED_ENGINE_LOAD, "Engine Load", 1000, BYTE_PERCENTAGE (word * 100 / 255)
@@ -209,13 +209,13 @@ void PumaOBD::requestObdUpdates()
   // To ensure that every data element gets a chance we rotate through the list in a round robin fashion
   OBDData *tmp = iterateDataObject(true);
   if (tmp) {
-    updateSensor(tmp);
+    requestSensorData(tmp);
     m_current = tmp;
-    updateSensor(iterateDataObject(true));
+    requestSensorData(iterateDataObject(true));
   }
 }
 
-void PumaOBD::updateSensor(OBDData *sensor)
+void PumaOBD::requestSensorData(OBDData *sensor)
 {
   if (sensor) {
     CAN_Frame message;
@@ -227,6 +227,8 @@ void PumaOBD::updateSensor(OBDData *sensor)
     message.m_data[1] = 0x41; // mode 1 = show current data, mode 2 = show freeze frame
     message.m_data[2] = sensor->pid(); // The pid to which the simulated data applies
     sensor->simulateData(&message);
+    
+    // We send the simulated data onto the CAN bus. Since it is in loopback mode, the data will echo back to the RX and processed as if it was send by someone else.
     m_CAN.write(message);
 #else
     // Ask for a sensor value from the OBD bus, but don't wait for a reply, i.e. some time in the future the ECU is hopefully
@@ -236,6 +238,7 @@ void PumaOBD::updateSensor(OBDData *sensor)
     message.m_data[0] = 0x02; // two valid bytes with data following
     message.m_data[1] = 0x01; // mode 1 = show current data, mode 2 = show freeze frame
     message.m_data[2] = sensor->pid();  // the requested pid
+    
     m_CAN.write(message);
 #endif
   }
@@ -322,7 +325,6 @@ bool PumaOBD::processMessage(CAN_Frame message)
     OBDData *object = dataObject(pid);
     if (object) {
       object->setValue(message.m_timeStamp, data);
-      Display()->updateSensor(object);
 
 #ifdef OBD_LOGGING
       logObdData(v2s("%04X ", pid) + object->toString());
@@ -522,6 +524,8 @@ void OBDData::setValue(uint32_t timeStamp, uint8_t *data)
 {
   m_updateRequested = 0;
   m_timeStamp = timeStamp;
+  
+  long old_value = m_value;
   m_value = *data;
 
   byte repeat = 0;
@@ -531,12 +535,14 @@ void OBDData::setValue(uint32_t timeStamp, uint8_t *data)
     repeat = 1;
   } else if (m_conversion == ULONG_NO_CONVERSION) {
     repeat = 3;
+  } else if (m_conversion == INT_NO_CONVERSION) {
+    m_value = int8_t(*data);
   }
 
   for (byte r = 0; r < repeat; r++) {
-    m_value *= 256;
+    m_value = m_value << 8;
     data++;
-    m_value += data && 0x00FF;
+    m_value += *data;
   }
 
   switch (m_conversion) {
@@ -567,6 +573,9 @@ void OBDData::setValue(uint32_t timeStamp, uint8_t *data)
     case ULONG_NO_CONVERSION:
       break;
   }
+
+  if (old_value != m_value)
+    Display()->updateSensor(this);
 }
 
 #ifdef LOOPBACK_MODE
@@ -581,16 +590,18 @@ void OBDData::simulateData(CAN_Frame *message)
   }
 
   // Special case: 'message == 0', which is used to simulate data for non OBD originating data, i.e. heading, roll, pitch, tpms, etc.
+  CAN_Frame _tmp_message;
   if (message == 0) {
-    m_value = m_simValue;
-    return;
+    message = &_tmp_message;
+    message->m_data[1] = 0x41;
+    message->m_data[2] = m_pid;
   }
 
   long tmp = 0;
   switch (m_conversion) {
     case INT_NO_CONVERSION:
       message->m_data[0] = 3;
-      message->m_data[3] = uint8_t(m_simValue);
+      message->m_data[3] = int8_t(m_simValue);
       break;
     case INT_MINUS40:
       message->m_data[0] = 3;
@@ -614,28 +625,33 @@ void OBDData::simulateData(CAN_Frame *message)
       break;
     case WORD_NO_CONVERSION:
       message->m_data[0] = 4;
-      message->m_data[3] = m_simValue >> 8;
-      message->m_data[4] = m_simValue && 0x00FF;
+      message->m_data[3] = uint8_t(m_simValue >> 8 & 0xFF);
+      message->m_data[4] = uint8_t(m_simValue & 0xFF);
       break;
     case WORD_DIV4:
       message->m_data[0] = 4;
       tmp = m_simValue * 4;
-      message->m_data[3] = tmp >> 8;
-      message->m_data[4] = tmp && 0x00FF;
+      message->m_data[3] = uint8_t(tmp >> 8);
+      message->m_data[4] = uint8_t(tmp & 0xFF);
       break;
     case WORD_DIV20:
       message->m_data[0] = 4;
       tmp = m_simValue * 20;
-      message->m_data[3] = tmp >> 8;
-      message->m_data[4] = tmp && 0x00FF;
+      message->m_data[3] = uint8_t(tmp >> 8);
+      message->m_data[4] = uint8_t(tmp & 0xFF);
       break;
     case ULONG_NO_CONVERSION:
       message->m_data[0] = 6;
-      message->m_data[3] = (m_simValue >> 24) && 0x00FF;
-      message->m_data[4] = (m_simValue >> 16) && 0x00FF;
-      message->m_data[5] = (m_simValue >> 8) && 0x00FF;
-      message->m_data[6] = m_simValue && 0x00FF;
+      message->m_data[3] = uint8_t(m_simValue >> 24 & 0xFF);
+      message->m_data[4] = uint8_t(m_simValue >> 16 & 0xFF);
+      message->m_data[5] = uint8_t(m_simValue >> 8 & 0xFF);
+      message->m_data[6] = uint8_t(m_simValue & 0xFF);
       break;
+  }
+
+// In case the sensor data is not coming from the CAN bus, we set the value directly, which then will cause the display to be updated.
+  if (message == &_tmp_message) {
+    setValue(millis(), &message->m_data[3]);
   }
 }
 #endif

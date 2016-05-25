@@ -23,9 +23,9 @@
 
 Position::Position()
 {
-  gps_Compass = new OBDData(PID_PUMA_HEADING, "Heading", "%03d", "", 1000, WORD_NO_CONVERSION, 0, 360, 5);
-  gps_Pitch = new OBDData(PID_PUMA_PITCH, "Pitch", "%2i", "", 1000, INT_NO_CONVERSION, -40, 40, 3);
-  gps_Roll = new OBDData(PID_PUMA_ROLL, "Roll", "%2i", "", 1000, INT_NO_CONVERSION, -40, 40, 3);
+  gps_Compass = new OBDData(PID_PUMA_HEADING, "Heading", "%03d", "", 1000, WORD_NO_CONVERSION, 0, 360, 4);
+  gps_Pitch = new OBDData(PID_PUMA_PITCH, "Pitch", "%2i", "", 1000, INT_NO_CONVERSION, -40, 40, 2);
+  gps_Roll = new OBDData(PID_PUMA_ROLL, "Roll", "%2i", "", 1000, INT_NO_CONVERSION, -40, 40, 2);
 }
 
 void Position::update()
@@ -37,10 +37,6 @@ void Position::update()
 #else
 // TODO: Get data from HW sensor
 #endif // LOOPBACK_MODE
-
-  Display()->updateSensor(gps_Compass);
-  Display()->updateSensor(gps_Pitch);
-  Display()->updateSensor(gps_Roll);
 }
 
 
