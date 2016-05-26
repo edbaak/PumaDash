@@ -11,6 +11,12 @@
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
 
+  WARNING: Modifying a vehicle's dashboard and instrument panel 
+  may require vehicle engineering and re-certification according 
+  to local laws and regulations, such as the Australian Design
+  Rules (ADR) and Vehicle Standards. This code does not make any 
+  claim to meet any such standard. 
+
   You should have received a copy of the GNU General Public License
   along with this code; if not, write to the Free Software
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-
@@ -36,6 +42,7 @@ class PumaDisplay;
 class SensorWidget;
 #define MAX_CHAR_SIZE 10
 
+// Returns a pointer to the one and only global display class instance. This global pointer prevents the need for every class/instance to store a local copy.
 PumaDisplay* Display();
 
 class BaseScreen
@@ -124,15 +131,10 @@ class PumaDisplay : public Diablo_Serial_4DLib
 
   protected:
     bool g_init_display;
-    byte g_active_screen; // The screen currently shown on the display
+    byte g_active_screen; // The screen currently shown on the display, i.e. m_screen0, m_screen1 or m_screen2
 
-    friend class Screen0;
     Screen0 m_screen0;    // Visual elements of the 'Left' display
-
-    friend class Screen1;
     Screen1 m_screen1;    // Visual elements of the 'Center' display
-
-    friend class Screen2;
     Screen2 m_screen2;    // Visual elements of the 'Right' display
 };
 

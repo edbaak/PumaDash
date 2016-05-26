@@ -11,6 +11,12 @@
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
 
+  WARNING: Modifying a vehicle's dashboard and instrument panel 
+  may require vehicle engineering and re-certification according 
+  to local laws and regulations, such as the Australian Design
+  Rules (ADR) and Vehicle Standards. This code does not make any 
+  claim to meet any such standard. 
+
   You should have received a copy of the GNU General Public License
   along with this code; if not, write to the Free Software
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-
