@@ -48,7 +48,7 @@ PumaDisplay::PumaDisplay(Stream *virtualPort) : Diablo_Serial_4DLib(virtualPort)
 {
   global_Puma_Display = this;
   g_init_display = true;
-  g_active_screen = 0; // Define the default screen. We can change this by tapping the touchscreen
+  g_active_screen = 1; // Define the default screen. We can change this by tapping the touchscreen
 
   // Set D4 on Arduino to Output (4D Arduino Adaptor V2 - Display Reset)
   pinMode(PIN_DISPLAY_RESET, OUTPUT);
@@ -270,10 +270,7 @@ void BaseScreen::printSubLabel(String subLabel, word x, word y, int color, byte 
 
 void BaseScreen::printValue(String value, byte textLength, word x, word y, int color, byte fontSize)
 {
-  // TODO: This can be done better
-  byte fixedStringLength = 1;
-
-  while (value.length() < fixedStringLength)
+  while (value.length() < textLength)
     value = " " + value;
   printPrepare(x, y, color, fontSize);
   Display()->print(value);
@@ -293,14 +290,15 @@ void Screen0::init()
 
   // Only create and add sensor objects the first time we call init.
   if (m_first_sensor == 0) {
-    printLabel("Position", 100, 3, PUMA_LABEL_COLOR);
+    printLabel("Position", 100, 4, PUMA_LABEL_COLOR);
     addSensor(new PitchAndRollWidget(PID_PUMA_PITCH, PUMA_SENSOR_DATA_FONT_SIZE, 10, 8, true, 7 ));
-    addSensor(new PitchAndRollWidget(PID_PUMA_ROLL, PUMA_SENSOR_DATA_FONT_SIZE, 50, 149, false, 10 ));
-    addSensor(new CompassWidget(PID_PUMA_HEADING, PUMA_HEADING_FONT_SIZE, 100, 100)); // TODO: set at correct x,y position
+    addSensor(new PitchAndRollWidget(PID_PUMA_ROLL, PUMA_SENSOR_DATA_FONT_SIZE, 55, 149, false, 10 ));
+    addSensor(new CompassWidget(PID_PUMA_HEADING, PUMA_HEADING_FONT_SIZE, display_x_mid, top_separator_line / 2));
 
     Table t1("TPMS", Table::TOP_BORDER | Table::SHOW_GRID, 2, 3,
-             left_border, left_divider_line,
-             top_border, display_max_y / 2);
+             left_border, right_border,
+             top_separator_line, bottom_border);
+  
     addSensor(new TpmsWidget(PID_PUMA_TPMS_FL_PRESS, TPMS_PRESSURE, PUMA_SENSOR_DATA_FONT_SIZE, t1.cellX(0), t1.cellY(0)));
     addSensor(new TpmsWidget(PID_PUMA_TPMS_FL_TEMP, TPMS_TEMPERATURE, PUMA_SENSOR_DATA_FONT_SIZE, t1.cellX(0), t1.cellY(0)));
 
@@ -318,7 +316,7 @@ void Screen0::init()
 
     addSensor(new TpmsWidget(PID_PUMA_TPMS_TR_PRESS, TPMS_PRESSURE, PUMA_SENSOR_DATA_FONT_SIZE, t1.cellX(1), t1.cellY(2)));
     addSensor(new TpmsWidget(PID_PUMA_TPMS_TR_TEMP, TPMS_TEMPERATURE, PUMA_SENSOR_DATA_FONT_SIZE, t1.cellX(1), t1.cellY(2)));
-  }
+ }
 }
 
 byte Screen0::displayOrientation()
@@ -338,16 +336,15 @@ void Screen1::init()
 {
   BaseScreen::init();
 
-  left_divider_line = 135;
+  left_divider_line = 110; //135;
   right_divider_line = maxWidth() - left_divider_line;
   bottom_divider = maxHeight() - 130;
   word label_x_offset = 13;
 
   // Only create and add sensor objects the first time we call init.
   if (m_first_sensor == 0) {
-    byte speed_size = 5;
-    addSensor(new SensorWidget(PID_SPEED, speed_size, display_x_mid - (Display()->fontWidth(speed_size) * 1.5), 145));
-    addSensor(new RpmDialWidget(PID_RPM, 3, display_x_mid - (Display()->fontWidth(3) * 2), 95, RPM_RADIUS));
+    addSensor(new SensorWidget(PID_SPEED, PUMA_SPEED_FONT_SIZE, display_x_mid - (Display()->fontWidth(PUMA_SPEED_FONT_SIZE) * 1.7), 145));
+    addSensor(new RpmDialWidget(PID_RPM, PUMA_RPM_FONT_SIZE, display_x_mid, RPM_RADIUS + 40, RPM_RADIUS));
 
     Table t1("Temperature", Table::RIGHT_BORDER | Table::BOTTOM_BORDER, 1, 3,
              left_border, left_divider_line,
@@ -370,11 +367,12 @@ void Screen1::init()
     addSensor(new SensorWidget(PID_ENGINE_FUEL_RATE, 2, right_divider_line + label_x_offset, t3.cellY(1)));  // Economy
     //    addSensor(new SensorWidget(PID_RANGE, 2, right_divider_line + label_x_offset, t3.cellY(2)));     // Range
 
-    //    printLabel("Distance", right_divider_line + left_divider_line / 2 - 40, display_y_mid + 3, PUMA_LABEL_COLOR);
+    Table t4("Distance", Table::LEFT_BORDER, 1, 3,
+             right_divider_line, right_border,
+             display_max_y / 2, bottom_border);
     //    printLabel("Odo", right_divider_line + label_x_offset, label1_y_offset + display_y_mid, PUMA_LABEL_COLOR);
     //    printLabel("Trip", right_divider_line + label_x_offset, label2_y_offset + display_y_mid, PUMA_LABEL_COLOR);
     //    printLabel("Last Service", right_divider_line + label_x_offset, label3_y_offset + display_y_mid, PUMA_LABEL_COLOR);
-
 
     //    printLabel("Drivetrain", display_y_mid - 50, bottom_divider + 3, PUMA_LABEL_COLOR);
     //    printLabel("Torque", left_divider_line + 15, bottom_divider + 15, PUMA_LABEL_COLOR);
@@ -406,10 +404,14 @@ void Screen2::init()
 
   // Only create and add sensor objects the first time we call init.
   if (m_first_sensor == 0) {
-    //   printLabel("Speed Control", 80, 30, PUMA_LABEL_COLOR);
+       printLabel("Speed Control", 80, 4, PUMA_LABEL_COLOR);
     //    addSensor(new SensorWidget(PID_CC_SPEED, 4, mid_separator_line, 50));        // Km/h
     //    addSensor(new SensorWidget(PID_CC_MODE, 2, left_border, 100));         // Mode: OFF, ARMED, ON
     //    addSensor(new SensorWidget(PID_CC_ACCELERATOR, 2, left_border + 150, 100));  // Throttle: 50%
+    Table t1("On-Board Diagnostics", Table::TOP_BORDER, 1, 3,
+             left_border, right_border,
+             top_separator_line, bottom_border);
+  
     //    addSensor(new ListWidget("On-Board Diagnostics", PID_DTC, 3, left_border, 120, display_max_x, display_max_y));
   }
 }

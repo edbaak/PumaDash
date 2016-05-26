@@ -52,12 +52,14 @@ class CAN_Frame;
 // Puma dashboard specific UI defines
 #define PUMA_LABEL_SIZE 1             // Font size for labels and subLabels
 #define PUMA_HEADING_FONT_SIZE 4      // Font size for heading
+#define PUMA_SPEED_FONT_SIZE 5
+#define PUMA_RPM_FONT_SIZE 3
 #define PUMA_SENSOR_DATA_FONT_SIZE 2  // Font size for 'normal' sensor data (RPM, Speed, TPMS and a few more are shown bigger)
 #define PUMA_LABEL_COLOR WHITE        // FG color for label text
 #define PUMA_ALARM_COLOR RED          // FX color for data that is in the alarm operating zone. Usually this means a too high value, but for Fuel Tank it means 'too low'
 #define PUMA_WARNING_COLOR YELLOW     // FG color for data that is in a warning operating zone
 #define PUMA_NORMAL_COLOR LIGHTGREEN  // FG color for data that is in the normal/safe operating zone
-#define RPM_RADIUS 110                // Size of the Rpm dial
+#define RPM_RADIUS 100                // Size of the Rpm dial
 
 // PUMA Dash specific PID's, i.e. not part of the OBD2 standard and unknown to the vehicle ECU.
 // These PID's are 'extensions' to the OBD standard and are NOT transmitted on the CAN bus

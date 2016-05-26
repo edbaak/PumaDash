@@ -51,7 +51,7 @@ Table::Table(String title, word borderLines, byte columns, byte rows, word minX,
     x -= w * title.length() / 2;
     m_title_height = Display()->charheight('A') * PUMA_LABEL_SIZE + 4;
 
-    Display()->gfx_MoveTo(x, m_min_y + 2);
+    Display()->gfx_MoveTo(x, m_min_y + 4);
     Display()->print(title);
   }
 
@@ -74,10 +74,10 @@ Table::Table(String title, word borderLines, byte columns, byte rows, word minX,
     Display()->gfx_LinePattern(0x00aa);
     byte border = 30;
     if (m_columns > 1)
-      for (byte column = 1; column <= m_columns; column++)
+      for (byte column = 1; column < m_columns; column++)
         Display()->gfx_Line(cellX(column), m_min_y + border, cellX(column), m_max_y - border, PUMA_LABEL_COLOR);
     if (m_rows > 1)
-      for (byte row = 1; row <= m_rows; row++)
+      for (byte row = 1; row < m_rows; row++)
         Display()->gfx_Line(m_min_x + border, cellY(row), m_max_x - border, cellY(row), PUMA_LABEL_COLOR);
     Display()->gfx_LinePattern(0);
   }
@@ -140,7 +140,6 @@ RpmDialWidget::RpmDialWidget(word pid, byte fontSize, word x, word y, word radiu
   update(0);
 }
 
-// x = display_x_mid, y = maxHeight() - 100
 void RpmDialWidget::drawRpmDial()
 {
   Display()->gfx_MoveTo(m_x, m_y);
@@ -211,7 +210,12 @@ void RpmDialWidget::updateRpm(word rpm)
   Display()->gfx_TriangleFilled(x_pos[0], y_pos[0], x_pos[1], y_pos[1], x_pos[2], y_pos[2], color);
 
   // TODO: fix print position
-  Display()->printValue(String(rpm), 3, m_x - 58, m_y - 95, color, 3);
+  Display()->printValue(v2s("%4d",rpm), 
+                        4, 
+                        m_x - Display()->fontWidth(m_fontSize) * 2, 
+                        m_y - Display()->fontHeight(m_fontSize) * 1.5, 
+                        color, 
+                        m_fontSize);
 }
 
 
@@ -264,10 +268,11 @@ void PitchAndRollWidget::updateAngle(int angle)
   else if (abs(angle) > 15)
     color = PUMA_WARNING_COLOR;
 
+  word h = Display()->fontHeight(m_fontSize);
   if (m_pitchMode)
-    Display()->printValue(String(abs(angle)), 3, m_x - 1, m_y + m_interleave * 16 + 3, color, m_fontSize);
+    Display()->printValue(String(abs(angle)), 3, m_x - 1, m_y + m_interleave * 16 + 5, color, m_fontSize);
   else
-    Display()->printValue(String(abs(angle)), 3, m_x + m_interleave * 16 + 4, m_y - 15, color, m_fontSize);
+    Display()->printValue(String(abs(angle)), 3, m_x + m_interleave * 16 + 6, m_y - h + 3, color, m_fontSize);
 
   if (angle > 40)
     angle = 40;
@@ -324,18 +329,19 @@ void CompassWidget::updateHeading(word heading)
   if (heading != old_heading) {
     old_heading = heading;
 
+    word w = Display()->fontWidth(m_fontSize);
+    word h = Display()->fontHeight(m_fontSize);
+    
     Display()->txt_Xgap(2);
-    char hd[5];
-    sprintf(hd, "%03d", heading);
-    Display()->printValue(hd, 3, 65, 40, PUMA_NORMAL_COLOR, m_fontSize);
+    Display()->printValue(v2s("%03d", heading), 3, m_x - (w * 1.5), m_y - (h / 2), PUMA_NORMAL_COLOR, m_fontSize);
     Display()->txt_Xgap(0);
 
     heading += 270;
     if (heading > 360)
       heading -= 360;
 
-    int x_ = 245;
-    int y_ = 25;
+    int x_ = m_x + (w * 2.5);
+    int y_ = m_y - (h / 2);
     int radius_ = 25;
     Display()->gfx_CircleFilled(x_, y_, radius_ - 1, BLACK);
     Display()->gfx_Circle(x_, y_, radius_, PUMA_LABEL_COLOR);
@@ -354,9 +360,9 @@ void CompassWidget::updateHeading(word heading)
 //                                              TpmsWidget
 // ******************************************************************************************************
 
-#define TPMS_X1_OFFSET 55
+#define TPMS_X1_OFFSET 50
 #define TPMS_Y1_OFFSET 75
-#define TPMS_X2_OFFSET 85
+#define TPMS_X2_OFFSET 80
 #define TPMS_Y2_OFFSET 30
 
 TpmsWidget::TpmsWidget(word pid, TPMS_MODE mode, byte fontSize, word x, word y) : SensorWidget(pid, fontSize, x, y)
