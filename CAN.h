@@ -273,12 +273,15 @@ class CAN_Frame
     void init(uint32_t id, uint8_t len, uint8_t *buf);
     void clear();
 
-    uint32_t m_timeStamp;     // set to millis() at the time of receiving the data
+    // Do NOT change the order or type of the following variables!! The CAN protocol depends on it
     uint32_t m_id;            // if (extended == CAN_RECESSIVE) { extended ID } else { standard ID }
     uint8_t m_rtr;            // Remote Transmission Request Bit (RTR)
     uint8_t m_extended;       // Identifier Extension Bit (IDE)
     uint8_t m_length;         // Data Length
     uint8_t m_data[8];        // Message data
+
+    // Add any new variables below this line
+    uint32_t m_timeStamp;     // set to millis() at the time of receiving the data
 };
 
 class PumaCAN
