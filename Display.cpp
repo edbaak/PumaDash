@@ -11,11 +11,11 @@
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
 
-  WARNING: Modifying a vehicle's dashboard and instrument panel 
-  may require vehicle engineering and re-certification according 
+  WARNING: Modifying a vehicle's dashboard and instrument panel
+  may require vehicle engineering and re-certification according
   to local laws and regulations, such as the Australian Design
-  Rules (ADR) and Vehicle Standards. This code does not make any 
-  claim to meet any such standard. 
+  Rules (ADR) and Vehicle Standards. This code does not make any
+  claim to meet any such standard.
 
   You should have received a copy of the GNU General Public License
   along with this code; if not, write to the Free Software
@@ -61,16 +61,19 @@ void PumaDisplay::setup()
   // Initialize the Display
   DISPLAY_SERIAL1.begin(DISPLAY_SPEED) ;
 
-  m_screen0.setup_(this);
-  m_screen1.setup_(this);
-  m_screen2.setup_(this);
-
   TimeLimit4D = 5000 ; // 5 second timeout on all commands
   Callback4D = NULL ;
-  //  m_display->Callback4D = mycallback ;
+  //  Display()->Callback4D = mycallback ;
 
   txt_FontID(FONT_3);
   touch_Set(TOUCH_ENABLE);
+
+  for (byte i = 0; i < MAX_CHAR_SIZE; i++) {
+    txt_Width(i + 1);
+    txt_Height(i + 1);
+    m_font_width[i] = charwidth('0');
+    m_font_height[i] = charheight('0');
+  }
 }
 
 BaseScreen *PumaDisplay::activeScreen()
@@ -128,6 +131,37 @@ void PumaDisplay::reset(word ms)
     delay(ms);
 }
 
+word PumaDisplay::fontWidth(byte fontSize)
+{
+  fontSize -= 1;
+  if (fontSize < MAX_CHAR_SIZE)
+    return m_font_width[fontSize];
+  return 10;
+}
+
+word PumaDisplay::fontHeight(byte fontSize)
+{
+  fontSize -= 1;
+  if (fontSize < MAX_CHAR_SIZE)
+    return m_font_height[fontSize];
+  return 10;
+}
+
+void PumaDisplay::printLabel(String label, word x, word y, int color, byte fontSize)
+{
+  activeScreen()->printLabel(label, x, y, color, fontSize);
+}
+
+void PumaDisplay::printSubLabel(String subLabel, word x, word y, int color, byte fontSize)
+{
+  activeScreen()->printSubLabel(subLabel, x, y, color, fontSize);
+}
+
+void PumaDisplay::printValue(String value, byte textLength, word x, word y, int color, byte fontSize)
+{
+  activeScreen()->printValue(value, textLength, x, y, color, fontSize);
+}
+
 // ******************************************************************************************************
 //                                              BASE SCREEN
 // ******************************************************************************************************
@@ -139,11 +173,6 @@ BaseScreen::BaseScreen()
   m_first_sensor = 0;
 }
 
-void BaseScreen::setup_(PumaDisplay *disp)
-{
-  m_display = disp;
-}
-
 void BaseScreen::init()
 {
   display_max_y = 0;
@@ -151,11 +180,11 @@ void BaseScreen::init()
   m_first_sensor = 0;
 
   // TODO: Make some of these into #defines
-  m_display->gfx_Cls();
-  m_display->gfx_ScreenMode(displayOrientation());
+  Display()->gfx_Cls();
+  Display()->gfx_ScreenMode(displayOrientation());
 
-  display_max_x = m_display->gfx_Get(X_MAX);
-  display_max_y = m_display->gfx_Get(Y_MAX);
+  display_max_x = Display()->gfx_Get(X_MAX);
+  display_max_y = Display()->gfx_Get(Y_MAX);
   top_separator_line = display_max_y / 3;
   mid_separator_line = top_separator_line + (top_separator_line * 2 / 3);
   bottom_divider = top_separator_line + (top_separator_line * 4 / 3);
@@ -165,29 +194,6 @@ void BaseScreen::init()
   display_x_mid = display_max_x / 2;
   top_border = 10;
   bottom_border = display_max_y - top_border;
-
-  for (byte i = 0; i < MAX_CHAR_SIZE; i++) {
-    m_display->txt_Width(i + 1);
-    m_display->txt_Height(i + 1);
-    m_char_width[i] = m_display->charwidth('0');
-    m_char_height[i] = m_display->charheight('0');
-  }
-}
-
-word BaseScreen::charWidth(byte fontSize)
-{
-  fontSize -= 1;
-  if (fontSize < MAX_CHAR_SIZE)
-    return m_char_width[fontSize];
-  return 10;
-}
-
-word BaseScreen::charHeight(byte fontSize)
-{
-  fontSize -= 1;
-  if (fontSize < MAX_CHAR_SIZE)
-    return m_char_height[fontSize];
-  return 10;
 }
 
 void BaseScreen::addSensor(SensorWidget *sensor)
@@ -228,7 +234,7 @@ void BaseScreen::updateSensor(OBDData *sensor)
 
 bool BaseScreen::touchPressed()
 {
-  int j = m_display->touch_Get(TOUCH_STATUS) ;
+  int j = Display()->touch_Get(TOUCH_STATUS) ;
   return (j == TOUCH_PRESSED);
 }
 
@@ -244,22 +250,22 @@ word BaseScreen::maxHeight()
 
 void BaseScreen::printPrepare(word x, word y, int color, byte fontSize)
 {
-  m_display->gfx_MoveTo(x, y);
-  m_display->txt_Width(fontSize);
-  m_display->txt_Height(fontSize);
-  m_display->txt_FGcolour(color);
+  Display()->gfx_MoveTo(x, y);
+  Display()->txt_Width(fontSize);
+  Display()->txt_Height(fontSize);
+  Display()->txt_FGcolour(color);
 }
 
 void BaseScreen::printLabel(String label, word x, word y, int color, byte fontSize)
 {
   printPrepare(x, y, color, fontSize);
-  m_display->print(label);
+  Display()->print(label);
 }
 
 void BaseScreen::printSubLabel(String subLabel, word x, word y, int color, byte fontSize)
 {
   printPrepare(x, y, color, fontSize);
-  m_display->print(subLabel);
+  Display()->print(subLabel);
 }
 
 void BaseScreen::printValue(String value, byte textLength, word x, word y, int color, byte fontSize)
@@ -270,7 +276,7 @@ void BaseScreen::printValue(String value, byte textLength, word x, word y, int c
   while (value.length() < fixedStringLength)
     value = " " + value;
   printPrepare(x, y, color, fontSize);
-  m_display->print(value);
+  Display()->print(value);
 }
 
 // ******************************************************************************************************
@@ -340,8 +346,8 @@ void Screen1::init()
   // Only create and add sensor objects the first time we call init.
   if (m_first_sensor == 0) {
     byte speed_size = 5;
-    addSensor(new SensorWidget(PID_SPEED, speed_size, display_x_mid - (charWidth(speed_size) * 1.5), 145));
-    addSensor(new RpmDialWidget(PID_RPM, 3, display_x_mid - (charWidth(3) * 2), 95, RPM_RADIUS));
+    addSensor(new SensorWidget(PID_SPEED, speed_size, display_x_mid - (Display()->fontWidth(speed_size) * 1.5), 145));
+    addSensor(new RpmDialWidget(PID_RPM, 3, display_x_mid - (Display()->fontWidth(3) * 2), 95, RPM_RADIUS));
 
     Table t1("Temperature", Table::RIGHT_BORDER | Table::BOTTOM_BORDER, 1, 3,
              left_border, left_divider_line,

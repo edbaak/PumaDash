@@ -179,63 +179,26 @@
 #define PID_PARTICULATE_MATTER_SENSOR	  0x86
 #define PID_INTAKE_MANIFOLD_ABS_PRESS	  0x87
 
-
 //***************************************************************
+// Currently NOT supported modes:
 // Mode 03h = Show stored diagnostic trouble codes DTC
-// ***************************************************************
-
-// Currently NOT supported
-
-// ***************************************************************
-// Mode 04h = Clear diagnostic trouble codes and stored values
-// ***************************************************************
-
-// Clears all DTC codes and stored values, and switches off the MIL light
-// Currently NOT supported
-
-// ***************************************************************
+// Mode 04h = Clear diagnostic trouble codes and stored values, and switch off the MIL light
 // Mode 05h = Test results, oxygen sensor monitoring (non CAN only)
-// ***************************************************************
-
-// Currently NOT supported
-
-// ***************************************************************
-// Mode 06h = Test results, other component/system monitoring (Test results, oxygen sensor
-// monitoring for CAN only)
-// ***************************************************************
-
-// Currently NOT supported
-
-// ***************************************************************
+// Mode 06h = Test results, other component/system monitoring (Test results, oxygen sensor monitoring for CAN only)
 // Mode 07h = Show pending Diagnostic Trouble Codes (detected during current or last driving cycle)
-// ***************************************************************
-
-// Currently NOT supported
-
-// ***************************************************************
 // Mode 08h = Control operation of on-board component/system
+// Mode 0Ah = Permanent Diagnostic Trouble Codes (DTCs) (Cleared DTCs)
 // ***************************************************************
-
-// Currently NOT supported
 
 // ***************************************************************
 // Mode 09h = Request vehicle information
 // ***************************************************************
 
-// Currently NOT supported
 #define PID_MODE9_VIN					    0x03 // Returns VIN number (20 ascii char max)
 #define PID_MODE9_ECU_NAME				0x0A // Returns ECU name (20 ascii char max)
 
 // ***************************************************************
-// Mode 0Ah = Permanent Diagnostic Trouble Codes (DTCs) (Cleared DTCs)
-// ***************************************************************
-
-// Currently NOT supported
-
-
-// ***************************************************************
-// The following PID values are more interesting for internal usage, and not expected to
-// be used in apps directly
+// The following PID values are used in the OBD protocol
 // ***************************************************************
 
 // To request the value of a specific PID, a PID_REQUEST is done to the CAN bus
@@ -247,7 +210,11 @@
 #define PID_REPLY			0x7E8
 
 
+// ***************************************************************
 // The following undocumented 0xID's are emitted regularly by the Puma ECU
+// At this stage the meaning of these ID's is unknown.
+// ***************************************************************
+
 //  9A, 
 //  DC, 
 //  DD, 
@@ -267,8 +234,6 @@
 // 405, 
 // 4C0, 
 // 5C0, 
-
-#define MAX_RX_FIFO 12
 
 typedef enum OBD_DATA_CONVERSION {
   BYTE_NO_CONVERSION,

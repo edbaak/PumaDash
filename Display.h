@@ -50,7 +50,6 @@ class BaseScreen
   public:
     BaseScreen();
 
-    virtual void setup_(PumaDisplay *disp);
     virtual byte displayOrientation() = 0;
     virtual void update() {};
     virtual void init();
@@ -66,15 +65,12 @@ class BaseScreen
     word maxWidth();
     word maxHeight();
     bool touchPressed();
-    word charWidth(byte fontSize);
-    word charHeight(byte fontSize);
 
   protected:
     void printPrepare(word x, word y, int color, byte fontSize);
 
   protected:
     SensorWidget *m_first_sensor;
-    PumaDisplay *m_display;
     word display_max_x;
     word display_max_y;
     word display_x_mid;
@@ -88,10 +84,6 @@ class BaseScreen
     word top_separator_line;
     word mid_separator_line;
     word bottom_divider;
-
-  private:
-    word m_char_width[MAX_CHAR_SIZE + 1];
-    word m_char_height[MAX_CHAR_SIZE + 1];
 };
 
 class Screen0 : public BaseScreen
@@ -126,16 +118,27 @@ class PumaDisplay : public Diablo_Serial_4DLib
     void processTouchEvents();
     void reset(word ms = DISPLAY_RESET_MS);
 
-    BaseScreen *activeScreen();
+    void printLabel(String label, word x, word y, int color, byte fontSize = 1);
+    void printSubLabel(String subLabel, word x, word y, int color, byte fontSize = 1);
+    void printValue(String value, byte textLength, word x, word y, int color, byte fontSize);
+
     void updateSensor(OBDData *sensor);
+
+    word fontWidth(byte fontSize);
+    word fontHeight(byte fontSize);
 
   protected:
     bool g_init_display;
     byte g_active_screen; // The screen currently shown on the display, i.e. m_screen0, m_screen1 or m_screen2
+    BaseScreen *activeScreen();
 
     Screen0 m_screen0;    // Visual elements of the 'Left' display
     Screen1 m_screen1;    // Visual elements of the 'Center' display
     Screen2 m_screen2;    // Visual elements of the 'Right' display
+
+  private:
+    word m_font_width[MAX_CHAR_SIZE + 1];
+    word m_font_height[MAX_CHAR_SIZE + 1];
 };
 
 #endif
