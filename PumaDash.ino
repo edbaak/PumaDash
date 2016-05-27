@@ -47,7 +47,9 @@
 
 bool led1_on = true;
 
-PumaDisplay g_display(&DISPLAY_SERIAL1);  // Puma display driver. We need to create this beast first, so we can use a global reference to it throughout the code.
+PumaDisplay g_display1(&DISPLAY_SERIAL1);  // Puma display driver. We need to create this beast first, so we can use a global reference to it throughout the code.
+//PumaDisplay g_display2(&DISPLAY_SERIAL2);  // Same here. This one is for the second display.
+//PumaDisplay g_display3(&DISPLAY_SERIAL3);  // And again for the third display.
 Position g_position;                      // GPS position & pitch and roll of vehicle
 Tpms g_tpms;                              // Tire Pressure Monitoring
 CruiseCtrl g_speed;                       // Speed Control and deals with gearbox ratios etc to calculate gear shifts
@@ -55,7 +57,7 @@ PumaOBD g_obd;                            // On Board Diagnostics for the Vehicl
 
 void setup() {
   // Start with resetting the Display. Then do activities that don't require the display so that we use the recommended 5 seconds delay more usefully.
-  g_display.reset(0); 
+  g_display1.reset(0); 
 
   // Initiate Serial comms so we can send debug info to the Serial Monitor (when connected)
   Serial.begin(DISPLAY_SPEED);  
@@ -72,7 +74,7 @@ void setup() {
 
   // Setup crucial components in the system
   g_obd.setup();
-  g_display.setup(); // In here we'll finalize the 5 second display reset delay.
+  g_display1.setup(); // In here we'll finalize the 5 second display reset delay.
 
   // Enable the interrupt handler that will process RX data coming from the CAN/OBD2 bus 
   attachInterrupt(digitalPinToInterrupt(PIN_MP2515_RX_INTERRUPT), canRxHandler, FALLING);
@@ -85,7 +87,7 @@ void loop() {
   digitalWrite(PIN_CAN_BOARD_LED1, led1_on);
   led1_on = !led1_on;
   
-  g_display.processTouchEvents();
+  g_display1.processTouchEvents();
   g_tpms.update();
   g_position.update();
   g_obd.requestObdUpdates();
