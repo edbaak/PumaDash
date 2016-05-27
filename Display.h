@@ -75,14 +75,17 @@ class BaseScreen
     word display_max_y;
     word display_x_mid;
     word display_y_mid;
+    
     word left_border;
     word right_border;
     word top_border;
     word bottom_border;
-    word left_divider_line;
-    word right_divider_line;
-    word top_separator_line;
-    word mid_separator_line;
+    
+    word left_divider;
+    word right_divider;
+    
+    word top_divider;
+    word mid_divider;
     word bottom_divider;
 };
 

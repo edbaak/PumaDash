@@ -51,6 +51,7 @@
 #include "Utils.h"
 #include <string.h>
 #include <../Bounce2/Bounce2.h>
+#include "OBD.h"
 
 #define bounceInterval 1
 #define brakePinId 1
@@ -100,6 +101,10 @@ void update();
   Bounce decreaseSpeed;
   Bounce lowRangeGearSelected;
 
+private:
+    OBDData *m_CC_Speed;
+    OBDData *m_CC_Mode;
+    OBDData *m_CC_Accelerator;
 };
 
 #endif
