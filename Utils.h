@@ -39,6 +39,7 @@ class CAN_Frame;
 #define DISPLAY_SPEED 115200    // The baudrate at which we're running the 4D display
 #define DISPLAY_RESET_MS 5000   // Wait time after a display reset
 #define MAX_RX_FIFO 12          // FIFO buffer that stores received CAN messages, so that the MCP2515 can be emptied and available for the next message
+#define PUMA_DEFAULT_SCREEN 2   // Define the default screen. We can change this by tapping the touchscreen
 //#define RAW_LOGGING           // Saves RAW OBD data in a file on SD card
 //#define OBD_LOGGING           // Saves Processed OBD data in a file on SD card
 
@@ -93,7 +94,9 @@ class CAN_Frame;
 #define PIN_LEGACY_SPI_MOSI 11
 #define PIN_LEGACY_SPI_MISO 12
 #define PIN_LEGACY_SPI_SCK 13
-#define DISPLAY_SERIAL1 Serial1  // We're running the 4D Display on USART 2, using pin 18 & 19
+#define DISPLAY_SERIAL1 Serial1  // We're running the Left 4D Display on USART 2, using pin 18 & 19
+#define DISPLAY_SERIAL2 Serial2  // We're running the Center 4D Display on USART 3, using pin ?? & ??
+#define DISPLAY_SERIAL3 Serial3  // We're running the Right 4D Display on USART 4, using pin ?? & ??
 #define PIN_MEGA_SPI_MISO 50     // Connect Pin 50 to 12 to use with CAN BOARD
 #define PIN_MEGA_SPI_MOSI 51     // Connect Pin 51 to 11 to use with CAN BOARD
 #define PIN_MEGA_SPI_SCK 52      // Connect Pin 52 to 13 to use with CAN BOARD
