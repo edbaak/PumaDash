@@ -43,22 +43,22 @@ Tpms::Tpms()
 #define TEMP_STEP 3
 
   m_FL_Pressure = new OBDData(PID_PUMA_TPMS_FL_PRESS, "FL Pressure", "%2d", "PSI", 1000, WORD_NO_CONVERSION, MIN_PRESS, MAX_PRESS, PRESS_STEP);
-  OBDData *m_FL_Temperature = new OBDData(PID_PUMA_TPMS_FL_TEMP, "Temperature", "%2d", "C", 1000, WORD_NO_CONVERSION, MIN_TEMP, MAX_TEMP, TEMP_STEP);
+  m_FL_Temperature = new OBDData(PID_PUMA_TPMS_FL_TEMP, "Temperature", "%2d", "C", 1000, WORD_NO_CONVERSION, MIN_TEMP, MAX_TEMP, TEMP_STEP);
 
   m_FR_Pressure = new OBDData(PID_PUMA_TPMS_FR_PRESS, "FR Pressure", "%2d", "PSI", 1000, WORD_NO_CONVERSION, MIN_PRESS, MAX_PRESS, PRESS_STEP);
-  OBDData *m_FR_Temperature = new OBDData(PID_PUMA_TPMS_FR_TEMP, "Temperature", "%2d", "C", 1000, WORD_NO_CONVERSION, MIN_TEMP, MAX_TEMP, TEMP_STEP);
+  m_FR_Temperature = new OBDData(PID_PUMA_TPMS_FR_TEMP, "Temperature", "%2d", "C", 1000, WORD_NO_CONVERSION, MIN_TEMP, MAX_TEMP, TEMP_STEP);
 
   m_RL_Pressure = new OBDData(PID_PUMA_TPMS_RL_PRESS, "RL Pressure", "%2d", "PSI", 1000, WORD_NO_CONVERSION, MIN_PRESS, MAX_PRESS, PRESS_STEP);
-  OBDData *m_RL_Temperature = new OBDData(PID_PUMA_TPMS_RL_TEMP, "Temperature", "%2d", "C", 1000, WORD_NO_CONVERSION, MIN_TEMP, MAX_TEMP, TEMP_STEP);
+  m_RL_Temperature = new OBDData(PID_PUMA_TPMS_RL_TEMP, "Temperature", "%2d", "C", 1000, WORD_NO_CONVERSION, MIN_TEMP, MAX_TEMP, TEMP_STEP);
 
   m_RR_Pressure = new OBDData(PID_PUMA_TPMS_RR_PRESS, "RR Pressure", "%2d", "PSI", 1000, WORD_NO_CONVERSION, MIN_PRESS, MAX_PRESS, PRESS_STEP);
-  OBDData *m_RR_Temperature = new OBDData(PID_PUMA_TPMS_RR_TEMP, "Temperature", "%2d", "C", 1000, WORD_NO_CONVERSION, MIN_TEMP, MAX_TEMP, TEMP_STEP);
+  m_RR_Temperature = new OBDData(PID_PUMA_TPMS_RR_TEMP, "Temperature", "%2d", "C", 1000, WORD_NO_CONVERSION, MIN_TEMP, MAX_TEMP, TEMP_STEP);
 
   m_TL_Pressure = new OBDData(PID_PUMA_TPMS_TL_PRESS, "TL Pressure", "%2d", "PSI", 1000, WORD_NO_CONVERSION, MIN_PRESS, MAX_PRESS, PRESS_STEP);
-  OBDData *m_TL_Temperature = new OBDData(PID_PUMA_TPMS_TL_TEMP, "Temperature", "%2d", "C", 1000, WORD_NO_CONVERSION, MIN_TEMP, MAX_TEMP, TEMP_STEP);
+  m_TL_Temperature = new OBDData(PID_PUMA_TPMS_TL_TEMP, "Temperature", "%2d", "C", 1000, WORD_NO_CONVERSION, MIN_TEMP, MAX_TEMP, TEMP_STEP);
 
   m_TR_Pressure = new OBDData(PID_PUMA_TPMS_TR_PRESS, "TR Pressure", "%2d", "PSI", 1000, WORD_NO_CONVERSION, MIN_PRESS, MAX_PRESS, PRESS_STEP);
-  OBDData *m_TR_Temperature = new OBDData(PID_PUMA_TPMS_TR_TEMP, "Temperature", "%2d", "C", 1000, WORD_NO_CONVERSION, MIN_TEMP, MAX_TEMP, TEMP_STEP);
+  m_TR_Temperature = new OBDData(PID_PUMA_TPMS_TR_TEMP, "Temperature", "%2d", "C", 1000, WORD_NO_CONVERSION, MIN_TEMP, MAX_TEMP, TEMP_STEP);
 
   m_tirePressureWarningLevel = 30;
   m_tirePressureAlarmLevel = 24;
