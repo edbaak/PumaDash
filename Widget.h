@@ -35,7 +35,7 @@
 #include "Display.h"
 #include "OBD.h"
 
-class Table
+class TableWidget
 {
   public:
     typedef enum BORDER_LINES {
@@ -48,7 +48,7 @@ class Table
       SHOW_GRID = 0x10
     } BORDER_LINES;
 
-    Table(String title, word borderLines, byte columns, byte rows, word minX, word maxX, word minY, word maxY);
+    TableWidget(String title, word borderLines, byte columns, byte rows, word minX, word minY, word maxX, word maxY);
     word cellX(byte column);
     word cellY(byte row);
 

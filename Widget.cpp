@@ -29,7 +29,7 @@
 
 // ************************************************************************
 
-Table::Table(String title, word borderLines, byte columns, byte rows, word minX, word maxX, word minY, word maxY)
+TableWidget::TableWidget(String title, word borderLines, byte columns, byte rows, word minX, word minY, word maxX, word maxY)
 {
   m_title = title;
   m_border_lines = borderLines;
@@ -83,12 +83,12 @@ Table::Table(String title, word borderLines, byte columns, byte rows, word minX,
   }
 }
 
-word Table::cellX(byte column)
+word TableWidget::cellX(byte column)
 {
   return m_min_x + (column * m_cell_width);
 }
 
-word Table::cellY(byte row)
+word TableWidget::cellY(byte row)
 {
   return m_min_y + m_title_height + (row * m_cell_height);
 }

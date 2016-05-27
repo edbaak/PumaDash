@@ -302,9 +302,11 @@ void Screen0::init()
     addSensor(new PitchAndRollWidget(PID_PUMA_ROLL, PUMA_SENSOR_DATA_FONT_SIZE, 55, 149, false, 10 ));
     addSensor(new CompassWidget(PID_PUMA_HEADING, PUMA_HEADING_FONT_SIZE, display_x_mid, top_divider / 2));
 
-    Table t1("TPMS", Table::TOP_BORDER | Table::SHOW_GRID, 2, 3,
-             left_border, right_border,
-             top_divider, bottom_border);
+    TableWidget t1("TPMS", TableWidget::TOP_BORDER | TableWidget::SHOW_GRID, 2, 3,
+                 left_border, 
+                 top_divider, 
+                 right_border,
+                 bottom_border);
 
     addSensor(new TpmsWidget(PID_PUMA_TPMS_FL_PRESS, TPMS_PRESSURE, PUMA_SENSOR_DATA_FONT_SIZE, t1.cellX(0), t1.cellY(0)));
     addSensor(new TpmsWidget(PID_PUMA_TPMS_FL_TEMP, TPMS_TEMPERATURE, PUMA_SENSOR_DATA_FONT_SIZE, t1.cellX(0), t1.cellY(0)));
@@ -350,30 +352,38 @@ void Screen1::init()
     addSensor(new SensorWidget(PID_SPEED, PUMA_SPEED_FONT_SIZE, display_x_mid - (Display()->fontWidth(PUMA_SPEED_FONT_SIZE) * 1.7), 145));
     addSensor(new RpmDialWidget(PID_RPM, PUMA_RPM_FONT_SIZE, display_x_mid, RPM_RADIUS + 40, RPM_RADIUS));
 
-    Table t1("Temperature", Table::RIGHT_BORDER | Table::BOTTOM_BORDER, 1, 3,
-             left_border, left_divider,
-             top_border, display_max_y / 2);
+    TableWidget t1("Temperature", TableWidget::RIGHT_BORDER | TableWidget::BOTTOM_BORDER, 1, 3,
+                   left_border, 
+                   top_border, 
+                   left_divider,
+                   display_max_y / 2);
     addSensor(new SensorWidget(PID_AMBIENT_AIR_TEMP, 2, label_x_offset, t1.cellY(0)));
     addSensor(new SensorWidget(PID_COOLANT_TEMP, 2, label_x_offset, t1.cellY(1)));
     addSensor(new SensorWidget(PID_INTAKE_AIR_TEMP, 2, label_x_offset, t1.cellY(2)));
 
-    Table t2("Pressure", Table::TOP_BORDER | Table::RIGHT_BORDER, 1, 3,
-             left_border, left_divider,
-             display_max_y / 2, bottom_border);
+    TableWidget t2("Pressure", TableWidget::TOP_BORDER | TableWidget::RIGHT_BORDER, 1, 3,
+                   left_border, 
+                   display_max_y / 2, 
+                   left_divider,
+                   bottom_border);
     addSensor(new SensorWidget(PID_FUEL_PRESSURE, 2, label_x_offset, t2.cellY(0)));
     addSensor(new SensorWidget(PID_BAROMETRIC_PRESSURE, 2, label_x_offset, t2.cellY(1)));
     //    addSensor(new SensorWidget(PID_OIL, 2, label_x_offset, t2.cellY(2)));
 
-    Table t3("Fuel", Table::LEFT_BORDER | Table::BOTTOM_BORDER, 1, 3,
-             right_divider, right_border,
-             top_border, display_max_y / 2);
+    TableWidget t3("Fuel", TableWidget::LEFT_BORDER | TableWidget::BOTTOM_BORDER, 1, 3,
+                   right_divider, 
+                   top_border, 
+                   right_border,
+                   display_max_y / 2);
     addSensor(new SensorWidget(PID_FUEL_LEVEL, 2, right_divider + label_x_offset, t3.cellY(0))); // Tank
     addSensor(new SensorWidget(PID_ENGINE_FUEL_RATE, 2, right_divider + label_x_offset, t3.cellY(1)));  // Economy
     //    addSensor(new SensorWidget(PID_RANGE, 2, right_divider + label_x_offset, t3.cellY(2)));     // Range
 
-    Table t4("Distance", Table::LEFT_BORDER, 1, 3,
-             right_divider, right_border,
-             display_max_y / 2, bottom_border);
+    TableWidget t4("Distance", TableWidget::LEFT_BORDER, 1, 3,
+                   right_divider, 
+                   display_max_y / 2, 
+                   right_border,
+                   bottom_border);
     //    printLabel("Odo", right_divider + label_x_offset, label1_y_offset + display_y_mid, PUMA_LABEL_COLOR);
     //    printLabel("Trip", right_divider + label_x_offset, label2_y_offset + display_y_mid, PUMA_LABEL_COLOR);
     //    printLabel("Last Service", right_divider + label_x_offset, label3_y_offset + display_y_mid, PUMA_LABEL_COLOR);
@@ -423,9 +433,11 @@ void Screen2::init()
                                PUMA_SENSOR_DATA_FONT_SIZE, 
                                left_border + 150, 
                                100));  // Throttle: 50%
-    Table t1("On-Board Diagnostics", Table::TOP_BORDER, 1, 3,
-             left_border, right_border,
-             top_divider, bottom_border);
+    TableWidget t1("On-Board Diagnostics", TableWidget::TOP_BORDER, 1, 3,
+                   left_border, 
+                   top_divider, 
+                   right_border,
+                   bottom_border);
 
     //    addSensor(new ListWidget("On-Board Diagnostics", PID_PUMA_DTC, 3, left_border, 120, display_max_x, display_max_y));
   }
