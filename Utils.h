@@ -49,7 +49,7 @@ class CAN_Frame;
 //#define CAN_DEBUG 1           // Low level CAN debugging
 #define PID_DISCOVERY_MODE    // To discover new unknown PIDS, enable RECORD_UNKNOWN_PIDS. NOTE: This will only work if RX Masking/Filtering is switched off
 #define MAX_UNKNOWN_PIDS 50     // Max number of unhandled PID's that we keep track of
-//#define SELF_TEST
+#define SELF_TEST
 
 // Puma dashboard specific UI defines
 #define PUMA_LABEL_SIZE 1             // Font size for labels and subLabels

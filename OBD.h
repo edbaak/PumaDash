@@ -289,7 +289,6 @@ class OBDData
     String m_label;
     String m_subLabel;
     String m_format;
-    uint32_t m_simulator;
     OBD_DATA_CONVERSION m_conversion;
 
   private:

@@ -135,18 +135,18 @@ void PumaDisplay::reset(word ms)
 
 word PumaDisplay::fontWidth(byte fontSize)
 {
-  fontSize -= 1;
+  if (fontSize > 0) fontSize -= 1;
   if (fontSize < MAX_CHAR_SIZE)
     return m_font_width[fontSize];
-  return 10;
+  return 12;
 }
 
 word PumaDisplay::fontHeight(byte fontSize)
 {
-  fontSize -= 1;
+  if (fontSize > 0) fontSize -= 1;
   if (fontSize < MAX_CHAR_SIZE)
     return m_font_height[fontSize];
-  return 10;
+  return 18;
 }
 
 void PumaDisplay::printLabel(String label, word x, word y, int color, byte fontSize)
@@ -256,6 +256,7 @@ word BaseScreen::maxHeight()
 
 void BaseScreen::printPrepare(word x, word y, int color, byte fontSize)
 {
+  // TODO: don't change the settings if they are already the correct value
   Display()->gfx_MoveTo(x, y);
   Display()->txt_Width(fontSize);
   Display()->txt_Height(fontSize);

@@ -193,7 +193,7 @@ void PumaOBD::setup()
   pinMode(PIN_MP2515_RX_INTERRUPT, INPUT);
 
 #ifdef PID_DISCOVERY_MODE
-  Serial.println("WARNING: Running in PID Discovery mode! Normal reception of OBD data disabled.");
+  Serial.println("WARNING: Running in PID Discovery mode!");
 #endif
 
   m_CAN.begin(PIN_MEGA_SPI_CS, PumaCAN::MCP_STD, PumaCAN::CAN_500KBPS, PumaCAN::MCP_16MHZ);

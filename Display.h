@@ -52,7 +52,6 @@ class BaseScreen
     BaseScreen();
 
     virtual byte displayOrientation() = 0;
-    virtual void update() {};
     virtual void init();
 
     void addSensor(SensorWidget *sensor);
