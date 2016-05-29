@@ -43,17 +43,17 @@ PumaOBD::PumaOBD()
   m_last = 0;
   m_current = 0;
 
-  m_rxFIFO_head = 0;
-  m_rxFIFO_tail = 0;
+  m_rxFIFO_write = 0;
+  m_rxFIFO_read = 0;
   m_rxFIFO_count = 0;
 
 #ifdef PID_DISCOVERY_MODE
   addDataObject(new OBDData(PID_SUPPORTED_PID_01_20, "", "", "", 5000, ULONG_NO_CONVERSION, 0, 0, 0));
   addDataObject(new OBDData(PID_SUPPORTED_PID_21_40, "", "", "", 5000, ULONG_NO_CONVERSION, 0, 0, 0));
-  addDataObject(new OBDData(PID_SUPPORTED_PID_41_60, "", "", "", 5000, ULONG_NO_CONVERSION, 0, 0, 0));
-  addDataObject(new OBDData(PID_SUPPORTED_PID_61_80, "", "", "", 5000, ULONG_NO_CONVERSION, 0, 0, 0));
-  addDataObject(new OBDData(PID_SUPPORTED_PID_81_A0, "", "", "", 5000, ULONG_NO_CONVERSION, 0, 0, 0));
-#else
+//  addDataObject(new OBDData(PID_SUPPORTED_PID_41_60, "", "", "", 5000, ULONG_NO_CONVERSION, 0, 0, 0));
+//  addDataObject(new OBDData(PID_SUPPORTED_PID_61_80, "", "", "", 5000, ULONG_NO_CONVERSION, 0, 0, 0));
+//  addDataObject(new OBDData(PID_SUPPORTED_PID_81_A0, "", "", "", 5000, ULONG_NO_CONVERSION, 0, 0, 0));
+#endif
   addDataObject(new OBDData(PID_RPM, "", "%4d", "Rpm", 100, WORD_DIV4, 0, 6000, 300));
   addDataObject(new OBDData(PID_SPEED, "", "%3d", "Km/h", 250, BYTE_NO_CONVERSION, 0, 115, 3));
 
@@ -106,7 +106,6 @@ PumaOBD::PumaOBD()
   //  addDataObject(new OBDData(PID_CATALYST_TEMP_B1S2, LONG_DIV10_MINUS40
   //  addDataObject(new OBDData(PID_CATALYST_TEMP_B2S2, LONG_DIV10_MINUS40
   //  addDataObject(new OBDData(PID_AIR_FUEL_EQUIV_RATIO, LONG_TIMES200_DIV65536: // 0~200
-#endif
 
 #ifdef PID_DISCOVERY_MODE
   for (word i = 0; i < MAX_UNKNOWN_PIDS; i++)
@@ -252,19 +251,19 @@ void PumaOBD::requestSensorData(OBDData *sensor)
 void PumaOBD::readRxBuffers()
 {
   while (m_CAN.available() && (m_rxFIFO_count < MAX_RX_FIFO)) { // One or more messages available, and FIFO buffer not full?
-    m_rxFIFO[m_rxFIFO_head] = m_CAN.read();
-    m_rxFIFO[m_rxFIFO_head].m_timeStamp = millis();
-    m_rxFIFO_head++;
+    m_rxFIFO[m_rxFIFO_write] = m_CAN.read();
+    m_rxFIFO[m_rxFIFO_write].m_timeStamp = millis();
+    m_rxFIFO_write++;
     m_rxFIFO_count++;
-    if (m_rxFIFO_head >= MAX_RX_FIFO)
-      m_rxFIFO_head = 0;
+    if (m_rxFIFO_write >= MAX_RX_FIFO)
+      m_rxFIFO_write = 0;
   }
 }
 
 void PumaOBD::readMessages()
 {
   // Process messages in the RX FIFO buffer
-  while (m_rxFIFO_tail != m_rxFIFO_head) {
+  while (m_rxFIFO_read != m_rxFIFO_write) {
 
     if (m_rxFIFO_count > 10) {
       // TODO: Add this as a warning on the display
@@ -272,20 +271,20 @@ void PumaOBD::readMessages()
     }
 
 #ifdef RAW_LOGGING
-    logRawData(&m_rxFIFO[m_rxFIFO_tail]);
+    logRawData(&m_rxFIFO[m_rxFIFO_read]);
 #endif
 
-    if (m_rxFIFO[m_rxFIFO_tail].m_id == 0x7E8) {
-      processMessage(m_rxFIFO[m_rxFIFO_tail]);
+    if (m_rxFIFO[m_rxFIFO_read].m_id == 0x7E8) {
+      processMessage(m_rxFIFO[m_rxFIFO_read]);
     } else {
 #ifdef PID_DISCOVERY_MODE
-      addUnhandledPID(m_rxFIFO[m_rxFIFO_tail].m_id);
+      addUnhandledPID(m_rxFIFO[m_rxFIFO_read].m_id);
 #endif
     }
 
     if (m_rxFIFO_count > 0) m_rxFIFO_count--;
-    m_rxFIFO_tail++;
-    if (m_rxFIFO_tail >= MAX_RX_FIFO) m_rxFIFO_tail = 0;
+    m_rxFIFO_read++;
+    if (m_rxFIFO_read >= MAX_RX_FIFO) m_rxFIFO_read = 0;
   }
 }
 

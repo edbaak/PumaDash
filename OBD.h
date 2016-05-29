@@ -330,8 +330,8 @@ class PumaOBD
   private:
     PumaCAN m_CAN;
     CAN_Frame m_rxFIFO[MAX_RX_FIFO];
-    byte m_rxFIFO_head;
-    byte m_rxFIFO_tail;
+    byte m_rxFIFO_write;
+    byte m_rxFIFO_read;
     byte m_rxFIFO_count;
 
   private:

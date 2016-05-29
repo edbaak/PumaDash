@@ -117,11 +117,9 @@ void logRawData(CAN_Frame *message)
     return;
 
   char buf[150];
-  sprintf(buf, "%06d, %04x, %d, %d, %d, %02X, %02X, %02X, %02X, %02X, %02X, %02X, %02X",
+  sprintf(buf, "%08ul, %04X, %u,   %02X, %02X, %02X, %02X, %02X, %02X, %02X, %02X",
           message->m_timeStamp,
           message->m_id,
-          message->m_rtr,
-          message->m_extended,
           message->m_length,
           message->m_data[0],
           message->m_data[1],

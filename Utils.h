@@ -47,7 +47,7 @@ class CAN_Frame;
 //#define LOOPBACK_MODE           // CAN loopback mode. Messages transmitted are looped back to the CAN receiver, which helps with debugging.
 //#define OBD_DEBUG               // Prints out raw OBD RX data to Serial
 //#define CAN_DEBUG 1           // Low level CAN debugging
-//#define PID_DISCOVERY_MODE    // To discover new unknown PIDS, enable RECORD_UNKNOWN_PIDS. NOTE: This will only work if RX Masking/Filtering is switched off
+#define PID_DISCOVERY_MODE    // To discover new unknown PIDS, enable RECORD_UNKNOWN_PIDS. NOTE: This will only work if RX Masking/Filtering is switched off
 #define MAX_UNKNOWN_PIDS 50     // Max number of unhandled PID's that we keep track of
 //#define SELF_TEST
 
