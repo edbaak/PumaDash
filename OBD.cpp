@@ -39,73 +39,76 @@
 
 PumaOBD::PumaOBD()
 {
-  m_first = 0;
-  m_last = 0;
-  m_current = 0;
+  m_firstData[0] = 0;
+  m_firstData[1] = 0;
+  m_lastData[0] = 0;
+  m_lastData[1] = 0;
+  m_curData[0] = 0;
+  m_curData[1] = 0;
 
   m_rxFIFO_write = 0;
   m_rxFIFO_read = 0;
   m_rxFIFO_count = 0;
 
 #ifdef PID_DISCOVERY_MODE
-  addDataObject(new OBDData(PID_SUPPORTED_PID_01_20, "", "", "", 5000, ULONG_NO_CONVERSION, 0, 0, 0));
-  addDataObject(new OBDData(PID_SUPPORTED_PID_21_40, "", "", "", 5000, ULONG_NO_CONVERSION, 0, 0, 0));
-//  addDataObject(new OBDData(PID_SUPPORTED_PID_41_60, "", "", "", 5000, ULONG_NO_CONVERSION, 0, 0, 0));
-//  addDataObject(new OBDData(PID_SUPPORTED_PID_61_80, "", "", "", 5000, ULONG_NO_CONVERSION, 0, 0, 0));
-//  addDataObject(new OBDData(PID_SUPPORTED_PID_81_A0, "", "", "", 5000, ULONG_NO_CONVERSION, 0, 0, 0));
+  addDataObject(false, new OBDData(PID_SUPPORTED_PID_01_20, "", "", "", ULONG_NO_CONVERSION, 0, 0));
+  addDataObject(false, new OBDData(PID_SUPPORTED_PID_21_40, "", "", "", ULONG_NO_CONVERSION, 0, 0));
+  //  addDataObject(false, new OBDData(PID_SUPPORTED_PID_41_60, "", "", "", ULONG_NO_CONVERSION, 0, 0));
+  //  addDataObject(false, new OBDData(PID_SUPPORTED_PID_61_80, "", "", "", ULONG_NO_CONVERSION, 0, 0));
+  //  addDataObject(false, new OBDData(PID_SUPPORTED_PID_81_A0, "", "", "", ULONG_NO_CONVERSION, 0, 0));
 #endif
-  addDataObject(new OBDData(PID_RPM, "", "%4d", "Rpm", 100, WORD_DIV4, 0, 6000, 300));
-  addDataObject(new OBDData(PID_SPEED, "", "%3d", "Km/h", 250, BYTE_NO_CONVERSION, 0, 115, 3));
+  addDataObject(true, new OBDData(PID_RPM, "", "%4d", "Rpm", WORD_DIV4, 0, 6000));
+  addDataObject(true, new OBDData(PID_SPEED, "", "%3d", "Km/h", BYTE_NO_CONVERSION, 0, 115));
 
-  addDataObject(new OBDData(PID_COOLANT_TEMP, "Coolant", "%3d", "C", 3000, INT_MINUS40, -25, 130, 4));
-  addDataObject(new OBDData(PID_INTAKE_AIR_TEMP, "Intake Air", "%3d", "C", 5000, INT_MINUS40, 10, 50, 5));
-  addDataObject(new OBDData(PID_AMBIENT_AIR_TEMP, "Ambient Air", "%3d", "C", 5000, INT_MINUS40, 10, 50, 5));
-  //  addDataObject(new OBDData(PID_ENGINE_OIL_TEMP, "Engine Oil", "%3d", "C", 2000, INT_MINUS40, 0, 150, 4));
+  addDataObject(false, new OBDData(PID_COOLANT_TEMP, "Coolant", "%3d", "C", INT_MINUS40, -25, 130));
+  addDataObject(false, new OBDData(PID_INTAKE_AIR_TEMP, "Intake Air", "%3d", "C", INT_MINUS40, 10, 50));
+  addDataObject(false, new OBDData(PID_AMBIENT_AIR_TEMP, "Ambient Air", "%3d", "C", INT_MINUS40, 10, 50));
+  //  addDataObject(false, new OBDData(PID_ENGINE_OIL_TEMP, "Engine Oil", "%3d", "C", INT_MINUS40, 0, 150));
 
-  addDataObject(new OBDData(PID_BAROMETRIC_PRESSURE, "Air", "%4d", "mBar", 5000, BYTE_TIMES10, 950, 1150, 10));
-  addDataObject(new OBDData(PID_FUEL_PRESSURE, "Fuel rail", "%4d", "kPa", 5000, BYTE_TIMES3, 0, 765, 30));
+  addDataObject(false, new OBDData(PID_BAROMETRIC_PRESSURE, "Air", "%4d", "mBar", BYTE_TIMES10, 950, 1150));
+  addDataObject(false, new OBDData(PID_FUEL_PRESSURE, "Fuel rail", "%4d", "kPa", BYTE_TIMES3, 0, 765));
 
-  addDataObject(new OBDData(PID_FUEL_LEVEL, "Tank Level", "%3d", "%", 3000, BYTE_PERCENTAGE, 0, 100, 2));
-  addDataObject(new OBDData(PID_ENGINE_FUEL_RATE, "Fuel Rate", "%3.1f", "L/hr", 3000, WORD_DIV20, 0, 30, 1)); // L/h
+  addDataObject(false, new OBDData(PID_FUEL_LEVEL, "Tank Level", "%3d", "%", BYTE_PERCENTAGE, 0, 100));
+  addDataObject(false, new OBDData(PID_ENGINE_FUEL_RATE, "Fuel Rate", "%3.1f", "L/hr", WORD_DIV20, 0, 30)); // L/h
 
-  //  addDataObject(new OBDFloatValue(PID_CONTROL_MODULE_VOLTAGE, "Battery Voltage", 5000, WORD_DIV1000 // V
-  //  addDataObject(new OBDByteValue(PID_CALCULATED_ENGINE_LOAD, "Engine Load", 1000, BYTE_PERCENTAGE (word * 100 / 255)
-  //  addDataObject(new OBDByteValue(PID_ABSOLUTE_ENGINE_LOAD, "Abs Engine Load", 1000, BYTE_PERCENTAGE (word * 100 / 255)
-  //  addDataObject(new OBDData(PID_ENGINE_TORQUE_DEMANDED, "Torque Demanded", 1000, INT_MINUS125 // %
-  //  addDataObject(new OBDData(PID_ENGINE_TORQUE_PERCENTAGE, "Torque Percentage", 1000, INT_MINUS125 // %
-  //  addDataObject(new OBDWordValue(PID_EVAP_SYS_VAPOR_PRESSURE, SHIFT_RIGHT_2 // kPa
-  //  addDataObject(new OBDByteValue(PID_THROTTLE_POSITION, BYTE_PERCENTAGE (word * 100 / 255)
-  //  addDataObject(new OBDByteValue(PID_COMMANDED_EGR, BYTE_PERCENTAGE (word * 100 / 255)
-  //  addDataObject(new OBDByteValue(PID_COMMANDED_EVAPORATIVE_PURGE, BYTE_PERCENTAGE (word * 100 / 255)
-  //  addDataObject(new OBDByteValue(PID_RELATIVE_THROTTLE_POS, BYTE_PERCENTAGE (word * 100 / 255)
-  //  addDataObject(new OBDByteValue(PID_ABSOLUTE_THROTTLE_POS_B, BYTE_PERCENTAGE (word * 100 / 255)
-  //  addDataObject(new OBDByteValue(PID_ABSOLUTE_THROTTLE_POS_C, BYTE_PERCENTAGE (word * 100 / 255)
-  //  addDataObject(new OBDByteValue(PID_ACC_PEDAL_POS_D, BYTE_PERCENTAGE (word * 100 / 255)
-  //  addDataObject(new OBDByteValue(PID_ACC_PEDAL_POS_E, BYTE_PERCENTAGE (word * 100 / 255)
-  //  addDataObject(new OBDByteValue(PID_ACC_PEDAL_POS_F, BYTE_PERCENTAGE (word * 100 / 255)
-  //  addDataObject(new OBDByteValue(PID_COMMANDED_THROTTLE_ACTUATOR, BYTE_PERCENTAGE (word * 100 / 255)
-  //  addDataObject(new OBDByteValue(PID_ETHANOL_FUEL, BYTE_PERCENTAGE (word * 100 / 255)
-  //  addDataObject(new OBDByteValue(PID_HYBRID_BATT_REMAINING_LIFE, BYTE_PERCENTAGE (word * 100 / 255)
-  //  addDataObject(new OBDWordValue(PID_MAF_AIR_FLOW_RATE, WORD_DIV100 // grams/sec
-  //  addDataObject(new OBDData(PID_TIMING_ADVANCE, BYTE_DIV2_MINUS64
-  //  addDataObject(new OBDWordValue(PID_DISTANCE_SINCE_DTC_CLEARED, WORD_NO_CONVERSION: // km
-  //  addDataObject(new OBDWordValue(PID_DISTANCE_WITH_MIL_ON, WORD_NO_CONVERSION: // km
-  //  addDataObject(new OBDWordValue(PID_RUN_TIME_WITH_MIL_ON, WORD_NO_CONVERSION: // minute
-  //  addDataObject(new OBDWordValue(PID_TIME_SINCE_DTC_CLEARED, WORD_NO_CONVERSION: // minute
-  //  addDataObject(new OBDWordValue(PID_RUNTIME_SINCE_ENG_START, WORD_NO_CONVERSION: // second
-  //  addDataObject(new OBDWordValue(PID_FUEL_RAIL_PRESSURE, WORD_NO_CONVERSION: // kPa
-  //  addDataObject(new OBDWordValue(PID_ENGINE_REF_TORQUE, WORD_NO_CONVERSION: // Nm
-  //  addDataObject(new OBDData(PID_SHORT_TERM_FUEL_TRIM_1, INT_MINUS128_TIMES100_DIV128
-  //  addDataObject(new OBDData(PID_LONG_TERM_FUEL_TRIM_1, INT_MINUS128_TIMES100_DIV128
-  //  addDataObject(new OBDData(PID_SHORT_TERM_FUEL_TRIM_2, INT_MINUS128_TIMES100_DIV128
-  //  addDataObject(new OBDData(PID_LONG_TERM_FUEL_TRIM_2, INT_MINUS128_TIMES100_DIV128
-  //  addDataObject(new OBDData(PID_EGR_ERROR, INT_MINUS128_TIMES100_DIV128
-  //  addDataObject(new OBDData(PID_FUEL_INJECTION_TIMING, LONG_MINUS26880_DIV128
-  //  addDataObject(new OBDData(PID_CATALYST_TEMP_B1S1, LONG_DIV10_MINUS40
-  //  addDataObject(new OBDData(PID_CATALYST_TEMP_B2S1, LONG_DIV10_MINUS40
-  //  addDataObject(new OBDData(PID_CATALYST_TEMP_B1S2, LONG_DIV10_MINUS40
-  //  addDataObject(new OBDData(PID_CATALYST_TEMP_B2S2, LONG_DIV10_MINUS40
-  //  addDataObject(new OBDData(PID_AIR_FUEL_EQUIV_RATIO, LONG_TIMES200_DIV65536: // 0~200
+  //  addDataObject(false, new OBDFloatValue(PID_CONTROL_MODULE_VOLTAGE, "Battery Voltage", WORD_DIV1000 // V
+  //  addDataObject(false, new OBDByteValue(PID_CALCULATED_ENGINE_LOAD, "Engine Load", BYTE_PERCENTAGE (word * 100 / 255)
+  //  addDataObject(false, new OBDByteValue(PID_ABSOLUTE_ENGINE_LOAD, "Abs Engine Load", BYTE_PERCENTAGE (word * 100 / 255)
+  //  addDataObject(false, new OBDData(PID_ENGINE_TORQUE_DEMANDED, "Torque Demanded", INT_MINUS125 // %
+  //  addDataObject(false, new OBDData(PID_ENGINE_TORQUE_PERCENTAGE, "Torque Percentage", INT_MINUS125 // %
+  //  addDataObject(false, new OBDWordValue(PID_EVAP_SYS_VAPOR_PRESSURE, SHIFT_RIGHT_2 // kPa
+  //  addDataObject(false, new OBDByteValue(PID_THROTTLE_POSITION, BYTE_PERCENTAGE (word * 100 / 255)
+  //  addDataObject(false, new OBDByteValue(PID_COMMANDED_EGR, BYTE_PERCENTAGE (word * 100 / 255)
+  //  addDataObject(false, new OBDByteValue(PID_COMMANDED_EVAPORATIVE_PURGE, BYTE_PERCENTAGE (word * 100 / 255)
+  //  addDataObject(false, new OBDByteValue(PID_RELATIVE_THROTTLE_POS, BYTE_PERCENTAGE (word * 100 / 255)
+  //  addDataObject(false, new OBDByteValue(PID_ABSOLUTE_THROTTLE_POS_B, BYTE_PERCENTAGE (word * 100 / 255)
+  //  addDataObject(false, new OBDByteValue(PID_ABSOLUTE_THROTTLE_POS_C, BYTE_PERCENTAGE (word * 100 / 255)
+  //  addDataObject(false, new OBDByteValue(PID_ACC_PEDAL_POS_D, BYTE_PERCENTAGE (word * 100 / 255)
+  //  addDataObject(false, new OBDByteValue(PID_ACC_PEDAL_POS_E, BYTE_PERCENTAGE (word * 100 / 255)
+  //  addDataObject(false, new OBDByteValue(PID_ACC_PEDAL_POS_F, BYTE_PERCENTAGE (word * 100 / 255)
+  //  addDataObject(false, new OBDByteValue(PID_COMMANDED_THROTTLE_ACTUATOR, BYTE_PERCENTAGE (word * 100 / 255)
+  //  addDataObject(false, new OBDByteValue(PID_ETHANOL_FUEL, BYTE_PERCENTAGE (word * 100 / 255)
+  //  addDataObject(false, new OBDByteValue(PID_HYBRID_BATT_REMAINING_LIFE, BYTE_PERCENTAGE (word * 100 / 255)
+  //  addDataObject(false, new OBDWordValue(PID_MAF_AIR_FLOW_RATE, WORD_DIV100 // grams/sec
+  //  addDataObject(false, new OBDData(PID_TIMING_ADVANCE, BYTE_DIV2_MINUS64
+  //  addDataObject(false, new OBDWordValue(PID_DISTANCE_SINCE_DTC_CLEARED, WORD_NO_CONVERSION: // km
+  //  addDataObject(false, new OBDWordValue(PID_DISTANCE_WITH_MIL_ON, WORD_NO_CONVERSION: // km
+  //  addDataObject(false, new OBDWordValue(PID_RUN_TIME_WITH_MIL_ON, WORD_NO_CONVERSION: // minute
+  //  addDataObject(false, new OBDWordValue(PID_TIME_SINCE_DTC_CLEARED, WORD_NO_CONVERSION: // minute
+  //  addDataObject(false, new OBDWordValue(PID_RUNTIME_SINCE_ENG_START, WORD_NO_CONVERSION: // second
+  //  addDataObject(false, new OBDWordValue(PID_FUEL_RAIL_PRESSURE, WORD_NO_CONVERSION: // kPa
+  //  addDataObject(false, new OBDWordValue(PID_ENGINE_REF_TORQUE, WORD_NO_CONVERSION: // Nm
+  //  addDataObject(false, new OBDData(PID_SHORT_TERM_FUEL_TRIM_1, INT_MINUS128_TIMES100_DIV128
+  //  addDataObject(false, new OBDData(PID_LONG_TERM_FUEL_TRIM_1, INT_MINUS128_TIMES100_DIV128
+  //  addDataObject(false, new OBDData(PID_SHORT_TERM_FUEL_TRIM_2, INT_MINUS128_TIMES100_DIV128
+  //  addDataObject(false, new OBDData(PID_LONG_TERM_FUEL_TRIM_2, INT_MINUS128_TIMES100_DIV128
+  //  addDataObject(false, new OBDData(PID_EGR_ERROR, INT_MINUS128_TIMES100_DIV128
+  //  addDataObject(false, new OBDData(PID_FUEL_INJECTION_TIMING, LONG_MINUS26880_DIV128
+  //  addDataObject(false, new OBDData(PID_CATALYST_TEMP_B1S1, LONG_DIV10_MINUS40
+  //  addDataObject(false, new OBDData(PID_CATALYST_TEMP_B2S1, LONG_DIV10_MINUS40
+  //  addDataObject(false, new OBDData(PID_CATALYST_TEMP_B1S2, LONG_DIV10_MINUS40
+  //  addDataObject(false, new OBDData(PID_CATALYST_TEMP_B2S2, LONG_DIV10_MINUS40
+  //  addDataObject(false, new OBDData(PID_AIR_FUEL_EQUIV_RATIO, LONG_TIMES200_DIV65536: // 0~200
 
 #ifdef PID_DISCOVERY_MODE
   for (word i = 0; i < MAX_UNKNOWN_PIDS; i++)
@@ -113,29 +116,22 @@ PumaOBD::PumaOBD()
 #endif
 }
 
-void PumaOBD::addDataObject(OBDData *object)
+void PumaOBD::addDataObject(bool highPrio, OBDData *object)
 {
-  if (m_first == 0)
-    m_first = object;
-  else
-    m_last->m_next = object;
-  m_last = object;
+  if (m_firstData[highPrio] == 0) {
+    m_firstData[highPrio] = object;
+  } else {
+    m_lastData[highPrio]->m_next = object;
+  }
+  m_lastData[highPrio] = object;
+  m_curData[highPrio] = object;
 }
 
 OBDData *PumaOBD::dataObject(uint8_t PID)
 {
-  // We start searching possibly somewhere in the middle of the list, at the current object with which we've had the last interaction
-  OBDData *tmp = m_current;
-  while (tmp) {
-    if (tmp->pid() == PID)
-      return tmp;
-    tmp = tmp->m_next;
-  }
-
-  // If we haven't found the PID, start at the beginning of the list until we reach the current object.
-  if (m_current != m_first) {
-    tmp = m_first;
-    while (tmp && tmp != m_current) {
+  for (byte prio = 1; prio >= 0; prio--) {
+    OBDData *tmp = m_firstData[prio];
+    while (tmp) {
       if (tmp->pid() == PID)
         return tmp;
       tmp = tmp->m_next;
@@ -145,32 +141,16 @@ OBDData *PumaOBD::dataObject(uint8_t PID)
 }
 
 // DANGER: This function can return a NULL pointer!
-OBDData *PumaOBD::iterateDataObject(bool needsUpdate)
+OBDData *PumaOBD::nextDataObject(bool highPrio)
 {
-  OBDData *tmp = m_current;
+  OBDData *tmp = m_curData[highPrio];
   if (tmp) {
     tmp = tmp->m_next;
-    while (tmp && tmp != m_current) {
-      if (!needsUpdate || tmp->needsUpdate()) {
-        return tmp;
-      }
-      tmp = tmp->m_next;
-    }
+    if (tmp == 0)
+      tmp = m_firstData[highPrio];
+    m_curData[highPrio] = tmp;
+    return tmp;
   }
-
-  // If we haven't found the PID, start at the beginning of the list until we reach the current object.
-  if (m_current != m_first) {
-    tmp = m_first;
-    while (tmp && tmp != m_current) {
-      if (!needsUpdate || tmp->needsUpdate()) {
-        return tmp;
-      }
-      tmp = tmp->m_next;
-    }
-  }
-
-  if (m_first == m_last && m_first != 0 && m_first->needsUpdate())
-    return m_first;
 
   return 0;
 }
@@ -211,15 +191,17 @@ void PumaOBD::requestObdUpdates()
   // Now check if there is any data that needs an update.
   // We only ask for MAX 2 elements at a time, because the MCP2515 can only handle two sets of data.
   // To ensure that every data element gets a chance we rotate through the list in a round robin fashion
-  OBDData *tmp = iterateDataObject(true);
-  if (tmp) {
-    requestSensorData(tmp);
-    m_current = tmp;
-    requestSensorData(iterateDataObject(true));
-  }
+
+  // First we take an element from the high priority list, which should only contain a few elements, and hence these will be updated with a higher frequency
+  OBDData *tmp = nextDataObject(true);
+  if (tmp) requestSensorData(tmp);
+
+  // Then take one element from the low priority list
+  tmp = nextDataObject(false);
+  if (tmp) requestSensorData(tmp);
 }
 
-void PumaOBD::requestSensorData(OBDData *sensor)
+void PumaOBD::requestSensorData(OBDData * sensor)
 {
   if (sensor) {
     CAN_Frame message;
@@ -347,9 +329,7 @@ void PumaOBD::printUnhandledPIDS()
 OBDData::OBDData()
 {
   m_pid = 0;
-  m_updateInterval = 0;
   m_timeStamp = 0;
-  m_updateRequested = 0;
   m_label = "";
   m_subLabel = "";
   m_conversion = BYTE_NO_CONVERSION;
@@ -360,16 +340,14 @@ OBDData::~OBDData()
 {
 }
 
-OBDData::OBDData(uint8_t pid, String label, String format, String subLabel, uint16_t updateInterval, OBD_DATA_CONVERSION conversion, long min, long max, long step)
+OBDData::OBDData(uint8_t pid, String label, String format, String subLabel, OBD_DATA_CONVERSION conversion, long min, long max)
 {
   m_pid = pid;
   m_label = label;
   m_format = format;
   m_subLabel = subLabel;
-  m_updateInterval = updateInterval;
   m_conversion = conversion;
   m_timeStamp = 0;
-  m_updateRequested = 0;
   m_next = 0;
   m_value = 0;
 #ifdef LOOPBACK_MODE
@@ -377,32 +355,14 @@ OBDData::OBDData(uint8_t pid, String label, String format, String subLabel, uint
   m_simIncrease = true;
   m_simMinValue = min;
   m_simMaxValue = max;
-  m_simStepValue = step;
 #else
-  min = max = step;
+  min = max;
 #endif
 }
 
 uint8_t OBDData::pid()
 {
   return m_pid;
-}
-
-bool OBDData::needsUpdate()
-{
-  if (m_updateInterval > 0 || m_timeStamp == 0) {
-    unsigned long cur_time = millis();
-
-    if (m_updateRequested + m_updateInterval > cur_time) {
-      return false;
-    }
-
-    if (m_timeStamp + m_updateInterval < cur_time) {
-      m_updateRequested = millis();
-      return true;
-    }
-  }
-  return false;
 }
 
 String OBDData::label()
@@ -524,7 +484,6 @@ void OBDData::setValue(long value)
 
 void OBDData::setValue(uint32_t timeStamp, uint8_t *data)
 {
-  m_updateRequested = 0;
   m_timeStamp = timeStamp;
 
   long old_value = m_value;

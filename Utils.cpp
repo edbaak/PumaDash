@@ -276,12 +276,10 @@ void OBDDataTest()
   String t_label = "ObdLabel";
   char *t_format = "%d";
   String t_subLabel = "ObdSubLabel";
-  uint16_t t_interval = 0;
   OBD_DATA_CONVERSION t_conversion = BYTE_NO_CONVERSION;
   long t_min = 0;
   long t_max = 100;
-  long t_step = 5;
-  OBDData tester(t_pid, t_label, t_format, t_subLabel, t_interval, t_conversion, t_min, t_max, t_step);
+  OBDData tester(t_pid, t_label, t_format, t_subLabel, t_conversion, t_min, t_max);
 
   FAIL_IF_FALSE(tester.pid() == t_pid, "1.1");
   FAIL_IF_FALSE(tester.label() == t_label, "1.2");

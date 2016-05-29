@@ -252,10 +252,8 @@ class OBDData
 {
   public:
     OBDData();
-    OBDData(uint8_t pid, String label, String format, String subLabel, uint16_t updateInterval, OBD_DATA_CONVERSION conversion, long min, long max, long step);
+    OBDData(uint8_t pid, String label, String format, String subLabel, OBD_DATA_CONVERSION conversion, long min, long max);
     virtual ~OBDData();
-
-    bool needsUpdate();
 
     uint8_t pid();
     String label();
@@ -283,8 +281,6 @@ class OBDData
     friend class PumaOBD;
     OBDData *m_next;
     uint32_t m_timeStamp;
-    uint32_t m_updateRequested;
-    uint16_t m_updateInterval;
     uint8_t m_pid;
     String m_label;
     String m_subLabel;
@@ -293,12 +289,11 @@ class OBDData
 
   private:
     long m_value;
+    long m_simMinValue;
+    long m_simMaxValue;
 #ifdef LOOPBACK_MODE
     long m_simValue;
     bool m_simIncrease;
-    long m_simMinValue;
-    long m_simMaxValue;
-    long m_simStepValue;
 #endif
 };
 
@@ -313,7 +308,7 @@ class PumaOBD
     void readRxBuffers(); // Interupt driven
 
   protected:
-    void addDataObject(OBDData *obj);
+    void addDataObject(bool highPrio, OBDData *obj);
     OBDData *dataObject(uint8_t PID);
 
     void processMessage(CAN_Frame message);
@@ -321,10 +316,10 @@ class PumaOBD
     void requestSensorData(OBDData *sensor);
 
     OBDData m_invalidPID; // This object is used to return a valid pointer in case we don't support the PID
-    OBDData *m_first;
-    OBDData *m_last;
-    OBDData *m_current;
-    OBDData *iterateDataObject(bool needsUpdate);
+    OBDData *m_firstData[2];
+    OBDData *m_curData[2];
+    OBDData *m_lastData[2];
+    OBDData *nextDataObject(bool highPrio);
 
   private:
     PumaCAN m_CAN;

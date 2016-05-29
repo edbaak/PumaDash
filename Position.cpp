@@ -29,9 +29,9 @@
 
 Position::Position()
 {
-  gps_Compass = new OBDData(PID_PUMA_HEADING, "Heading", "%03d", "", 1000, WORD_NO_CONVERSION, 0, 360, 4);
-  gps_Pitch = new OBDData(PID_PUMA_PITCH, "Pitch", "%2i", "", 1000, INT_NO_CONVERSION, -40, 40, 2);
-  gps_Roll = new OBDData(PID_PUMA_ROLL, "Roll", "%2i", "", 1000, INT_NO_CONVERSION, -40, 40, 2);
+  gps_Compass = new OBDData(PID_PUMA_HEADING, "Heading", "%03d", "", WORD_NO_CONVERSION, 0, 360);
+  gps_Pitch = new OBDData(PID_PUMA_PITCH, "Pitch", "%2i", "", INT_NO_CONVERSION, -40, 40);
+  gps_Roll = new OBDData(PID_PUMA_ROLL, "Roll", "%2i", "", INT_NO_CONVERSION, -40, 40);
 }
 
 void Position::update()

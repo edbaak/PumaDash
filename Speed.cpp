@@ -40,9 +40,9 @@ CruiseCtrl::CruiseCtrl()
   minAllowedSpeed = 5.0;
   maxAllowedSpeed = 100.0;
 
-  m_CC_Speed = new OBDData(PID_PUMA_CC_SPEED, "Target Speed", "%3d", "Km/h", 1000, BYTE_NO_CONVERSION, 0, 110, 5);
-  m_CC_Mode = new OBDData(PID_PUMA_CC_MODE, "Mode", "%3d", "", 1000, BYTE_NO_CONVERSION, 0, 2, 1);
-  m_CC_Accelerator = new OBDData(PID_PUMA_CC_ACCELERATOR, "Accelerator", "%3d", "%", 1000, BYTE_NO_CONVERSION, 0, 100, 1);
+  m_CC_Speed = new OBDData(PID_PUMA_CC_SPEED, "Target Speed", "%3d", "Km/h", BYTE_NO_CONVERSION, 0, 110);
+  m_CC_Mode = new OBDData(PID_PUMA_CC_MODE, "Mode", "%3d", "", BYTE_NO_CONVERSION, 0, 2);
+  m_CC_Accelerator = new OBDData(PID_PUMA_CC_ACCELERATOR, "Accelerator", "%3d", "%", BYTE_NO_CONVERSION, 0, 100);
 }
 
 void CruiseCtrl::switchOnCruiseControlRelay(bool on)

@@ -62,6 +62,7 @@ class CAN_Frame;
 #define PUMA_WARNING_COLOR YELLOW     // FG color for data that is in a warning operating zone
 #define PUMA_NORMAL_COLOR LIGHTGREEN  // FG color for data that is in the normal/safe operating zone
 #define RPM_RADIUS 100                // Size of the Rpm dial
+#define PUMA_SIM_STEP_VALUE 3
 
 // PUMA Dash specific PID's, i.e. not part of the OBD2 standard and unknown to the vehicle ECU.
 // These PID's are 'extensions' to the OBD standard and are NOT transmitted on the CAN bus
