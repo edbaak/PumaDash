@@ -31,35 +31,31 @@
 
 String g_logFileName = "";
 
-String v2s(char* format, int value)
+String v2s(String format, int value)
 {
   char s[10];
-  sprintf(s, format, value);
-  String ret(s);
-  return ret;
+  sprintf(s, format.c_str(), value);
+  return String (s);
 }
 
-String v2s(char* format, byte value)
+String v2s(String format, byte value)
 {
   char s[10];
-  sprintf(s, format, value);
-  String ret(s);
-  return ret;
+  sprintf(s, format.c_str(), value);
+  return String(s);
 }
 
-String v2s(char* format, word value)
+String v2s(String format, word value)
 {
   char s[10];
-  sprintf(s, format, value);
-  String ret(s);
-  return ret;
+  sprintf(s, format.c_str(), value);
+  return String(s);
 }
 
-String v2s(char* format, unsigned long value)
+String v2s(String format, unsigned long value)
 {
   // TODO: should use format :-)
-  String s(value);
-  return s;
+  return String(value);
 }
 
 void uniqueLogFileName()

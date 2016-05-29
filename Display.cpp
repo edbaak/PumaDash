@@ -200,7 +200,6 @@ void BaseScreen::init()
   left_divider = 110; //135;
   right_divider = maxWidth() - left_divider;
   bottom_divider = maxHeight() - 130;
-
 }
 
 void BaseScreen::addSensor(SensorWidget *sensor)

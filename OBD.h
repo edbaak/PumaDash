@@ -268,7 +268,7 @@ class OBDData
 #endif
     void setFormat(String format);
 
-    String toString(byte width, byte precision = 0);
+    String toString();
     byte stringLength();
     byte toByte();
     word toWord();

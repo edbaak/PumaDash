@@ -49,7 +49,7 @@ class CAN_Frame;
 //#define CAN_DEBUG 1           // Low level CAN debugging
 //#define PID_DISCOVERY_MODE    // To discover new unknown PIDS, enable RECORD_UNKNOWN_PIDS. NOTE: This will only work if RX Masking/Filtering is switched off
 #define MAX_UNKNOWN_PIDS 50     // Max number of unhandled PID's that we keep track of
-#define SELF_TEST
+//#define SELF_TEST
 
 // Puma dashboard specific UI defines
 #define PUMA_LABEL_SIZE 1             // Font size for labels and subLabels
@@ -107,10 +107,10 @@ class CAN_Frame;
 #define PIN_MEGA_SPI_CS 53       // Connect pin 53 to 10 to use with CAN BOARD
 
 // Helper functions that don't belong in a class and aren't that important.
-String v2s(char* format, int value);
-String v2s(char* format, byte value);
-String v2s(char* format, word value);
-String v2s(char* format, unsigned long value);
+String v2s(String format, int value);
+String v2s(String format, byte value);
+String v2s(String format, word value);
+String v2s(String format, unsigned long value);
 
 void uniqueLogFileName();
 void initLogging();

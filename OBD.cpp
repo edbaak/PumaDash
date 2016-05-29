@@ -476,47 +476,20 @@ byte OBDData::stringLength()
   return decimals + fraction;
 }
 
-String OBDData::toString(byte width, byte precision)
+String OBDData::toString()
 {
-  if (width > 9) width = 9;
-  if (precision > 9) precision = 9;
-  
-  String format = "%";
-  format += char(width);
-  if (precision > 0) {
-    format += ".";
-    format += char(precision);
-  }
-  
-  if (m_value >= 0)
-    format += "lu";
-  else
-    format += "li";
-      
-  char buf[20];
-  if (m_conversion == WORD_DIV20) {
-    float tmp = m_value;
-    tmp /= 20;
-    sprintf(buf, format.c_str(), tmp);
-  } else if (m_conversion == ULONG_NO_CONVERSION) {
-    unsigned long tmp = m_value;
-    sprintf(buf, "0x08X", tmp);
-  } else {
-    sprintf(buf, format.c_str(), m_value);
-  }
-  
-/*  
+  char buf[30];
   if (m_conversion == WORD_DIV20) {
     float tmp = m_value;
     tmp /= 20;
     sprintf(buf, m_format.c_str(), tmp);
   } else if (m_conversion == ULONG_NO_CONVERSION) {
     unsigned long tmp = m_value;
-    sprintf(buf, "0x08X", tmp);
+    sprintf(buf, "0X%08X", tmp);
   } else {
     sprintf(buf, m_format.c_str(), m_value);
   }
-*/
+
   return buf;
 }
 
