@@ -11,11 +11,11 @@
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
 
-  WARNING: Modifying a vehicle's dashboard and instrument panel 
-  may require vehicle engineering and re-certification according 
+  WARNING: Modifying a vehicle's dashboard and instrument panel
+  may require vehicle engineering and re-certification according
   to local laws and regulations, such as the Australian Design
-  Rules (ADR) and Vehicle Standards. This code does not make any 
-  claim to meet any such standard. 
+  Rules (ADR) and Vehicle Standards. This code does not make any
+  claim to meet any such standard.
 
   You should have received a copy of the GNU General Public License
   along with this code; if not, write to the Free Software
@@ -48,25 +48,25 @@ PumaOBD::PumaOBD()
   m_rxFIFO_count = 0;
 
 #ifdef PID_DISCOVERY_MODE
-  addDataObject(new OBDData(PID_SUPPORTED_PID_01_20, "", "", "", 0, ULONG_NO_CONVERSION, 0, 0, 0));
-  addDataObject(new OBDData(PID_SUPPORTED_PID_21_40, "", "", "", 0, ULONG_NO_CONVERSION, 0, 0, 0));
-  addDataObject(new OBDData(PID_SUPPORTED_PID_41_60, "", "", "", 0, ULONG_NO_CONVERSION, 0, 0, 0));
-  addDataObject(new OBDData(PID_SUPPORTED_PID_61_80, "", "", "", 0, ULONG_NO_CONVERSION, 0, 0, 0));
-  addDataObject(new OBDData(PID_SUPPORTED_PID_81_A0, "", "", "", 0, ULONG_NO_CONVERSION, 0, 0, 0));
+  addDataObject(new OBDData(PID_SUPPORTED_PID_01_20, "", "", "", 5000, ULONG_NO_CONVERSION, 0, 0, 0));
+  addDataObject(new OBDData(PID_SUPPORTED_PID_21_40, "", "", "", 5000, ULONG_NO_CONVERSION, 0, 0, 0));
+  addDataObject(new OBDData(PID_SUPPORTED_PID_41_60, "", "", "", 5000, ULONG_NO_CONVERSION, 0, 0, 0));
+  addDataObject(new OBDData(PID_SUPPORTED_PID_61_80, "", "", "", 5000, ULONG_NO_CONVERSION, 0, 0, 0));
+  addDataObject(new OBDData(PID_SUPPORTED_PID_81_A0, "", "", "", 5000, ULONG_NO_CONVERSION, 0, 0, 0));
 #else
-    addDataObject(new OBDData(PID_RPM, "", "%4d", "Rpm", 100, WORD_DIV4, 0, 6000, 300));
-    addDataObject(new OBDData(PID_SPEED, "", "%3d", "Km/h", 250, BYTE_NO_CONVERSION, 0, 115, 3));
-  
-    addDataObject(new OBDData(PID_COOLANT_TEMP, "Coolant", "%3d", "C", 3000, INT_MINUS40, -25, 130, 4));
-    addDataObject(new OBDData(PID_INTAKE_AIR_TEMP, "Intake Air", "%3d", "C", 5000, INT_MINUS40, 10, 50, 5));
-    addDataObject(new OBDData(PID_AMBIENT_AIR_TEMP, "Ambient Air", "%3d", "C", 5000, INT_MINUS40, 10, 50, 5));
-    //  addDataObject(new OBDData(PID_ENGINE_OIL_TEMP, "Engine Oil", "%3d", "C", 2000, INT_MINUS40, 0, 150, 4));
-  
-    addDataObject(new OBDData(PID_BAROMETRIC_PRESSURE, "Air", "%4d", "mBar", 5000, BYTE_TIMES10, 950, 1150, 10));
-    addDataObject(new OBDData(PID_FUEL_PRESSURE, "Fuel rail", "%4d", "kPa", 5000, BYTE_TIMES3, 0, 765, 30));
-  
-    addDataObject(new OBDData(PID_FUEL_LEVEL, "Tank Level", "%3d", "%", 3000, BYTE_PERCENTAGE, 0, 100, 2));
-    addDataObject(new OBDData(PID_ENGINE_FUEL_RATE, "Fuel Rate", "%3.1f", "L/hr", 3000, WORD_DIV20, 0, 30, 1)); // L/h
+  addDataObject(new OBDData(PID_RPM, "", "%4d", "Rpm", 100, WORD_DIV4, 0, 6000, 300));
+  addDataObject(new OBDData(PID_SPEED, "", "%3d", "Km/h", 250, BYTE_NO_CONVERSION, 0, 115, 3));
+
+  addDataObject(new OBDData(PID_COOLANT_TEMP, "Coolant", "%3d", "C", 3000, INT_MINUS40, -25, 130, 4));
+  addDataObject(new OBDData(PID_INTAKE_AIR_TEMP, "Intake Air", "%3d", "C", 5000, INT_MINUS40, 10, 50, 5));
+  addDataObject(new OBDData(PID_AMBIENT_AIR_TEMP, "Ambient Air", "%3d", "C", 5000, INT_MINUS40, 10, 50, 5));
+  //  addDataObject(new OBDData(PID_ENGINE_OIL_TEMP, "Engine Oil", "%3d", "C", 2000, INT_MINUS40, 0, 150, 4));
+
+  addDataObject(new OBDData(PID_BAROMETRIC_PRESSURE, "Air", "%4d", "mBar", 5000, BYTE_TIMES10, 950, 1150, 10));
+  addDataObject(new OBDData(PID_FUEL_PRESSURE, "Fuel rail", "%4d", "kPa", 5000, BYTE_TIMES3, 0, 765, 30));
+
+  addDataObject(new OBDData(PID_FUEL_LEVEL, "Tank Level", "%3d", "%", 3000, BYTE_PERCENTAGE, 0, 100, 2));
+  addDataObject(new OBDData(PID_ENGINE_FUEL_RATE, "Fuel Rate", "%3.1f", "L/hr", 3000, WORD_DIV20, 0, 30, 1)); // L/h
 
   //  addDataObject(new OBDFloatValue(PID_CONTROL_MODULE_VOLTAGE, "Battery Voltage", 5000, WORD_DIV1000 // V
   //  addDataObject(new OBDByteValue(PID_CALCULATED_ENGINE_LOAD, "Engine Load", 1000, BYTE_PERCENTAGE (word * 100 / 255)
@@ -429,61 +429,112 @@ OBD_DATA_CONVERSION OBDData::dataConversion()
 // This returns the expected string length returned by toString, if the specified format could be applied correctly.
 byte OBDData::stringLength()
 {
-  if (m_format.length() > 0 && m_format[0] == '%') {
-    char l = m_format[1];
+  byte decimals = 0;
+  byte fraction = 0;
+  byte dot_pos = 0;
+  if (m_format.length() < 2 || m_format[0] != '%')
+    return 3;
+
+  char l = m_format[1];
+  dot_pos = 2;
+
+  if (l == '0' && m_format.length() > 2) {
+    l = m_format[2];
+    dot_pos = 3;
+  }
+
+  switch (l) {
+    case '1': decimals = 1; break;
+    case '2': decimals = 2; break;
+    case '3': decimals = 3; break;
+    case '4': decimals = 4; break;
+    case '5': decimals = 5; break;
+    case '6': decimals = 6; break;
+    case '7': decimals = 7; break;
+    case '8': decimals = 8; break;
+    case '9': decimals = 9; break;
+    default: decimals = 3; break;
+  }
+
+  if (m_format.length() > 4 && m_format[dot_pos] == '.') {
+    l = m_format[dot_pos + 1];
+
     switch (l) {
-      case '1': return 1;
-      case '2': return 2;
-      case '3': return 3;
-      case '4': return 4;
-      case '5': return 5;
-      case '6': return 6;
-      case '7': return 7;
-      case '8': return 8;
-      case '9': return 9;
-      default: return 4;
+      case '1': fraction = 2; break;
+      case '2': fraction = 3; break;
+      case '3': fraction = 4; break;
+      case '4': fraction = 5; break;
+      case '5': fraction = 6; break;
+      case '6': fraction = 7; break;
+      case '7': fraction = 8; break;
+      case '8': fraction = 9; break;
+      case '9': fraction = 10; break;
+      default: fraction = 1; break;
     }
   }
-  // TODO: Not sure if this works well in all cases.
-  return 4;
+
+  return decimals + fraction;
 }
 
-String OBDData::toString()
+String OBDData::toString(byte width, byte precision)
 {
-#ifdef PID_DISCOVERY_MODE
-  char buf[20];
-  if (m_conversion == ULONG_NO_CONVERSION) {
-    unsigned long tmp = m_value;
-    sprintf(buf, "0x08X", tmp);
+  if (width > 9) width = 9;
+  if (precision > 9) precision = 9;
+  
+  String format = "%";
+  format += char(width);
+  if (precision > 0) {
+    format += ".";
+    format += char(precision);
   }
-#else
+  
+  if (m_value >= 0)
+    format += "lu";
+  else
+    format += "li";
+      
   char buf[20];
   if (m_conversion == WORD_DIV20) {
     float tmp = m_value;
     tmp /= 20;
+    sprintf(buf, format.c_str(), tmp);
+  } else if (m_conversion == ULONG_NO_CONVERSION) {
+    unsigned long tmp = m_value;
+    sprintf(buf, "0x08X", tmp);
+  } else {
+    sprintf(buf, format.c_str(), m_value);
+  }
+  
+/*  
+  if (m_conversion == WORD_DIV20) {
+    float tmp = m_value;
+    tmp /= 20;
     sprintf(buf, m_format.c_str(), tmp);
+  } else if (m_conversion == ULONG_NO_CONVERSION) {
+    unsigned long tmp = m_value;
+    sprintf(buf, "0x08X", tmp);
   } else {
     sprintf(buf, m_format.c_str(), m_value);
   }
-#endif
+*/
   return buf;
 }
 
 byte OBDData::toByte()
 {
-  byte b = m_value;
+  byte b = m_value & 0xFF;
   return b;
 }
 
 word OBDData::toWord()
 {
-  word w = m_value;
+  word w = m_value & 0xFFFF;
   return w;
 }
 
 int OBDData::toInt()
 {
-  int i = m_value;
+  int i = m_value & 0xFFFF;
   return i;
 }
 
@@ -491,6 +542,13 @@ long OBDData::toLong()
 {
   return m_value;
 }
+
+#ifdef SELF_TEST
+void OBDData::setValue(long value)
+{
+  m_value = value;
+}
+#endif
 
 void OBDData::setValue(uint32_t timeStamp, uint8_t *data)
 {
@@ -548,6 +606,11 @@ void OBDData::setValue(uint32_t timeStamp, uint8_t *data)
 
   if (old_value != m_value)
     Display()->updateSensor(this);
+}
+
+void OBDData::setFormat(String format)
+{
+  m_format = format;
 }
 
 #ifdef LOOPBACK_MODE

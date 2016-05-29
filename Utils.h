@@ -39,16 +39,17 @@ class CAN_Frame;
 #define DISPLAY_SPEED 115200    // The baudrate at which we're running the 4D display
 #define DISPLAY_RESET_MS 5000   // Wait time after a display reset
 #define MAX_RX_FIFO 12          // FIFO buffer that stores received CAN messages, so that the MCP2515 can be emptied and available for the next message
-#define PUMA_DEFAULT_SCREEN 2   // Define the default screen. We can change this by tapping the touchscreen
-//#define RAW_LOGGING           // Saves RAW OBD data in a file on SD card
-//#define OBD_LOGGING           // Saves Processed OBD data in a file on SD card
+#define PUMA_DEFAULT_SCREEN 1   // Define the default screen. We can change this by tapping the touchscreen
+#define RAW_LOGGING             // Saves RAW OBD data in a file on SD card
+#define OBD_LOGGING             // Saves Processed OBD data in a file on SD card
 
 // Debugging modes
-#define LOOPBACK_MODE           // CAN loopback mode. Messages transmitted are looped back to the CAN receiver, which helps with debugging.
-//#define OBD_DEBUG             // Prints out raw OBD RX data to Serial
+//#define LOOPBACK_MODE           // CAN loopback mode. Messages transmitted are looped back to the CAN receiver, which helps with debugging.
+//#define OBD_DEBUG               // Prints out raw OBD RX data to Serial
 //#define CAN_DEBUG 1           // Low level CAN debugging
 //#define PID_DISCOVERY_MODE    // To discover new unknown PIDS, enable RECORD_UNKNOWN_PIDS. NOTE: This will only work if RX Masking/Filtering is switched off
 #define MAX_UNKNOWN_PIDS 50     // Max number of unhandled PID's that we keep track of
+#define SELF_TEST
 
 // Puma dashboard specific UI defines
 #define PUMA_LABEL_SIZE 1             // Font size for labels and subLabels
@@ -83,6 +84,9 @@ class CAN_Frame;
 #define PID_PUMA_CC_MODE          0xEF
 #define PID_PUMA_CC_ACCELERATOR   0xEE
 #define PID_PUMA_DTC              0xED
+#define PID_PUMA_ODO              0xEC
+#define PID_PUMA_TRIP             0xEB
+#define PID_PUMA_LAST_SERVICE     0xEA
 
 // Mega board PIN definitions
 #define PIN_MP2515_RX_INTERRUPT 2

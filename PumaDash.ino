@@ -69,8 +69,10 @@ void setup() {
 // Setup logging to the SD (USB) medium
   initLogging();
 
+#ifdef SELF_TEST
   // Run a comprehensive self-test
   selfTest();
+#endif
 
   // Setup crucial components in the system
   g_obd.setup();

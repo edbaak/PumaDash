@@ -263,8 +263,12 @@ class OBDData
     word color();
     OBD_DATA_CONVERSION dataConversion();
     void setValue(uint32_t timeStamp, uint8_t *data);
+#ifdef SELF_TEST
+    void setValue(long value);
+#endif
+    void setFormat(String format);
 
-    String toString();
+    String toString(byte width, byte precision = 0);
     byte stringLength();
     byte toByte();
     word toWord();

@@ -11,11 +11,11 @@
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
 
-  WARNING: Modifying a vehicle's dashboard and instrument panel 
-  may require vehicle engineering and re-certification according 
+  WARNING: Modifying a vehicle's dashboard and instrument panel
+  may require vehicle engineering and re-certification according
   to local laws and regulations, such as the Australian Design
-  Rules (ADR) and Vehicle Standards. This code does not make any 
-  claim to meet any such standard. 
+  Rules (ADR) and Vehicle Standards. This code does not make any
+  claim to meet any such standard.
 
   You should have received a copy of the GNU General Public License
   along with this code; if not, write to the Free Software
@@ -75,20 +75,20 @@ TableWidget::TableWidget(String title, word borderLines, byte columns, byte rows
     byte border = 30;
     if (m_columns > 1)
       for (byte column = 1; column < m_columns; column++)
-        Display()->gfx_Line(cellX(column), m_min_y + border, cellX(column), m_max_y - border, PUMA_LABEL_COLOR);
+        Display()->gfx_Line(X(column), m_min_y + border, X(column), m_max_y - border, PUMA_LABEL_COLOR);
     if (m_rows > 1)
       for (byte row = 1; row < m_rows; row++)
-        Display()->gfx_Line(m_min_x + border, cellY(row), m_max_x - border, cellY(row), PUMA_LABEL_COLOR);
+        Display()->gfx_Line(m_min_x + border, Y(row), m_max_x - border, Y(row), PUMA_LABEL_COLOR);
     Display()->gfx_LinePattern(0);
   }
 }
 
-word TableWidget::cellX(byte column)
+word TableWidget::X(byte column)
 {
   return m_min_x + (column * m_cell_width);
 }
 
-word TableWidget::cellY(byte row)
+word TableWidget::Y(byte row)
 {
   return m_min_y + m_title_height + (row * m_cell_height);
 }
@@ -136,8 +136,6 @@ void SensorWidget::update(OBDData *sensor)
 RpmDialWidget::RpmDialWidget(word pid, byte fontSize, word x, word y, word radius) : SensorWidget(pid, fontSize, x, y)
 {
   m_radius = radius;
-  drawRpmDial();
-  update(0);
 }
 
 void RpmDialWidget::drawRpmDial()
@@ -189,6 +187,8 @@ void RpmDialWidget::update(OBDData *sensor)
 
 void RpmDialWidget::updateRpm(word rpm)
 {
+  drawRpmDial(); // TODO: only repaint when needed?
+
   word color = PUMA_NORMAL_COLOR;
   if (rpm >= 4000)
     color = PUMA_ALARM_COLOR;
@@ -210,11 +210,11 @@ void RpmDialWidget::updateRpm(word rpm)
   Display()->gfx_TriangleFilled(x_pos[0], y_pos[0], x_pos[1], y_pos[1], x_pos[2], y_pos[2], color);
 
   // TODO: fix print position
-  Display()->printValue(v2s("%4d",rpm), 
-                        4, 
-                        m_x - Display()->fontWidth(m_fontSize) * 2, 
-                        m_y - Display()->fontHeight(m_fontSize) * 1.5, 
-                        color, 
+  Display()->printValue(v2s("%4d", rpm),
+                        4,
+                        m_x - Display()->fontWidth(m_fontSize) * 2,
+                        m_y - Display()->fontHeight(m_fontSize) * 1.5,
+                        color,
                         m_fontSize);
 }
 
@@ -227,7 +227,6 @@ PitchAndRollWidget::PitchAndRollWidget(word pid, byte fontSize, word x, word y, 
 {
   m_pitchMode = pitchMode;
   m_interleave = interleave;
-  update(0);
 }
 
 void PitchAndRollWidget::update(OBDData *sensor)
@@ -249,9 +248,9 @@ void PitchAndRollWidget::updateAngle(int angle)
       w = 5;
     if (i == 0) {
       if (m_pitchMode)
-        Display()->gfx_CircleFilled(m_x+4, y_, 3, PUMA_LABEL_COLOR);
+        Display()->gfx_CircleFilled(m_x + 4, y_, 3, PUMA_LABEL_COLOR);
       else
-        Display()->gfx_CircleFilled(x_, m_y-4, 3, PUMA_LABEL_COLOR);
+        Display()->gfx_CircleFilled(x_, m_y - 4, 3, PUMA_LABEL_COLOR);
     } else {
       if (m_pitchMode)
         Display()->gfx_Line(m_x, y_, m_x + w, y_, PUMA_LABEL_COLOR);
@@ -287,13 +286,13 @@ void PitchAndRollWidget::updateAngle(int angle)
   static word y_last_r = 0;
 
   // Reset display area
-    if (m_pitchMode) {
-      if (x_last_p != 0)
-        Display()->gfx_TriangleFilled(x_last_p, y_last_p, x_last_p + 20, y_last_p - 5, x_last_p + 20, y_last_p + 5, BLACK);
-    } else {
-      if (x_last_r != 0)
-        Display()->gfx_TriangleFilled(x_last_r, y_last_r, x_last_r - 5, y_last_r - 20, x_last_r + 5, y_last_r - 20, BLACK);
-    }
+  if (m_pitchMode) {
+    if (x_last_p != 0)
+      Display()->gfx_TriangleFilled(x_last_p, y_last_p, x_last_p + 20, y_last_p - 5, x_last_p + 20, y_last_p + 5, BLACK);
+  } else {
+    if (x_last_r != 0)
+      Display()->gfx_TriangleFilled(x_last_r, y_last_r, x_last_r - 5, y_last_r - 20, x_last_r + 5, y_last_r - 20, BLACK);
+  }
 
   if (m_pitchMode) {
     x_last_p = m_x + 10;
@@ -312,7 +311,6 @@ void PitchAndRollWidget::updateAngle(int angle)
 
 CompassWidget::CompassWidget(word pid, byte fontSize, word x, word y) : SensorWidget(pid, fontSize, x, y)
 {
-  update(0);
 }
 
 void CompassWidget::update(OBDData *sensor)
@@ -331,7 +329,7 @@ void CompassWidget::updateHeading(word heading)
 
     word w = Display()->fontWidth(m_fontSize);
     word h = Display()->fontHeight(m_fontSize);
-    
+
     Display()->txt_Xgap(2);
     Display()->printValue(v2s("%03d", heading), 3, m_x - (w * 1.5), m_y - (h / 2), PUMA_NORMAL_COLOR, m_fontSize);
     Display()->txt_Xgap(0);
@@ -368,7 +366,6 @@ void CompassWidget::updateHeading(word heading)
 TpmsWidget::TpmsWidget(word pid, TPMS_MODE mode, byte fontSize, word x, word y) : SensorWidget(pid, fontSize, x, y)
 {
   m_mode = mode;
-  update(0);
 }
 
 void TpmsWidget::update(OBDData *sensor)
@@ -436,6 +433,109 @@ void ListWidget::appendLine(String line)
   line = line;
 }
 
+// ******************************************************************************************************
+//                                              StringList
+// ******************************************************************************************************
 
+StringList::StringList()
+{
+  m_count = 0;
+  m_first = 0;
+}
 
+StringList::~StringList()
+{
+  deleteAll();
+}
+
+void StringList::addString(String s)
+{
+  StringListElement *tmp = new StringListElement;
+  tmp->m_buf = s;
+  tmp->m_next = 0;
+  if (m_first == 0) {
+    m_first = tmp;
+  } else {
+    StringListElement *iterator = m_first;
+    while (iterator->m_next != 0) {
+      iterator = iterator->m_next;
+    }
+    iterator->m_next = tmp;
+  }
+  m_count++;
+}
+
+word StringList::count()
+{
+  return m_count;
+}
+
+String StringList::stringAt(word index)
+{
+  StringListElement *iterator = m_first;
+  word i = 0;
+  while (iterator != 0) {
+    if (i == index)
+      return iterator->m_buf;
+    iterator = iterator->m_next;
+    i++;
+  }
+
+  return "blah";
+}
+
+bool StringList::deleteAt(word index)
+{
+  if (m_count == 0) {
+    Serial.println("WARNING: Trying to delete a string from an empty stringlist");
+    return false;
+  }
+
+  if (index > m_count) {
+    Serial.println("WARNING: Index too large when deleting from a stringlist");
+    return false;
+  }
+
+  StringListElement *iterator = m_first;
+  StringListElement *previous = m_first;
+  StringListElement *next = 0;
+  if (index == 0) {
+    next = m_first->m_next;
+    delete m_first;
+    m_first = next;
+    m_count--;
+    return true;
+  }
+
+  word i = 0;
+  previous = m_first;
+  iterator = m_first;
+  while (iterator != 0) {
+    if (i == index) {
+      next = iterator->m_next;
+      delete iterator;
+      previous->m_next = next;
+      m_count--;
+      return true;
+    }
+    previous = iterator;
+    iterator = iterator->m_next;
+    i++;
+  }
+
+  Serial.println("WARNING: Failed to delete a string from stringlist");
+  return false;
+}
+
+void StringList::deleteAll()
+{
+  StringListElement *iterator = m_first;
+  while (iterator != 0) {
+    StringListElement *next = iterator->m_next;
+    delete iterator;
+    iterator = next;
+  }
+  m_count = 0;
+  m_first = 0;
+}
 

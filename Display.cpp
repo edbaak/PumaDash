@@ -117,7 +117,7 @@ void PumaDisplay::reset(word ms)
     long new_ms = ms - (millis() - display_startup_delay_timer);
     display_startup_delay_timer = 0; // Make sure the next reset is handled normally
     if (new_ms > 0) {
-      Serial.println("Display reset. Waiting " + v2s("%d", word(new_ms)) + " ms");
+      Serial.println(String("Display reset. Waiting ") + v2s("%d", word(new_ms)) + String(" ms"));
       delay(word(new_ms));
     }
     return;
@@ -297,10 +297,26 @@ void Screen0::init()
 
   // Only create and add sensor objects the first time we call init.
   if (m_first_sensor == 0) {
-    printLabel("Position", 100, 4, PUMA_LABEL_COLOR);
-    addSensor(new PitchAndRollWidget(PID_PUMA_PITCH, PUMA_SENSOR_DATA_FONT_SIZE, 10, 8, true, 7 ));
-    addSensor(new PitchAndRollWidget(PID_PUMA_ROLL, PUMA_SENSOR_DATA_FONT_SIZE, 55, 149, false, 10 ));
-    addSensor(new CompassWidget(PID_PUMA_HEADING, PUMA_HEADING_FONT_SIZE, display_x_mid, top_divider / 2));
+    printLabel("Position", 
+                100, 
+                4, 
+                PUMA_LABEL_COLOR);
+    addSensor(new PitchAndRollWidget(PID_PUMA_PITCH, 
+                                      PUMA_SENSOR_DATA_FONT_SIZE, 
+                                      10, 
+                                      8, 
+                                      true, 
+                                      7 ));
+    addSensor(new PitchAndRollWidget(PID_PUMA_ROLL, 
+                                      PUMA_SENSOR_DATA_FONT_SIZE, 
+                                      55, 
+                                      149, 
+                                      false, 
+                                      10 ));
+    addSensor(new CompassWidget(PID_PUMA_HEADING, 
+                                PUMA_HEADING_FONT_SIZE, 
+                                display_x_mid, 
+                                top_divider / 2));
 
     TableWidget t1("TPMS", TableWidget::TOP_BORDER | TableWidget::SHOW_GRID, 2, 3,
                  left_border, 
@@ -308,23 +324,71 @@ void Screen0::init()
                  right_border,
                  bottom_border);
 
-    addSensor(new TpmsWidget(PID_PUMA_TPMS_FL_PRESS, TPMS_PRESSURE, PUMA_SENSOR_DATA_FONT_SIZE, t1.cellX(0), t1.cellY(0)));
-    addSensor(new TpmsWidget(PID_PUMA_TPMS_FL_TEMP, TPMS_TEMPERATURE, PUMA_SENSOR_DATA_FONT_SIZE, t1.cellX(0), t1.cellY(0)));
+    addSensor(new TpmsWidget(PID_PUMA_TPMS_FL_PRESS, 
+                              TPMS_PRESSURE, 
+                              PUMA_SENSOR_DATA_FONT_SIZE, 
+                              t1.X(0), 
+                              t1.Y(0)));
+    addSensor(new TpmsWidget(PID_PUMA_TPMS_FL_TEMP, 
+                              TPMS_TEMPERATURE, 
+                              PUMA_SENSOR_DATA_FONT_SIZE, 
+                              t1.X(0), 
+                              t1.Y(0)));
 
-    addSensor(new TpmsWidget(PID_PUMA_TPMS_FR_PRESS, TPMS_PRESSURE, PUMA_SENSOR_DATA_FONT_SIZE, t1.cellX(1), t1.cellY(0)));
-    addSensor(new TpmsWidget(PID_PUMA_TPMS_FR_TEMP, TPMS_TEMPERATURE, PUMA_SENSOR_DATA_FONT_SIZE, t1.cellX(1), t1.cellY(0)));
+    addSensor(new TpmsWidget(PID_PUMA_TPMS_FR_PRESS, 
+                              TPMS_PRESSURE, 
+                              PUMA_SENSOR_DATA_FONT_SIZE, 
+                              t1.X(1), 
+                              t1.Y(0)));
+    addSensor(new TpmsWidget(PID_PUMA_TPMS_FR_TEMP, 
+                              TPMS_TEMPERATURE, 
+                              PUMA_SENSOR_DATA_FONT_SIZE, 
+                              t1.X(1), 
+                              t1.Y(0)));
 
-    addSensor(new TpmsWidget(PID_PUMA_TPMS_RL_PRESS, TPMS_PRESSURE, PUMA_SENSOR_DATA_FONT_SIZE, t1.cellX(0), t1.cellY(1)));
-    addSensor(new TpmsWidget(PID_PUMA_TPMS_RL_TEMP, TPMS_TEMPERATURE, PUMA_SENSOR_DATA_FONT_SIZE, t1.cellX(0), t1.cellY(1)));
+    addSensor(new TpmsWidget(PID_PUMA_TPMS_RL_PRESS, 
+                              TPMS_PRESSURE, 
+                              PUMA_SENSOR_DATA_FONT_SIZE, 
+                              t1.X(0), 
+                              t1.Y(1)));
+    addSensor(new TpmsWidget(PID_PUMA_TPMS_RL_TEMP, 
+                              TPMS_TEMPERATURE, 
+                              PUMA_SENSOR_DATA_FONT_SIZE, 
+                              t1.X(0), 
+                              t1.Y(1)));
 
-    addSensor(new TpmsWidget(PID_PUMA_TPMS_RR_PRESS, TPMS_PRESSURE, PUMA_SENSOR_DATA_FONT_SIZE, t1.cellX(1), t1.cellY(1)));
-    addSensor(new TpmsWidget(PID_PUMA_TPMS_RR_TEMP, TPMS_TEMPERATURE, PUMA_SENSOR_DATA_FONT_SIZE, t1.cellX(1), t1.cellY(1)));
+    addSensor(new TpmsWidget(PID_PUMA_TPMS_RR_PRESS, 
+                              TPMS_PRESSURE, 
+                              PUMA_SENSOR_DATA_FONT_SIZE, 
+                              t1.X(1), 
+                              t1.Y(1)));
+    addSensor(new TpmsWidget(PID_PUMA_TPMS_RR_TEMP, 
+                              TPMS_TEMPERATURE, 
+                              PUMA_SENSOR_DATA_FONT_SIZE, 
+                              t1.X(1), 
+                              t1.Y(1)));
 
-    addSensor(new TpmsWidget(PID_PUMA_TPMS_TL_PRESS, TPMS_PRESSURE, PUMA_SENSOR_DATA_FONT_SIZE, t1.cellX(0), t1.cellY(2)));
-    addSensor(new TpmsWidget(PID_PUMA_TPMS_TL_TEMP, TPMS_TEMPERATURE, PUMA_SENSOR_DATA_FONT_SIZE, t1.cellX(0), t1.cellY(2)));
+    addSensor(new TpmsWidget(PID_PUMA_TPMS_TL_PRESS, 
+                              TPMS_PRESSURE, 
+                              PUMA_SENSOR_DATA_FONT_SIZE, 
+                              t1.X(0), 
+                              t1.Y(2)));
+    addSensor(new TpmsWidget(PID_PUMA_TPMS_TL_TEMP, 
+                              TPMS_TEMPERATURE, 
+                              PUMA_SENSOR_DATA_FONT_SIZE, 
+                              t1.X(0), 
+                              t1.Y(2)));
 
-    addSensor(new TpmsWidget(PID_PUMA_TPMS_TR_PRESS, TPMS_PRESSURE, PUMA_SENSOR_DATA_FONT_SIZE, t1.cellX(1), t1.cellY(2)));
-    addSensor(new TpmsWidget(PID_PUMA_TPMS_TR_TEMP, TPMS_TEMPERATURE, PUMA_SENSOR_DATA_FONT_SIZE, t1.cellX(1), t1.cellY(2)));
+    addSensor(new TpmsWidget(PID_PUMA_TPMS_TR_PRESS, 
+                              TPMS_PRESSURE, 
+                              PUMA_SENSOR_DATA_FONT_SIZE, 
+                              t1.X(1), 
+                              t1.Y(2)));
+    addSensor(new TpmsWidget(PID_PUMA_TPMS_TR_TEMP, 
+                              TPMS_TEMPERATURE, 
+                              PUMA_SENSOR_DATA_FONT_SIZE, 
+                              t1.X(1), 
+                              t1.Y(2)));
   }
 }
 
@@ -349,44 +413,87 @@ void Screen1::init()
 
   // Only create and add sensor objects the first time we call init.
   if (m_first_sensor == 0) {
-    addSensor(new SensorWidget(PID_SPEED, PUMA_SPEED_FONT_SIZE, display_x_mid - (Display()->fontWidth(PUMA_SPEED_FONT_SIZE) * 1.7), 145));
-    addSensor(new RpmDialWidget(PID_RPM, PUMA_RPM_FONT_SIZE, display_x_mid, RPM_RADIUS + 40, RPM_RADIUS));
+    addSensor(new SensorWidget(PID_SPEED, 
+                                PUMA_SPEED_FONT_SIZE, 
+                                display_x_mid - (Display()->fontWidth(PUMA_SPEED_FONT_SIZE) * 1.7), 
+                                145));
+    addSensor(new RpmDialWidget(PID_RPM, 
+                                PUMA_RPM_FONT_SIZE, 
+                                display_x_mid, RPM_RADIUS + 40, 
+                                RPM_RADIUS));
 
     TableWidget t1("Temperature", TableWidget::RIGHT_BORDER | TableWidget::BOTTOM_BORDER, 1, 3,
                    left_border, 
                    top_border, 
                    left_divider,
                    display_max_y / 2);
-    addSensor(new SensorWidget(PID_AMBIENT_AIR_TEMP, 2, label_x_offset, t1.cellY(0)));
-    addSensor(new SensorWidget(PID_COOLANT_TEMP, 2, label_x_offset, t1.cellY(1)));
-    addSensor(new SensorWidget(PID_INTAKE_AIR_TEMP, 2, label_x_offset, t1.cellY(2)));
+                   
+    addSensor(new SensorWidget(PID_AMBIENT_AIR_TEMP, 
+                                2, 
+                                label_x_offset, 
+                                t1.Y(0)));
+    addSensor(new SensorWidget(PID_COOLANT_TEMP, 
+                                2, 
+                                label_x_offset, 
+                                t1.Y(1)));
+    addSensor(new SensorWidget(PID_INTAKE_AIR_TEMP, 
+                                2, 
+                                label_x_offset, 
+                                t1.Y(2)));
 
     TableWidget t2("Pressure", TableWidget::TOP_BORDER | TableWidget::RIGHT_BORDER, 1, 3,
                    left_border, 
                    display_max_y / 2, 
                    left_divider,
                    bottom_border);
-    addSensor(new SensorWidget(PID_FUEL_PRESSURE, 2, label_x_offset, t2.cellY(0)));
-    addSensor(new SensorWidget(PID_BAROMETRIC_PRESSURE, 2, label_x_offset, t2.cellY(1)));
-    //    addSensor(new SensorWidget(PID_OIL, 2, label_x_offset, t2.cellY(2)));
+                   
+    addSensor(new SensorWidget(PID_FUEL_PRESSURE, 
+                                2, 
+                                label_x_offset, 
+                                t2.Y(0)));
+    addSensor(new SensorWidget(PID_BAROMETRIC_PRESSURE, 
+                                2, 
+                                label_x_offset, 
+                                t2.Y(1)));
+    //    addSensor(new SensorWidget(PID_OIL, 2, label_x_offset, t2.Y(2)));
 
     TableWidget t3("Fuel", TableWidget::LEFT_BORDER | TableWidget::BOTTOM_BORDER, 1, 3,
                    right_divider, 
                    top_border, 
                    right_border,
                    display_max_y / 2);
-    addSensor(new SensorWidget(PID_FUEL_LEVEL, 2, right_divider + label_x_offset, t3.cellY(0))); // Tank
-    addSensor(new SensorWidget(PID_ENGINE_FUEL_RATE, 2, right_divider + label_x_offset, t3.cellY(1)));  // Economy
-    //    addSensor(new SensorWidget(PID_RANGE, 2, right_divider + label_x_offset, t3.cellY(2)));     // Range
+                   
+    addSensor(new SensorWidget(PID_FUEL_LEVEL, 
+                                2, 
+                                right_divider + label_x_offset, 
+                                t3.Y(0))); // Tank
+    addSensor(new SensorWidget(PID_ENGINE_FUEL_RATE, 
+                                2, 
+                                right_divider + label_x_offset, 
+                                t3.Y(1)));  // Economy
+    //    addSensor(new SensorWidget(PID_RANGE, 
+    //                            2, 
+    //                            right_divider + label_x_offset, 
+    //                            t3.Y(2)));     // Range
 
     TableWidget t4("Distance", TableWidget::LEFT_BORDER, 1, 3,
                    right_divider, 
                    display_max_y / 2, 
                    right_border,
                    bottom_border);
-    //    printLabel("Odo", right_divider + label_x_offset, label1_y_offset + display_y_mid, PUMA_LABEL_COLOR);
-    //    printLabel("Trip", right_divider + label_x_offset, label2_y_offset + display_y_mid, PUMA_LABEL_COLOR);
-    //    printLabel("Last Service", right_divider + label_x_offset, label3_y_offset + display_y_mid, PUMA_LABEL_COLOR);
+
+    addSensor(new SensorWidget(PID_PUMA_ODO, 
+                                2, 
+                                right_divider + label_x_offset, 
+                                t4.Y(0))); 
+    addSensor(new SensorWidget(PID_PUMA_TRIP, 
+                                2, 
+                                right_divider + label_x_offset, 
+                                t4.Y(1))); 
+    addSensor(new SensorWidget(PID_PUMA_LAST_SERVICE, 
+                                2, 
+                                right_divider + label_x_offset, 
+                                t4.Y(2))); 
 
     //    printLabel("Drivetrain", display_y_mid - 50, bottom_divider + 3, PUMA_LABEL_COLOR);
     //    printLabel("Torque", left_divider + 15, bottom_divider + 15, PUMA_LABEL_COLOR);
@@ -416,7 +523,7 @@ void Screen2::init()
 {
   BaseScreen::init();
 
-  byte speed_size = PUMA_SENSOR_DATA_FONT_SIZE + 2;
+  byte speed_size = PUMA_SENSOR_DATA_FONT_SIZE + 1;
 
   // Only create and add sensor objects the first time we call init.
   if (m_first_sensor == 0) {
@@ -433,6 +540,7 @@ void Screen2::init()
                                PUMA_SENSOR_DATA_FONT_SIZE, 
                                left_border + 150, 
                                100));  // Throttle: 50%
+                               
     TableWidget t1("On-Board Diagnostics", TableWidget::TOP_BORDER, 1, 3,
                    left_border, 
                    top_divider, 

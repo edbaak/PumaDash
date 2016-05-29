@@ -40,6 +40,7 @@
 
 class PumaDisplay;
 class SensorWidget;
+
 #define MAX_CHAR_SIZE 10
 
 // Returns a pointer to the one and only global display class instance. This global pointer prevents the need for every class/instance to store a local copy.

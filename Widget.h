@@ -11,11 +11,11 @@
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
 
-  WARNING: Modifying a vehicle's dashboard and instrument panel 
-  may require vehicle engineering and re-certification according 
+  WARNING: Modifying a vehicle's dashboard and instrument panel
+  may require vehicle engineering and re-certification according
   to local laws and regulations, such as the Australian Design
-  Rules (ADR) and Vehicle Standards. This code does not make any 
-  claim to meet any such standard. 
+  Rules (ADR) and Vehicle Standards. This code does not make any
+  claim to meet any such standard.
 
   You should have received a copy of the GNU General Public License
   along with this code; if not, write to the Free Software
@@ -35,6 +35,26 @@
 #include "Display.h"
 #include "OBD.h"
 
+class StringList
+{
+  public:
+    StringList();
+    virtual ~StringList();
+    void addString(String s);
+    word count();
+    String stringAt(word index);
+    bool deleteAt(word index);
+    void deleteAll();
+
+  private:
+    struct StringListElement {
+      String m_buf;
+      StringListElement *m_next;
+    };
+    StringListElement *m_first;
+    word m_count;
+};
+
 class TableWidget
 {
   public:
@@ -49,8 +69,8 @@ class TableWidget
     } BORDER_LINES;
 
     TableWidget(String title, word borderLines, byte columns, byte rows, word minX, word minY, word maxX, word maxY);
-    word cellX(byte column);
-    word cellY(byte row);
+    word X(byte column);
+    word Y(byte row);
 
   private:
     String m_title;
