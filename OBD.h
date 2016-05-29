@@ -289,8 +289,8 @@ class OBDData
 
   private:
     long m_value;
-    long m_simMinValue;
-    long m_simMaxValue;
+    long m_minValue;
+    long m_maxValue;
 #ifdef LOOPBACK_MODE
     long m_simValue;
     bool m_simIncrease;

@@ -350,11 +350,11 @@ OBDData::OBDData(uint8_t pid, String label, String format, String subLabel, OBD_
   m_timeStamp = 0;
   m_next = 0;
   m_value = 0;
+  m_minValue = min;
+  m_maxValue = max;
 #ifdef LOOPBACK_MODE
   m_simValue = 0;
   m_simIncrease = true;
-  m_simMinValue = min;
-  m_simMaxValue = max;
 #else
   min = max;
 #endif
@@ -548,11 +548,11 @@ void OBDData::setFormat(String format)
 void OBDData::simulateData(CAN_Frame * message)
 {
   if (m_simIncrease) {
-    m_simValue += m_simStepValue;
-    if (m_simValue >= m_simMaxValue) m_simIncrease = false;
+    m_simValue += PUMA_SIM_STEP_VALUE;
+    if (m_simValue >= m_maxValue) m_simIncrease = false;
   } else {
-    m_simValue -= m_simStepValue;
-    if (m_simValue <= m_simMinValue) m_simIncrease = true;
+    m_simValue -= PUMA_SIM_STEP_VALUE;
+    if (m_simValue <= m_minValue) m_simIncrease = true;
   }
 
   // Special case: 'message == 0', which is used to simulate data for non OBD originating data, i.e. heading, roll, pitch, tpms, etc.
