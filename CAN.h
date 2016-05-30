@@ -265,6 +265,7 @@
 
 // End of constants
 
+//#define CAN_DEBUG 1           // Low level CAN debugging
 
 class CAN_Frame
 {
