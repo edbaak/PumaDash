@@ -35,7 +35,7 @@
 class CAN_Frame;
 
 // Operational settings
-#define LOGFILE_PREFIX 1605     // Prefix for SD card logging file names, i.e. 16050001.OBD
+#define LOGFILE_PREFIX 1606     // Prefix for SD card logging file names, i.e. 16050001.OBD
 #define DISPLAY_SPEED 115200    // The baudrate at which we're running the 4D display
 #define DISPLAY_RESET_MS 5000   // Wait time after a display reset
 #define MAX_RX_FIFO 12          // FIFO buffer that stores received CAN messages, so that the MCP2515 can be emptied and available for the next message
@@ -45,7 +45,6 @@ class CAN_Frame;
 
 // Debugging modes
 #define LOOPBACK_MODE           // CAN loopback mode. Messages transmitted are looped back to the CAN receiver, which helps with debugging.
-//#define OBD_DEBUG               // Prints out raw OBD RX data to Serial
 //#define CAN_DEBUG 1           // Low level CAN debugging
 #define PID_DISCOVERY_MODE      // To discover new unknown PIDS, enable RECORD_UNKNOWN_PIDS. NOTE: This will only work if RX Masking/Filtering is switched off
 #define MAX_UNKNOWN_PIDS 50     // Max number of unhandled PID's that we keep track of

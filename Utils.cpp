@@ -30,6 +30,7 @@
 #include "Widget.h"
 
 String g_logFileName = "";
+bool g_SD_card_available = false;
 
 String v2s(String format, int value)
 {
@@ -60,13 +61,12 @@ String v2s(String format, unsigned long value)
 
 void uniqueLogFileName()
 {
-  g_logFileName = "16050002";
-  return;
+  if (!g_SD_card_available) return;
   
   word num = 0;
-  byte version = 1;
+  byte version = 0;
   // Try to read the last number used to create an incremental numbered filename "MMYYxxxx.DAT"
-  File dataFile = SD.open("/OBD.CFG", FILE_READ);
+  File dataFile = SD.open("/PUMADASH.CFG", FILE_READ);
   if (dataFile) {
     version = dataFile.read();
     num = dataFile.read();
@@ -83,10 +83,13 @@ void uniqueLogFileName()
     g_logFileName = v2s("/%4d", LOGFILE_PREFIX) + v2s("%04d", num);
   }
 
-  dataFile = SD.open("/OBD.CFG", FILE_WRITE);
+  dataFile = SD.open("/PUMADASH.CFG", FILE_WRITE);
   if (dataFile) {
-    dataFile.write(version);
-    dataFile.write(num);
+    byte newVersion = 1; // bump the version when changing the file layout
+    dataFile.seek(0); // rewrite file
+    dataFile.write(byte(newVersion));
+    dataFile.write(byte(num > 8 & 0xFF));
+    dataFile.write(byte(num & 0xFF));
     dataFile.close();
   }
 }
@@ -105,6 +108,7 @@ void initLogging()
   if (!SD.begin(PIN_CAN_BOARD_SD_chipSelect)) {
     Serial.println("SD Card not found: Logging disabled");
   } else {
+    g_SD_card_available = true;
     Serial.print("SD Card found: ");
     uniqueLogFileName();
     Serial.println("Logging to " + g_logFileName);
@@ -117,7 +121,7 @@ void logRawData(CAN_Frame *message)
     return;
 
   char buf[150];
-  sprintf(buf, "%08ul, %04X, %u,   %02X, %02X, %02X, %02X, %02X, %02X, %02X, %02X",
+  sprintf(buf, "%08lu, %04X, %u,   %02X, %02X, %02X, %02X, %02X, %02X, %02X, %02X",
           message->m_timeStamp,
           message->m_id,
           message->m_length,
@@ -130,6 +134,7 @@ void logRawData(CAN_Frame *message)
           message->m_data[6],
           message->m_data[7]);
   logRawData(buf);
+  Serial.println(buf);
 }
 
 // Simple helper function to write a string to a logging file
@@ -149,6 +154,7 @@ void logRawData(char *s)
 
 void logObdData(String s)
 {
+  Serial.println(s);
   if (g_logFileName == "")
     return;
 
@@ -204,7 +210,7 @@ void stringListTest()
 void sdCardTest()
 {
   Serial.print("SD card test   : ");
-//  FAIL_IF_FALSE(SD.begin(PIN_CAN_BOARD_SD_chipSelect), "No SD card found");
+  FAIL_IF_FALSE(g_SD_card_available, "No SD card found");
 
   // This should not be needed, but in case a previous test round failed we may have to clean up
   // some test artifacts.
@@ -378,7 +384,7 @@ void selfTest()
   Serial.println("**************************************");
   Serial.println("Start Self Test");
   stringListTest();
-  //sdCardTest();
+  sdCardTest();
   OBDDataTest();
   Serial.println("Self Test Done ");
   Serial.println("**************************************");

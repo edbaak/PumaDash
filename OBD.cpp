@@ -51,26 +51,24 @@ PumaOBD::PumaOBD()
   m_rxFIFO_count = 0;
 
 #ifdef PID_DISCOVERY_MODE
-  addDataObject(false, new OBDData(PID_SUPPORTED_PID_01_20, "", "", "", ULONG_NO_CONVERSION, 0, 0));
-  addDataObject(false, new OBDData(PID_SUPPORTED_PID_21_40, "", "", "", ULONG_NO_CONVERSION, 0, 0));
+  addDataObject(false, new OBDData(PID_SUPPORTED_PID_01_20, "", "", "", ULONG_NO_CONVERSION, 0, 0XFFFFFF));
+  //addDataObject(false, new OBDData(PID_SUPPORTED_PID_21_40, "", "", "", ULONG_NO_CONVERSION, 0, 0XFFFFFF));
   //  addDataObject(false, new OBDData(PID_SUPPORTED_PID_41_60, "", "", "", ULONG_NO_CONVERSION, 0, 0));
   //  addDataObject(false, new OBDData(PID_SUPPORTED_PID_61_80, "", "", "", ULONG_NO_CONVERSION, 0, 0));
   //  addDataObject(false, new OBDData(PID_SUPPORTED_PID_81_A0, "", "", "", ULONG_NO_CONVERSION, 0, 0));
 #endif
   addDataObject(true, new OBDData(PID_RPM, "", "%4d", "Rpm", WORD_DIV4, 0, 6000));
   addDataObject(true, new OBDData(PID_SPEED, "", "%3d", "Km/h", BYTE_NO_CONVERSION, 0, 115));
-
   addDataObject(false, new OBDData(PID_COOLANT_TEMP, "Coolant", "%3d", "C", INT_MINUS40, -25, 130));
   addDataObject(false, new OBDData(PID_INTAKE_AIR_TEMP, "Intake Air", "%3d", "C", INT_MINUS40, 10, 50));
   addDataObject(false, new OBDData(PID_AMBIENT_AIR_TEMP, "Ambient Air", "%3d", "C", INT_MINUS40, 10, 50));
-  //  addDataObject(false, new OBDData(PID_ENGINE_OIL_TEMP, "Engine Oil", "%3d", "C", INT_MINUS40, 0, 150));
-
   addDataObject(false, new OBDData(PID_BAROMETRIC_PRESSURE, "Air", "%4d", "mBar", BYTE_TIMES10, 950, 1150));
-  addDataObject(false, new OBDData(PID_FUEL_PRESSURE, "Fuel rail", "%4d", "kPa", BYTE_TIMES3, 0, 765));
-
   addDataObject(false, new OBDData(PID_FUEL_LEVEL, "Tank Level", "%3d", "%", BYTE_PERCENTAGE, 0, 100));
-  addDataObject(false, new OBDData(PID_ENGINE_FUEL_RATE, "Fuel Rate", "%3.1f", "L/hr", WORD_DIV20, 0, 30)); // L/h
 
+  // addDataObject(false, new OBDData(PID_FUEL_PRESSURE, "Fuel rail", "%4d", "kPa", BYTE_TIMES3, 0, 765));
+  // addDataObject(false, new OBDData(PID_ENGINE_FUEL_RATE, "Fuel Rate", "%3.1f", "L/hr", WORD_DIV20, 0, 30)); // L/h
+
+  //  addDataObject(false, new OBDData(PID_ENGINE_OIL_TEMP, "Engine Oil", "%3d", "C", INT_MINUS40, 0, 150));
   //  addDataObject(false, new OBDFloatValue(PID_CONTROL_MODULE_VOLTAGE, "Battery Voltage", WORD_DIV1000 // V
   //  addDataObject(false, new OBDByteValue(PID_CALCULATED_ENGINE_LOAD, "Engine Load", BYTE_PERCENTAGE (word * 100 / 255)
   //  addDataObject(false, new OBDByteValue(PID_ABSOLUTE_ENGINE_LOAD, "Abs Engine Load", BYTE_PERCENTAGE (word * 100 / 255)
@@ -444,7 +442,7 @@ String OBDData::toString()
     sprintf(buf, m_format.c_str(), tmp);
   } else if (m_conversion == ULONG_NO_CONVERSION) {
     unsigned long tmp = m_value;
-    sprintf(buf, "0X%08X", tmp);
+    sprintf(buf, "0X%08lX", tmp);
   } else {
     sprintf(buf, m_format.c_str(), m_value);
   }
@@ -545,7 +543,7 @@ void OBDData::setFormat(String format)
 }
 
 #ifdef LOOPBACK_MODE
-void OBDData::simulateData(CAN_Frame * message)
+void OBDData::simulateData(CAN_Frame *message)
 {
   if (m_simIncrease) {
     m_simValue += PUMA_SIM_STEP_VALUE;
@@ -562,7 +560,10 @@ void OBDData::simulateData(CAN_Frame * message)
     message->m_data[1] = 0x41;
     message->m_data[2] = m_pid;
   }
-
+  message->m_length = 8;
+  message->m_rtr = 0;
+  message->m_extended = 0;
+  
   long tmp = 0;
   switch (m_conversion) {
     case INT_NO_CONVERSION:
