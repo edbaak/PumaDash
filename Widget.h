@@ -107,7 +107,7 @@ class RpmDialWidget : public SensorWidget
   public:
     RpmDialWidget(word pid, byte fontSize, word x, word y, word radius);
     void drawRpmDial();
-    void updateRpm(word rpm);
+    void updateRpm(word rpm, word color);
     virtual void update(OBDData *sensor);
 
   private:
@@ -146,8 +146,8 @@ class TpmsWidget : public SensorWidget
     virtual void update(OBDData *sensor);
 
   protected:
-    void updatePressure(String pressure);
-    void updateTemperature(String temperature);
+    void updatePressure(String pressure, word color);
+    void updateTemperature(String temperature, word color);
 
   private:
     TPMS_MODE m_mode;

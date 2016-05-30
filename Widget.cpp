@@ -180,20 +180,20 @@ void RpmDialWidget::drawRpmDial()
 void RpmDialWidget::update(OBDData *sensor)
 {
   if (sensor == 0)
-    updateRpm(0);
+    updateRpm(0, PUMA_ALARM_COLOR);
   else
-    updateRpm(sensor->toWord());
+    updateRpm(sensor->toWord(), sensor->color());
 }
 
-void RpmDialWidget::updateRpm(word rpm)
+void RpmDialWidget::updateRpm(word rpm, word color)
 {
   drawRpmDial(); // TODO: only repaint when needed?
 
-  word color = PUMA_NORMAL_COLOR;
-  if (rpm >= 4000)
-    color = PUMA_ALARM_COLOR;
-  else if (rpm < 1200)
-    color = PUMA_WARNING_COLOR;
+//  word color = PUMA_NORMAL_COLOR;
+//  if (rpm >= 4000)
+//    color = PUMA_ALARM_COLOR;
+//  else if (rpm < 1200)
+//    color = PUMA_WARNING_COLOR;
 
   static word last_rpm = 0;
   static word x_pos[3] = {0, 0, 0};
@@ -261,6 +261,7 @@ void PitchAndRollWidget::updateAngle(int angle)
     y_ += m_interleave;
   }
 
+// TODO: use sensor->color() instead
   int color = PUMA_NORMAL_COLOR;
   if (abs(angle) > 35)
     color = PUMA_ALARM_COLOR;
@@ -372,43 +373,33 @@ void TpmsWidget::update(OBDData *sensor)
 {
   if (m_mode == TPMS_PRESSURE) {
     if (sensor == 0)
-      updatePressure("--");
+      updatePressure("--", PUMA_ALARM_COLOR);
     else
-      updatePressure(sensor->toString());
+      updatePressure(sensor->toString(), sensor->color());
   }
   else
   {
     if (sensor == 0)
-      updateTemperature("--");
+      updateTemperature("--", PUMA_ALARM_COLOR);
     else
-      updateTemperature(sensor->toString());
+      updateTemperature(sensor->toString(), sensor->color());
 
   }
 }
 
-void TpmsWidget::updatePressure(String pressure)
+void TpmsWidget::updatePressure(String pressure, word color)
 {
   Display()->gfx_Line(m_x + TPMS_X1_OFFSET, m_y + TPMS_Y1_OFFSET , m_x + TPMS_X2_OFFSET, m_y + TPMS_Y2_OFFSET, PUMA_LABEL_COLOR);
 
   word x1 = m_x + TPMS_X1_OFFSET / 2;
   word y2 = m_y + TPMS_Y2_OFFSET;
-  int color = PUMA_NORMAL_COLOR;
-  //  if (Display()->m_tpms->tirePressureAlarm(tireLocation))
-  //    color = PUMA_ALARM_COLOR;
-  //  else if (Display()->m_tpms->tirePressureWarning(tireLocation))
-  //    color = PUMA_WARNING_COLOR;
   Display()->printValue(pressure, 2, x1, y2, color, m_fontSize);
 }
 
-void TpmsWidget::updateTemperature(String temperature)
+void TpmsWidget::updateTemperature(String temperature, word color)
 {
-  int color = PUMA_NORMAL_COLOR;
   word x2 = m_x + TPMS_X2_OFFSET;
   word y1 = m_y + TPMS_Y1_OFFSET - 20;
-  //  if (Display()->m_tpms->tireTemperatureAlarm(tireLocation))
-  //    color = PUMA_ALARM_COLOR;
-  //  else if (Display()->m_tpms->tireTemperatureWarning(tireLocation))
-  //    color = PUMA_WARNING_COLOR;
   Display()->printValue(temperature, 2, x2, y1, color, m_fontSize);
 }
 
