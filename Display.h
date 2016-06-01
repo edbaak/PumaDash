@@ -33,7 +33,7 @@
 #endif
 
 #include "Utils.h"
-#include <Diablo_Const4D.h>
+//#include <Diablo_Const4D.h>
 #include <Diablo_Serial_4DLib.h>
 #include <string.h>
 #include "OBD.h"
@@ -41,7 +41,7 @@
 class PumaDisplay;
 class SensorWidget;
 
-#define MAX_CHAR_SIZE 10
+#define MAX_FONT_SIZE 10
 
 // Returns a pointer to the one and only global display class instance. This global pointer prevents the need for every class/instance to store a local copy.
 PumaDisplay* Display();
@@ -54,9 +54,10 @@ class BaseScreen
     virtual byte displayOrientation() = 0;
     virtual void init();
 
-    void addSensor(SensorWidget *sensor);
-    SensorWidget *findSensor(word pid);
-    void updateSensor(OBDData *sensor);
+    void addSensorWidget(SensorWidget *sensor);
+    SensorWidget *findSensorWidget(word pid);
+    void updateSensorWidget(OBDData *sensor);
+    void requestStaticRefresh();
 
     void printLabel(String label, word x, word y, int color, byte fontSize = 1);
     void printSubLabel(String subLabel, word x, word y, int color, byte fontSize = 1);
@@ -70,7 +71,7 @@ class BaseScreen
     void printPrepare(word x, word y, int color, byte fontSize);
 
   protected:
-    SensorWidget *m_first_sensor;
+    SensorWidget *m_first_sensor_widget;
     word display_max_x;
     word display_max_y;
     word display_x_mid;
@@ -117,15 +118,18 @@ class PumaDisplay : public Diablo_Serial_4DLib
 {
   public:
     PumaDisplay(Stream * virtualPort);
+    virtual ~PumaDisplay();
+    
     void setup();
     void processTouchEvents();
+    void updateStatusbar();
     void reset(word ms = DISPLAY_RESET_MS);
 
     void printLabel(String label, word x, word y, int color, byte fontSize = 1);
     void printSubLabel(String subLabel, word x, word y, int color, byte fontSize = 1);
     void printValue(String value, byte textLength, word x, word y, int color, byte fontSize);
 
-    void updateSensor(OBDData *sensor);
+    void updateSensorWidget(OBDData *sensor);
 
     word fontWidth(byte fontSize);
     word fontHeight(byte fontSize);
@@ -134,14 +138,15 @@ class PumaDisplay : public Diablo_Serial_4DLib
     bool g_init_display;
     byte g_active_screen; // The screen currently shown on the display, i.e. m_screen0, m_screen1 or m_screen2
     BaseScreen *activeScreen();
-
+    unsigned long m_static_refresh_timer;
+    
     Screen0 m_screen0;    // Visual elements of the 'Left' display
     Screen1 m_screen1;    // Visual elements of the 'Center' display
     Screen2 m_screen2;    // Visual elements of the 'Right' display
 
   private:
-    word m_font_width[MAX_CHAR_SIZE + 1];
-    word m_font_height[MAX_CHAR_SIZE + 1];
+    word m_font_width[MAX_FONT_SIZE + 1];
+    word m_font_height[MAX_FONT_SIZE + 1];
 };
 
 #endif
