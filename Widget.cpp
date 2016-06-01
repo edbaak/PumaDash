@@ -104,6 +104,12 @@ SensorWidget::SensorWidget(word pid, byte fontSize, word x, word y)
   m_pid = pid;
   m_fontSize = fontSize;
   m_next = 0;
+  m_staticRefreshRequested = true;
+}
+
+void SensorWidget::requestStaticRefresh()
+{
+  m_staticRefreshRequested = true;
 }
 
 void SensorWidget::update(OBDData *sensor)
@@ -112,20 +118,24 @@ void SensorWidget::update(OBDData *sensor)
 
   word x1 = m_x;
   word y1 = m_y;
-  // TODO: optimize by only repainting label and sublabel when needed.
-  if (sensor->label() != "") {
-    Display()->printLabel(sensor->label(), x1, y1, PUMA_LABEL_COLOR, 1);
-    x1 += Display()->fontWidth(PUMA_LABEL_SIZE) * 2;
-    y1 += Display()->fontHeight(PUMA_LABEL_SIZE);
+  if (m_staticRefreshRequested) {
+    if (sensor->label() != "") {
+      Display()->printLabel(sensor->label(), x1, y1, PUMA_LABEL_COLOR, 1);
+      x1 += Display()->fontWidth(PUMA_LABEL_SIZE) * 2;
+      y1 += Display()->fontHeight(PUMA_LABEL_SIZE);
+    }
   }
 
   Display()->printValue(sensor->toString(), sensor->stringLength(), x1, y1, sensor->color(), m_fontSize);
 
-  if (sensor->subLabel() != "") {
-    x1 = x1 + (Display()->fontWidth(1) / 2) + (Display()->fontWidth(m_fontSize) * sensor->stringLength());
-    y1 = y1 + Display()->fontHeight(m_fontSize) - Display()->fontHeight(1);
-    Display()->printLabel(sensor->subLabel(), x1, y1, PUMA_LABEL_COLOR, 1);
+  if (m_staticRefreshRequested) {
+    if (sensor->subLabel() != "") {
+      x1 = x1 + (Display()->fontWidth(1) / 2) + (Display()->fontWidth(m_fontSize) * sensor->stringLength());
+      y1 = y1 + Display()->fontHeight(m_fontSize) - Display()->fontHeight(1);
+      Display()->printLabel(sensor->subLabel(), x1, y1, PUMA_LABEL_COLOR, 1);
+    }
   }
+  m_staticRefreshRequested = false;
 }
 
 
@@ -187,13 +197,10 @@ void RpmDialWidget::update(OBDData *sensor)
 
 void RpmDialWidget::updateRpm(word rpm, word color)
 {
-  drawRpmDial(); // TODO: only repaint when needed?
-
-//  word color = PUMA_NORMAL_COLOR;
-//  if (rpm >= 4000)
-//    color = PUMA_ALARM_COLOR;
-//  else if (rpm < 1200)
-//    color = PUMA_WARNING_COLOR;
+  if (m_staticRefreshRequested) {
+    drawRpmDial();
+    m_staticRefreshRequested = false;
+  }
 
   static word last_rpm = 0;
   static word x_pos[3] = {0, 0, 0};
@@ -242,26 +249,29 @@ void PitchAndRollWidget::updateAngle(int angle)
   // update the static display items
   word y_ = m_y;
   word x_ = m_x;
-  for (int i = -8; i <= 8; i++) {
-    int w = 2;
-    if (abs(i) == 2 || abs(i) == 4 || abs(i) == 6 || abs(i) == 8)
-      w = 5;
-    if (i == 0) {
-      if (m_pitchMode)
-        Display()->gfx_CircleFilled(m_x + 4, y_, 3, PUMA_LABEL_COLOR);
-      else
-        Display()->gfx_CircleFilled(x_, m_y - 4, 3, PUMA_LABEL_COLOR);
-    } else {
-      if (m_pitchMode)
-        Display()->gfx_Line(m_x, y_, m_x + w, y_, PUMA_LABEL_COLOR);
-      else
-        Display()->gfx_Line(x_, m_y - w, x_, m_y, PUMA_LABEL_COLOR);
+  if (m_staticRefreshRequested) {
+    for (int i = -8; i <= 8; i++) {
+      int w = 2;
+      if (abs(i) == 2 || abs(i) == 4 || abs(i) == 6 || abs(i) == 8)
+        w = 5;
+      if (i == 0) {
+        if (m_pitchMode)
+          Display()->gfx_CircleFilled(m_x + 4, y_, 3, PUMA_LABEL_COLOR);
+        else
+          Display()->gfx_CircleFilled(x_, m_y - 4, 3, PUMA_LABEL_COLOR);
+      } else {
+        if (m_pitchMode)
+          Display()->gfx_Line(m_x, y_, m_x + w, y_, PUMA_LABEL_COLOR);
+        else
+          Display()->gfx_Line(x_, m_y - w, x_, m_y, PUMA_LABEL_COLOR);
+      }
+      x_ += m_interleave;
+      y_ += m_interleave;
     }
-    x_ += m_interleave;
-    y_ += m_interleave;
+    m_staticRefreshRequested = false;
   }
 
-// TODO: use sensor->color() instead
+  // TODO: use sensor->color() instead
   int color = PUMA_NORMAL_COLOR;
   if (abs(angle) > 35)
     color = PUMA_ALARM_COLOR;
@@ -343,7 +353,10 @@ void CompassWidget::updateHeading(word heading)
     int y_ = m_y - (h / 2);
     int radius_ = 25;
     Display()->gfx_CircleFilled(x_, y_, radius_ - 1, BLACK);
-    Display()->gfx_Circle(x_, y_, radius_, PUMA_LABEL_COLOR);
+    if (m_staticRefreshRequested) {
+      Display()->gfx_Circle(x_, y_, radius_, PUMA_LABEL_COLOR);
+      m_staticRefreshRequested = false;
+    }
     Display()->gfx_MoveTo(x_, y_);
     word orbitX1, orbitY1;
     Display()->gfx_Orbit(heading, radius_, &orbitX1, &orbitY1);
@@ -389,7 +402,10 @@ void TpmsWidget::update(OBDData *sensor)
 
 void TpmsWidget::updatePressure(String pressure, word color)
 {
-  Display()->gfx_Line(m_x + TPMS_X1_OFFSET, m_y + TPMS_Y1_OFFSET , m_x + TPMS_X2_OFFSET, m_y + TPMS_Y2_OFFSET, PUMA_LABEL_COLOR);
+  if (m_staticRefreshRequested) {
+    Display()->gfx_Line(m_x + TPMS_X1_OFFSET, m_y + TPMS_Y1_OFFSET , m_x + TPMS_X2_OFFSET, m_y + TPMS_Y2_OFFSET, PUMA_LABEL_COLOR);
+    m_staticRefreshRequested = false;
+  }
 
   word x1 = m_x + TPMS_X1_OFFSET / 2;
   word y2 = m_y + TPMS_Y2_OFFSET;
@@ -404,7 +420,7 @@ void TpmsWidget::updateTemperature(String temperature, word color)
 }
 
 // ******************************************************************************************************
-//                                              TpmsWidget
+//                                              ListWidget
 // ******************************************************************************************************
 
 ListWidget::ListWidget(String title, word pid, byte fontSize, word x1, word y1, word x2, word y2) : SensorWidget(pid, fontSize, x1, y1)
@@ -417,6 +433,10 @@ ListWidget::ListWidget(String title, word pid, byte fontSize, word x1, word y1, 
 void ListWidget::update(OBDData *sensor)
 {
   Serial.println("Update list widget");
+    if (m_staticRefreshRequested) {
+      // foobar
+      m_staticRefreshRequested = false;
+    }
 }
 
 void ListWidget::appendLine(String line)

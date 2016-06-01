@@ -91,6 +91,7 @@ class SensorWidget
   public:
     SensorWidget(word pid, byte fontSize, word x, word y);
     virtual void update(OBDData *sensor);
+    void requestStaticRefresh();
 
   protected:
     friend class BaseScreen;
@@ -98,6 +99,7 @@ class SensorWidget
     byte m_fontSize;
     word m_x;
     word m_y;
+    bool m_staticRefreshRequested;
 
     SensorWidget *m_next;
 };
