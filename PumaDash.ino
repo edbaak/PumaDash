@@ -33,9 +33,30 @@
 #include <SPI.h>
 #include <SD.h>
 #include <Bounce2.h>
-#include <Diablo_Const4D.h>
 #include <Diablo_Serial_4DLib.h>
 
+/*
+ * TODO List
+ * -- Make CAN processing super stable
+ * ---- Re-enable *.update() calls in loop
+ * ---- Re-enable interrupt
+ * ---- Try interrupts with enable/disable interrupts
+ * ---- Try reducing the reset delay time
+ * ---- Try running the self-test sooner
+ * -- Run final two OBD range support queries
+ * -- Optimize display speed by redrawing static elements only when needed
+ * -- Improve min/max with color mechanism
+ * -- Add all supported PID's and show data somewhere
+ * -- Drive Defender without a console, to see that it works
+ * -- Take console measurements
+ * -- One or two resistors in accelerator pedal?
+ * -- Measure voltages on accelerator pedal
+ * -- Call Engineer
+ * -- Order two displays and extension board (plus electronic components) 
+ * -- Order USB port
+ * -- Order GPS plus motion sensors
+ */
+ 
 // Puma code
 #include "Utils.h"
 #include "CAN.h"
@@ -66,7 +87,11 @@ void setup() {
   pinMode(PIN_CAN_BOARD_LED1, OUTPUT);
   pinMode(PIN_CAN_BOARD_LED2, OUTPUT);
 
-// Setup logging to the SD (USB) medium
+  // Setup crucial components in the system
+  g_obd.setup();
+  g_display1.setup(); // In here we'll finalize the 5 second display reset delay.
+
+// Setup logging to the SD (USB) medium. Since this depends on the display we can only start logging once we have initialized the display.
   initLogging();
 
 #ifdef SELF_TEST
@@ -74,34 +99,33 @@ void setup() {
   selfTest();
 #endif
 
-  // Setup crucial components in the system
-  g_obd.setup();
-  g_display1.setup(); // In here we'll finalize the 5 second display reset delay.
-
   // Enable the interrupt handler that will process RX data coming from the CAN/OBD2 bus 
-  attachInterrupt(digitalPinToInterrupt(PIN_MP2515_RX_INTERRUPT), canRxHandler, FALLING);
+  //attachInterrupt(digitalPinToInterrupt(PIN_MP2515_RX_INTERRUPT), canRxHandler, FALLING);
 }
 
 // Run the infinite loop. On average, one cycle takes 35-40 ms.
 void loop() {
-  // LED1 indicates that the main loop is running. A flashing led is 'good'. It means we are not stuck in a dead-lock somewhere.
-  // The Led will appear to be more 'on' than 'off' but definitely needs to be flashing. Intensity will be much brighter than LED2 below.
+  // LED1 indicates that the main loop is running. A flashing led is 'good'.
+  // The Led will appear to be more 'on' than 'off' but definitely needs to be flashing. 
+  // Intensity will be much brighter than LED2 which is triggered by incoming OBD data.
   digitalWrite(PIN_CAN_BOARD_LED1, led1_on);
   led1_on = !led1_on;
-  
-  g_display1.processTouchEvents();
-  g_tpms.update();
-  g_position.update();
+
+  g_obd.readRxBuffers();
   g_obd.requestObdUpdates();
-  g_obd.readMessages();
-  g_speed.update();
+  
+//  g_tpms.update();
+//  g_position.update();
+  g_obd.update();
+//  g_speed.update();
+
+  g_display1.processTouchEvents();
+  g_display1.updateStatusbar();
 }
 
+/*
 // Interrupt handler for fetching messages from MCP2515 RX buffer
 void canRxHandler() {
-  // LED2 indicates CAN bus RX Interrupt activity. A flashing led is 'good'. It means we have incoming data, and are not stuck in a dead-lock somewhere.
-  // The Led should be on for only a very short period, so visually this will be a fast flashing led with a low light intensity. 
-  digitalWrite(PIN_CAN_BOARD_LED2, HIGH);
   g_obd.readRxBuffers();
-  digitalWrite(PIN_CAN_BOARD_LED2, LOW);
 }
+*/
