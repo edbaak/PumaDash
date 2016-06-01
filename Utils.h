@@ -42,12 +42,15 @@ class CAN_Frame;
 #define PUMA_DEFAULT_SCREEN 1   // Define the default screen. We can change this by tapping the touchscreen
 #define RAW_LOGGING             // Saves RAW OBD data in a file on SD card
 #define OBD_LOGGING             // Saves Processed OBD data in a file on SD card
+#define USE_SD_CARD_ON_4DDISPLAY
 
 // Debugging modes
 //#define LOOPBACK_MODE           // CAN loopback mode. Messages transmitted are looped back to the CAN receiver, which helps with debugging.
 //#define PID_DISCOVERY_MODE      // To discover new unknown PIDS, enable RECORD_UNKNOWN_PIDS. NOTE: This will only work if RX Masking/Filtering is switched off
 #define MAX_UNKNOWN_PIDS 25     // Max number of unhandled PID's that we keep track of
 #define SELF_TEST
+#define OBD_DEBUG
+
 
 // Puma dashboard specific UI defines
 #define PUMA_LABEL_SIZE 1             // Font size for labels and subLabels
@@ -91,11 +94,13 @@ class CAN_Frame;
 #define PIN_DISPLAY_RESET 4
 #define PIN_CAN_BOARD_LED1 7
 #define PIN_CAN_BOARD_LED2 8
-#define PIN_CAN_BOARD_SD_chipSelect 9 // SparkFun CAN-Bus Shield SPI chip select pin for SD card
+#ifndef USE_SD_CARD_ON_4DDISPLAY
+  #define PIN_CAN_BOARD_SD_CS 9 // SparkFun CAN-Bus Shield SPI chip select pin for SD card
+#endif  
 #define PIN_LEGACY_SPI_CS 10
 #define PIN_LEGACY_SPI_MOSI 11
 #define PIN_LEGACY_SPI_MISO 12
-#define PIN_LEGACY_SPI_SCK 13
+#define PIN_LEGACY_SPI_SCK 13    // Also the on-board LED
 #define DISPLAY_SERIAL1 Serial1  // We're running the Left 4D Display on USART 2, using pin 18 & 19
 #define DISPLAY_SERIAL2 Serial2  // We're running the Center 4D Display on USART 3, using pin ?? & ??
 #define DISPLAY_SERIAL3 Serial3  // We're running the Right 4D Display on USART 4, using pin ?? & ??
@@ -110,9 +115,8 @@ String v2s(String format, byte value);
 String v2s(String format, word value);
 String v2s(String format, unsigned long value);
 
-void uniqueLogFileName();
+String uniqueLogFileName();
 void initLogging();
-void logRawData(char *s);
 void logRawData(CAN_Frame *message);
 void logObdData(String s);
 
