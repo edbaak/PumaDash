@@ -33,6 +33,13 @@
 #include "WProgram.h" // for Arduino 23
 #endif
 
+#ifdef DISPLAY_DEBUG1
+#define DISPLAY_PRINTLN1(s) Serial.println(s); Serial.flush();
+#else
+#define DISPLAY_PRINTLN1(s) {}
+#endif
+
+
 PumaDisplay *global_Puma_Display = 0;
 
 PumaDisplay* Display()
@@ -85,6 +92,8 @@ void PumaDisplay::setup()
 
   TimeLimit4D = 5000 ; // 5 second timeout on all commands
   Callback4D = mycallback ;
+  m_displayContrast = 13;
+  gfx_Contrast(m_displayContrast);
 
   txt_FontID(FONT_3);
   touch_Set(TOUCH_ENABLE);
@@ -109,8 +118,23 @@ BaseScreen *PumaDisplay::activeScreen()
 
 void PumaDisplay::processTouchEvents()
 {
-  if (!g_init_display && m_screen0.touchPressed()) {
-    g_active_screen++;
+  DISPLAY_PRINTLN1(">> PumaDisplay::processTouchEvents()");
+  m_screen0.processTouchEvents();
+
+  word x, y;
+  if (m_screen0.displayTapped(x, y)) {
+  }
+
+  int steps;
+  if (!g_init_display && m_screen0.swipedLeftOrRight(steps)) {
+    m_screen0.resetSwiped();
+    if (steps < 0)
+      g_active_screen++;
+    else if (g_active_screen > 0)
+      g_active_screen--;
+    else
+      g_active_screen = 2;
+
     if (g_active_screen > 2)
       g_active_screen = 0;
     g_init_display = true;
@@ -119,7 +143,16 @@ void PumaDisplay::processTouchEvents()
   if (g_init_display) {
     g_init_display = false;
     activeScreen()->init();
+    activeScreen()->requestStaticRefresh();
   }
+
+  if (m_screen0.swipedUpOrDown(steps)) {
+    m_displayContrast -= steps;
+    if (m_displayContrast > 15) m_displayContrast = 15;
+    if (m_displayContrast < 1) m_displayContrast = 1;
+    gfx_Contrast(m_displayContrast);
+  }
+  DISPLAY_PRINTLN1("<< PumaDisplay::processTouchEvents()");
 }
 
 void PumaDisplay::updateStatusbar()
@@ -130,41 +163,31 @@ void PumaDisplay::updateStatusbar()
   String out = String(cur_time - timer);
   while (out.length() < 4) out = out + " ";
 
-  if (false) {
-    static String dots = " ";
-    out += dots;
-    printLabel(out, 0, activeScreen()->maxHeight() - 13, WHITE, 1);
-    dots += ".";
-    if (dots.length() > activeScreen()->maxWidth() / 10) {
-      dots = " ";
-      printLabel("                                                          ", 0, activeScreen()->maxHeight() - 13, WHITE, 1);
-    }
-  } else {
-    word y_ = activeScreen()->maxHeight() - fontHeight(1);
-    printLabel(out, 0, y_, WHITE, 1);
+  word y_ = activeScreen()->maxHeight() - fontHeight(1);
+  printLabel(out, 0, y_, WHITE, 1);
 
-    word char_width = fontWidth(1);
-    word _logfile_x = activeScreen()->maxWidth() - (8 * char_width);
+  word char_width = fontWidth(1);
+  word _logfile_x = activeScreen()->maxWidth() - (9 * char_width);
 
-    static word dot_count = 0;
-    static bool _print_dots = true;
-    word dot_x = (char_width * 5) + (dot_count++ * char_width);
-    if (dot_x >= _logfile_x - (2 * char_width)) {
-      dot_count = 0;
-      dot_x = (char_width * 5);
-    }
-    Display()->gfx_MoveTo(dot_x, y_);
-    if (_print_dots) Display()->print(".");
-    else Display()->print(" ");
+  static word dot_count = 0;
+  static bool _print_dots = true;
+  word dot_x = (char_width * 5) + (dot_count++ * char_width);
+  if (dot_x >= _logfile_x - (2 * char_width)) {
+    dot_count = 0;
+    dot_x = (char_width * 5);
+    _print_dots = !_print_dots;
+  }
+  Display()->gfx_MoveTo(dot_x, y_);
+  if (_print_dots) Display()->print(".");
+  else Display()->print(" ");
 
-    if (cur_time - m_static_refresh_timer > 10000) {
-      m_static_refresh_timer = cur_time;
-      activeScreen()->requestStaticRefresh();
+  if (cur_time - m_static_refresh_timer > 10000) {
+    m_static_refresh_timer = cur_time;
+    activeScreen()->requestStaticRefresh();
 
-      // While are are at it, refresh the log file name in the display status bar as well
-      Display()->gfx_MoveTo(_logfile_x, y_);
-      Display()->print(uniqueLogFileName());
-    }
+    // While are are at it, refresh the log file name in the display status bar as well
+    Display()->gfx_MoveTo(_logfile_x, y_);
+    Display()->print(uniqueLogFileName());
   }
 
   timer = cur_time;
@@ -267,6 +290,18 @@ void BaseScreen::init()
   left_divider = 110; //135;
   right_divider = maxWidth() - left_divider;
   bottom_divider = maxHeight() - 130;
+
+  m_touch_x1 = 0;
+  m_touch_x2 = 0;
+  m_touch_y1 = 0;
+  m_touch_y2 = 0;
+  m_display_tapped = false;
+  m_display_swiped = false;
+  m_touch_move_x = 0;
+  m_touch_move_y = 0;
+  m_touch_start = 0;
+  m_touch_end = 0;
+  m_swipe_mode = SWIPE_UNKNOWN;
 }
 
 void BaseScreen::addSensorWidget(SensorWidget * sensor)
@@ -314,10 +349,165 @@ void BaseScreen::requestStaticRefresh()
   }
 }
 
-bool BaseScreen::touchPressed()
+#define TOUCH_DIVIDER 6
+void BaseScreen::processTouchEvents()
 {
-  int j = Display()->touch_Get(TOUCH_STATUS) ;
-  return (j == TOUCH_PRESSED);
+  static unsigned long touch_timer = 0;
+  unsigned long cur_time = millis();
+//  if (cur_time - touch_timer < 40) return;
+  if (cur_time - m_touch_end > 100) m_touch_end = 0;
+  touch_timer = cur_time;
+  DISPLAY_PRINTLN1(">> BaseScreen::processTouchEvents()");
+
+  int state = Display()->touch_Get(TOUCH_STATUS);
+  if (state == TOUCH_PRESSED) {
+    if (m_touch_end == 0) {
+      Serial.println("TOUCH_PRESSED");
+      m_touch_x1 = Display()->touch_Get(TOUCH_GETX);
+      m_touch_x_start = m_touch_x1;
+      m_touch_y1 = Display()->touch_Get(TOUCH_GETY);
+      m_touch_y_start = m_touch_y1;
+      m_touch_start = cur_time;
+      m_display_tapped = false;
+      m_swipe_mode = SWIPE_UNKNOWN;
+    } else {
+      Serial.println("TOUCH PRESSED, continuing previous trace");
+    }
+
+  } else if (m_touch_start > 0) {
+
+    // grab the new x and the y coordinates of the touch
+    m_touch_x2 = Display()->touch_Get(TOUCH_GETX);
+    m_touch_y2 = Display()->touch_Get(TOUCH_GETY);
+
+    if (state == TOUCH_RELEASED) {
+      Serial.println("TOUCH_RELEASED");
+
+      if (cur_time - m_touch_start > 40 && cur_time - m_touch_start < 400 && m_swipe_mode != SWIPE_UD & m_swipe_mode != SWIPE_LR) {
+        Serial.println("TAPPED");
+        m_display_tapped = true;
+      } else {
+        Serial.println(cur_time - m_touch_start);
+      }
+      m_touch_end = cur_time;
+
+    } else if (state == TOUCH_MOVING) {
+      // calculate in which direction we're making the biggest move: up/down or left/right?
+      long move_x = m_touch_x2;
+      move_x -= m_touch_x_start;
+      long move_y = m_touch_y2;
+      move_y -= m_touch_y_start;
+
+      if (move_x != 0 || move_y != 0) {
+        if (m_swipe_mode == SWIPE_UNKNOWN) {
+          Serial.println("SWIPE_UNKNOWN");
+          m_swipe_mode = SWIPE_DETECTED; // Do another loop to get more movement so we can better assess with direction we're swiping in
+        } else if (m_swipe_mode == SWIPE_DETECTED) {
+          Serial.println("SWIPE_DETECTED");
+          long diff = abs(move_x) - abs(move_y);
+          Serial.print(">>>>>>>>>>>> ");
+          Serial.println(diff);
+          if (abs(diff) >= 10) {
+            if (abs(move_x) > abs(move_y))
+              m_swipe_mode = SWIPE_LR;
+            else
+              m_swipe_mode = SWIPE_UD;
+          }
+        } else if (m_swipe_mode == SWIPE_LR) {
+//          Serial.println("SWIPE_LR");
+          m_touch_move_y = 0;
+          long move_x = m_touch_x2;
+          move_x -= m_touch_x1;
+          m_touch_move_x = move_x / TOUCH_DIVIDER;
+          m_touch_x1 += m_touch_move_x * TOUCH_DIVIDER;
+          m_display_swiped = true;
+        } else if (m_swipe_mode == SWIPE_UD) {
+//          Serial.println("SWIPE_UD");
+          m_touch_move_x = 0;
+          long move_y = m_touch_y2;
+          move_y -= m_touch_y1;
+          m_touch_move_y = move_y / TOUCH_DIVIDER;
+          m_touch_y1 += m_touch_move_y * TOUCH_DIVIDER;
+          m_display_swiped = true;
+        }
+
+#ifdef TOUCH_DEBUG
+//        if (m_display_swiped) {
+//          Serial.print("x move: ");
+//          Serial.print(m_touch_move_x);
+//          Serial.print(",  y move: ");
+//          Serial.print(m_touch_move_y);
+//          if (m_touch_move_y != 0)
+//            Serial.println(" UP/DOWN");
+//          else if (m_touch_move_x != 0)
+//            Serial.println(" LEFT/RIGHT");
+//          else
+//            Serial.println("");
+//        }
+#endif
+      } else {
+        Serial.println("TOUCH_MOVING: Not enough movement");
+      }
+    }
+  }
+  DISPLAY_PRINTLN1("<< BaseScreen::processTouchEvents()");
+}
+
+bool BaseScreen::displayTapped(word &x, word &y)
+{
+  if (m_display_tapped) {
+    m_display_tapped = false;
+    x = m_touch_x1;
+    y = m_touch_y1;
+#ifdef TOUCH_DEBUG
+    Serial.println("Display tapped");
+#endif
+    return true;
+  }
+  return false;
+}
+
+bool BaseScreen::swipedUpOrDown(int &steps)
+{
+  if (m_swipe_mode == SWIPE_UD && m_display_swiped) {
+    steps = m_touch_move_y;
+    m_display_swiped = false;
+#ifdef TOUCH_DEBUG
+    if (m_touch_move_y < 0) {
+      Serial.print("Swiped up: ");
+      Serial.println(m_touch_move_y);
+    } else if (m_touch_move_y > 0) {
+      Serial.print("Swiped down: ");
+      Serial.println(m_touch_move_y);
+    }
+#endif
+    return true;
+  }
+  return false;
+}
+
+bool BaseScreen::swipedLeftOrRight(int &steps)
+{
+  if (m_swipe_mode == SWIPE_LR && m_display_swiped) {
+    steps = m_touch_move_x;
+    m_display_swiped = false;
+#ifdef TOUCH_DEBUG
+    if (m_touch_move_x < 0) {
+      Serial.print("Swiped left: ");
+      Serial.println(m_touch_move_x);
+    } else if (m_touch_move_x > 0) {
+      Serial.print("Swiped right: ");
+      Serial.println(m_touch_move_x);
+    }
+#endif
+    return true;
+  }
+  return false;
+}
+
+void BaseScreen::resetSwiped()
+{
+  m_touch_start = 0;
 }
 
 word BaseScreen::maxWidth()

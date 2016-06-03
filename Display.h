@@ -11,11 +11,11 @@
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
 
-  WARNING: Modifying a vehicle's dashboard and instrument panel 
-  may require vehicle engineering and re-certification according 
+  WARNING: Modifying a vehicle's dashboard and instrument panel
+  may require vehicle engineering and re-certification according
   to local laws and regulations, such as the Australian Design
-  Rules (ADR) and Vehicle Standards. This code does not make any 
-  claim to meet any such standard. 
+  Rules (ADR) and Vehicle Standards. This code does not make any
+  claim to meet any such standard.
 
   You should have received a copy of the GNU General Public License
   along with this code; if not, write to the Free Software
@@ -65,7 +65,12 @@ class BaseScreen
 
     word maxWidth();
     word maxHeight();
-    bool touchPressed();
+
+    void processTouchEvents();
+    bool displayTapped(word &x, word &y);
+    bool swipedUpOrDown(int &steps);
+    bool swipedLeftOrRight(int &steps);
+    void resetSwiped();
 
   protected:
     void printPrepare(word x, word y, int color, byte fontSize);
@@ -76,18 +81,39 @@ class BaseScreen
     word display_max_y;
     word display_x_mid;
     word display_y_mid;
-    
+
     word left_border;
     word right_border;
     word top_border;
     word bottom_border;
-    
+
     word left_divider;
     word right_divider;
-    
+
     word top_divider;
     word mid_divider;
     word bottom_divider;
+
+  protected:
+  typedef enum SWIPE_MODE {
+    SWIPE_UNKNOWN,
+    SWIPE_DETECTED,
+    SWIPE_LR,
+    SWIPE_UD
+  } SWIPE_MODE;
+    SWIPE_MODE m_swipe_mode;
+    word m_touch_x_start;
+    word m_touch_x1;
+    word m_touch_x2;
+    word m_touch_y_start;
+    word m_touch_y1;
+    word m_touch_y2;
+    bool m_display_tapped;
+    bool m_display_swiped;
+    long m_touch_move_x;
+    long m_touch_move_y;
+    unsigned long m_touch_start;
+    unsigned long m_touch_end;
 };
 
 class Screen0 : public BaseScreen
@@ -119,7 +145,7 @@ class PumaDisplay : public Diablo_Serial_4DLib
   public:
     PumaDisplay(Stream * virtualPort);
     virtual ~PumaDisplay();
-    
+
     void setup();
     void processTouchEvents();
     void updateStatusbar();
@@ -139,7 +165,8 @@ class PumaDisplay : public Diablo_Serial_4DLib
     byte g_active_screen; // The screen currently shown on the display, i.e. m_screen0, m_screen1 or m_screen2
     BaseScreen *activeScreen();
     unsigned long m_static_refresh_timer;
-    
+    int m_displayContrast;
+
     Screen0 m_screen0;    // Visual elements of the 'Left' display
     Screen1 m_screen1;    // Visual elements of the 'Center' display
     Screen2 m_screen2;    // Visual elements of the 'Right' display

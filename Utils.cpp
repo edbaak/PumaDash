@@ -87,18 +87,12 @@ void initLogging()
   // Initialize SD card
   // make sure that the default chip select pin is set to
   // output, even if you don't use it:
-#ifndef USE_SD_CARD_ON_4DDISPLAY
-  pinMode(PIN_CAN_BOARD_SD_CS, OUTPUT);
-#endif
+//  pinMode(PIN_CAN_BOARD_SD_CS, OUTPUT);
 
   // see if the card is present and can be initialized:
   g_SD_card_available = false;
-#ifdef USE_SD_CARD_ON_4DDISPLAY
   if (!Display()->file_Mount()) {
     Serial.println(Display()->file_Error());
-#else
-  if (!SD.begin(PIN_CAN_BOARD_SD_CS)) {
-#endif
     Serial.println("SD Card not found: Logging disabled");
   } else {
     g_SD_card_available = true;
@@ -108,7 +102,6 @@ void initLogging()
   }
 }
 
-#ifdef USE_SD_CARD_ON_4DDISPLAY
 String uniqueLogFileName()
 {
   if (!g_SD_card_available) return "NO LOG  ";
@@ -158,55 +151,6 @@ String uniqueLogFileName()
   return g_logFileName;
 }
 
-#else // USE_SD_CARD_ON_4DDISPLAY
-
-void uniqueLogFileName()
-{
-  if (!g_SD_card_available) return;
-
-  word num = 0;
-  byte version = 0;
-
-  // Try to read the last number used to create an incremental numbered filename "MMYYxxxx.DAT"
-  File dataFile = SD.open("/PUMADASH.PDC", FILE_READ);
-
-  if (dataFile) {
-    version = dataFile.read();
-    num = dataFile.read();
-    num = (num * 256) + dataFile.read();
-    dataFile.close();
-  }
-  g_logFileName = v2s("/%4d", LOGFILE_PREFIX) + v2s("%04d", num);
-
-  // If the file already exists i.e. we have indeed done some logging, we want to increment
-  // the number and save it for next round
-  char fname1[25];
-  strcpy(fname1, g_logFileName.c_str());
-  strcat(fname1, ".PDR");
-//  Serial.println(fname1);
-
-  char fname2[25];
-  strcpy(fname2, g_logFileName.c_str());
-  strcat(fname2, ".PDO");
-//  Serial.println(fname2);
-
-  if (SD.exists(fname1)) {
-    if (num < 9999) num++; // if reaching max we'll keep pumping into that file. This should never happen.
-    g_logFileName = v2s("/%4d", LOGFILE_PREFIX) + v2s("%04d", num);
-  }
-
-  dataFile = SD.open("/PUMADASH.PDC", FILE_WRITE);
-  if (dataFile) {
-    byte newVersion = 1; // bump the version when changing the file layout
-    if (dataFile.position() > 0) dataFile.seek(0); // rewrite file
-    dataFile.write(byte(newVersion));
-    dataFile.write(byte(num > 8 & 0xFF));
-    dataFile.write(byte(num & 0xFF));
-    dataFile.close();
-  }
-}
-#endif // USE_SD_CARD_ON_4DDISPLAY
-
 void logRawData(CAN_Frame *message)
 {
   if (message == 0)
@@ -229,8 +173,10 @@ void logRawData(CAN_Frame *message)
           message->m_data[6],
           message->m_data[7]);
 
+#ifdef RAW_MONITORING
   Serial.print(buf1);
   Serial.println(buf2);
+#endif
 
   if (g_logFileName == "")
     return;
@@ -238,25 +184,12 @@ void logRawData(CAN_Frame *message)
   char fname[25];
   strcpy(fname, g_logFileName.c_str());
   strcat(fname, ".PDR");
-#ifdef USE_SD_CARD_ON_4DDISPLAY
   word dataFile = Display()->file_Open(fname, 'a');
-#else
-  File dataFile = SD.open(fname, FILE_WRITE);
-#endif
-
   if (dataFile) {
-#ifdef USE_SD_CARD_ON_4DDISPLAY
-//Serial.print("Writing to: ");
-//Serial.println(fname);
     Display()->file_PutS(buf1, dataFile);
     Display()->file_PutS(buf2, dataFile);
     Display()->file_PutS("\r", dataFile);
     Display()->file_Close(dataFile);
-#else
-    dataFile.print(buf1);
-    dataFile.println(buf2);
-    dataFile.close();   //close file
-#endif
   } else {
     Serial.println("Error opening SD file for RAW logging");
     char modelStr[50];
@@ -268,32 +201,23 @@ void logRawData(CAN_Frame *message)
 
 void logObdData(String s)
 {
+#ifdef OBD_MONITORING
   Serial.println(s);
+#endif
   if (g_logFileName == "")
     return;
 
   char fname[25];
   strcpy(fname, g_logFileName.c_str());
   strcat(fname, ".PDO");
-#ifdef USE_SD_CARD_ON_4DDISPLAY
   word dataFile = Display()->file_Open(fname, 'a');
-#else
-  File dataFile = SD.open(fname, FILE_WRITE);
-#endif
 
   if (dataFile) {
-#ifdef USE_SD_CARD_ON_4DDISPLAY
-//Serial.print("Writing to: ");
-//Serial.println(fname);
     char buf[100];
     strcpy(buf, s.c_str()); // TODO: This is ugly
     Display()->file_PutS(buf, dataFile);
     Display()->file_PutS("\r", dataFile);
     Display()->file_Close(dataFile);
-#else
-    dataFile.println(s);
-    dataFile.close();   //close file
-#endif
   } else {
     Serial.println("Error opening SD file for OBD logging");
     char modelStr[50];
@@ -335,15 +259,6 @@ void stringListTest()
   Serial.println("PASS");
 }
 
-/*
-    Not tested at the moment (because I am lazy and don't need these):
-    void dataFile.flush()
-    byte dataFile.peek()
-    unsigned long dataFile.position()
-    bool dataFile.seek(position)
-    File dataFile.rewindDirectory()
-*/
-#ifdef USE_SD_CARD_ON_4DDISPLAY
 void sdCardTest()
 {
   Serial.print("SD card test   : ");
@@ -390,75 +305,6 @@ void sdCardTest()
   FAIL_IF_FALSE(Display()->file_Erase("/SELFTEST.XYZ"), "SD remove failed");
   Serial.println("PASS");
 }
-#else
-void sdCardTest()
-{
-  Serial.print("SD card test   : ");
-  FAIL_IF_FALSE(g_SD_card_available, "No SD card found");
-
-  // This should not be needed, but in case a previous test round failed we may have to clean up
-  // some test artifacts.
-  SD.remove("/SELF_TST.XYZ/SelfTest.log");
-  SD.rmdir("/SELF_TST.XYZ");
-
-  FAIL_IF_TRUE(SD.exists("/SELF_TST.XYZ"), "Test dir already exists");
-
-  // Use various SD and File functions to check that we can create a file, write date, read data,
-  // and delete everything again
-  FAIL_IF_FALSE(SD.mkdir("/SELF_TST.XYZ"), "SD.mkdir() failed");
-
-  File dataFile = SD.open("/SELF_TST.XYZ/SelfTest.log", FILE_WRITE);
-  FAIL_IF_FALSE(dataFile, "SD open failed");
-
-  dataFile.print("line ");
-  dataFile.println("1");
-  dataFile.println("line 2");
-  dataFile.write("The Quick Brown Fox Jumps Over\r\n");
-  dataFile.write(int(-1));
-  dataFile.write(byte(255));
-  dataFile.close();
-
-  // Remember: All file names are converted to upper case
-  File dir = SD.open("/SELF_TST.XYZ");
-  FAIL_IF_FALSE(dir, "SD.open() failed");
-
-  File tst_file = dir.openNextFile();
-  FAIL_IF_FALSE(tst_file, "openNextFile failed");
-
-  FAIL_IF_FALSE(strcmp(tst_file.name(), "SELFTEST.LOG") == 0, "file.name() failed");
-
-  int len = tst_file.size();
-  FAIL_IF_TRUE(len != 50, "File::size() failed");
-
-  byte buf[300];
-  int count = 0;
-  while (tst_file.available() > 0) {
-    buf[count++] = tst_file.read();
-    FAIL_IF_TRUE(count > len, "Too much data read.");
-  }
-  FAIL_IF_TRUE(count != 50, "Not all data read.");
-
-  byte ref_file[50] =
-  { 0x6C, 0x69, 0x6E, 0x65, 0x20, 0x31, 0xD, 0xA, 0x6C, 0x69,
-    0x6E, 0x65, 0x20, 0x32, 0xD, 0xA, 0x54, 0x68, 0x65, 0x20,
-    0x51, 0x75, 0x69, 0x63, 0x6B, 0x20, 0x42, 0x72, 0x6F, 0x77,
-    0x6E, 0x20, 0x46, 0x6F, 0x78, 0x20, 0x4A, 0x75, 0x6D, 0x70,
-    0x73, 0x20, 0x4F, 0x76, 0x65, 0x72, 0xD, 0xA, 0xFF, 0xFF
-  };
-
-  for (int i = 0; i < len; i++) {
-    FAIL_IF_TRUE(buf[i] != ref_file[i], "File::read() failed");
-  }
-
-  FAIL_IF_TRUE(!dir.isDirectory(), "isDirectory() failed");
-
-  if (!SD.rmdir("/SELF_TST.XYZ")) {
-    FAIL_IF_FALSE(SD.remove("/SELF_TST.XYZ/SelfTest.log"), "SD remove failed");
-    FAIL_IF_TRUE(!SD.rmdir("/SELF_TST.XYZ"), "rmdir() failed");
-  }
-  Serial.println("PASS");
-}
-#endif
 
 void OBDDataTest()
 {

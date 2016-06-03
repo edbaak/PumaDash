@@ -118,12 +118,12 @@ void SensorWidget::update(OBDData *sensor)
 
   word x1 = m_x;
   word y1 = m_y;
-  if (m_staticRefreshRequested) {
-    if (sensor->label() != "") {
+  if (sensor->label() != "") {
+    if (m_staticRefreshRequested)
       Display()->printLabel(sensor->label(), x1, y1, PUMA_LABEL_COLOR, 1);
-      x1 += Display()->fontWidth(PUMA_LABEL_SIZE) * 2;
-      y1 += Display()->fontHeight(PUMA_LABEL_SIZE);
-    }
+
+    x1 += Display()->fontWidth(PUMA_LABEL_SIZE) * 2;
+    y1 += Display()->fontHeight(PUMA_LABEL_SIZE);
   }
 
   Display()->printValue(sensor->toString(), sensor->stringLength(), x1, y1, sensor->color(), m_fontSize);
@@ -247,9 +247,9 @@ void PitchAndRollWidget::update(OBDData *sensor)
 void PitchAndRollWidget::updateAngle(int angle)
 {
   // update the static display items
-  word y_ = m_y;
-  word x_ = m_x;
   if (m_staticRefreshRequested) {
+    word y_ = m_y;
+    word x_ = m_x;
     for (int i = -8; i <= 8; i++) {
       int w = 2;
       if (abs(i) == 2 || abs(i) == 4 || abs(i) == 6 || abs(i) == 8)
@@ -433,10 +433,10 @@ ListWidget::ListWidget(String title, word pid, byte fontSize, word x1, word y1, 
 void ListWidget::update(OBDData *sensor)
 {
   Serial.println("Update list widget");
-    if (m_staticRefreshRequested) {
-      // foobar
-      m_staticRefreshRequested = false;
-    }
+  if (m_staticRefreshRequested) {
+    // foobar
+    m_staticRefreshRequested = false;
+  }
 }
 
 void ListWidget::appendLine(String line)

@@ -228,7 +228,7 @@ void PumaOBD::requestObdUpdates()
       m_slow_timer = cur_time;
       m_pid_range_request--;
       Serial.println("----- PID Range request -----");
-      requestSupportedPIDRange(PID_SUPPORTED_PID_41_60);
+      requestSupportedPIDRange(PID_SUPPORTED_PID_81_A0);
     }
   } else if (cur_time - m_slow_timer > 500) { // Update *one* sensor every 500 ms, i.e. if we have 10 sensors then every sensor gets an update every 5 seconds
     m_slow_timer = cur_time;
@@ -317,9 +317,7 @@ void PumaOBD::update()
       Serial.println("WARNING: RX FIFO is getting full: " + String(m_rxFIFO_count));
     }
 
-#ifdef RAW_LOGGING
     logRawData(&m_rxFIFO[m_rxFIFO_read]);
-#endif
 
     if (m_rxFIFO[m_rxFIFO_read].m_id == 0x7E8) {
       processMessage(&m_rxFIFO[m_rxFIFO_read]);
@@ -423,7 +421,7 @@ OBDData::OBDData(uint8_t pid, String label, String format, String subLabel, OBD_
   m_conversion = conversion;
   m_timeStamp = 0;
   m_next = 0;
-  m_value = 0;
+  m_value = -200; // set an arbitrary negative value so that we update the display even if the initial value is '0'.
   m_minValue = min;
   m_maxValue = max;
 #ifdef LOOPBACK_MODE

@@ -36,16 +36,19 @@
 #include <Diablo_Serial_4DLib.h>
 
 /*
+ * DONE List
+ * -- Optimize display speed by redrawing static elements only when needed
+ * 
  * TODO List
  * -- Make CAN processing super stable
  * ---- Re-enable *.update() calls in loop
  * ---- Re-enable interrupt
  * ---- Try interrupts with enable/disable interrupts
- * ---- Try reducing the reset delay time
- * ---- Try running the self-test sooner
+ * -- Try reducing the reset delay time
+ * -- Try running the self-test sooner
  * -- Run final two OBD range support queries
- * -- Optimize display speed by redrawing static elements only when needed
  * -- Improve min/max with color mechanism
+ * -- Show logfilename in Red if logging errors
  * -- Add all supported PID's and show data somewhere
  * -- Drive Defender without a console, to see that it works
  * -- Take console measurements
@@ -114,10 +117,10 @@ void loop() {
   g_obd.readRxBuffers();
   g_obd.requestObdUpdates();
   
-//  g_tpms.update();
-//  g_position.update();
+  g_tpms.update();
+  g_position.update();
   g_obd.update();
-//  g_speed.update();
+  g_speed.update();
 
   g_display1.processTouchEvents();
   g_display1.updateStatusbar();
@@ -126,6 +129,8 @@ void loop() {
 /*
 // Interrupt handler for fetching messages from MCP2515 RX buffer
 void canRxHandler() {
+  noInterrupts();
   g_obd.readRxBuffers();
+  interrupts();
 }
 */

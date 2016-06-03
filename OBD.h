@@ -162,7 +162,7 @@
 #define PID_FUEL_INJECTION_TIMING 		  0x5D // 0
 #define PID_ENGINE_FUEL_RATE 			      0x5E // 0
 #define PID_EMISSION_REQ				        0x5F // 0 Emission req to which engine is designed
-#define PID_SUPPORTED_PID_61_80         0x60 // 1 Bit Pattern on PUMA == ""
+#define PID_SUPPORTED_PID_61_80         0x60 // 1 Bit Pattern on PUMA == "00, 80, 00, 00"
 
 //0000 0
 //0001 1

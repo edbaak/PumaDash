@@ -35,21 +35,22 @@
 class CAN_Frame;
 
 // Operational settings
-#define LOGFILE_PREFIX 1606     // Prefix for SD card logging file names, i.e. 16050001.OBD
-#define DISPLAY_SPEED 115200    // The baudrate at which we're running the 4D display
-#define DISPLAY_RESET_MS 5000   // Wait time after a display reset
-#define MAX_RX_FIFO 12          // FIFO buffer that stores received CAN messages, so that the MCP2515 can be emptied and available for the next message
-#define PUMA_DEFAULT_SCREEN 1   // Define the default screen. We can change this by tapping the touchscreen
-#define RAW_LOGGING             // Saves RAW OBD data in a file on SD card
-#define OBD_LOGGING             // Saves Processed OBD data in a file on SD card
-#define USE_SD_CARD_ON_4DDISPLAY
+#define LOGFILE_PREFIX 1606       // Prefix for SD card logging file names, i.e. 16050001.OBD
+#define DISPLAY_SPEED 115200      // The baudrate at which we're running the 4D display
+#define DISPLAY_RESET_MS 5000     // Wait time after a display reset
+#define MAX_RX_FIFO 12            // FIFO buffer that stores received CAN messages, so that the MCP2515 can be emptied and available for the next message
+#define PUMA_DEFAULT_SCREEN 1     // Define the default screen. We can change this by tapping the touchscreen
 
 // Debugging modes
-//#define LOOPBACK_MODE           // CAN loopback mode. Messages transmitted are looped back to the CAN receiver, which helps with debugging.
+#define LOOPBACK_MODE           // CAN loopback mode. Messages transmitted are looped back to the CAN receiver, which helps with debugging.
 //#define PID_DISCOVERY_MODE      // To discover new unknown PIDS, enable RECORD_UNKNOWN_PIDS. NOTE: This will only work if RX Masking/Filtering is switched off
 #define MAX_UNKNOWN_PIDS 25     // Max number of unhandled PID's that we keep track of
 #define SELF_TEST
-#define OBD_DEBUG
+//#define RAW_MONITORING            // Shows RAW OBD data on the Serial Monitor
+//#define OBD_MONITORING            // Shows processed OBD data on the Serial Monitor
+//#define OBD_DEBUG
+//#define DISPLAY_DEBUG1          // Creates debugging stacktrace for important functions in Display class
+#define TOUCH_DEBUG
 
 
 // Puma dashboard specific UI defines
@@ -94,9 +95,7 @@ class CAN_Frame;
 #define PIN_DISPLAY_RESET 4
 #define PIN_CAN_BOARD_LED1 7
 #define PIN_CAN_BOARD_LED2 8
-#ifndef USE_SD_CARD_ON_4DDISPLAY
-  #define PIN_CAN_BOARD_SD_CS 9 // SparkFun CAN-Bus Shield SPI chip select pin for SD card
-#endif  
+//  #define PIN_CAN_BOARD_SD_CS 9 // SparkFun CAN-Bus Shield SPI chip select pin for SD card
 #define PIN_LEGACY_SPI_CS 10
 #define PIN_LEGACY_SPI_MOSI 11
 #define PIN_LEGACY_SPI_MISO 12
