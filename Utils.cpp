@@ -59,6 +59,35 @@ String v2s(String format, unsigned long value)
   return String(value);
 }
 
+//***************************************************************************
+//                                StopWatch
+//***************************************************************************
+
+StopWatch::StopWatch()
+{
+  m_start = 0;
+}
+
+void StopWatch::start()
+{
+  m_start = millis();
+}
+
+unsigned long StopWatch::elapsed()
+{
+  unsigned long tmp = millis();
+  return tmp - m_start;
+}
+
+bool StopWatch::notStarted()
+{
+  return m_start == 0;
+}
+
+//***************************************************************************
+//                                Logging
+//***************************************************************************
+
 /*
  *  word file_Mount();  // Initializes SD card
  *  void file_Unmount(); // Shuts down SD card
@@ -87,16 +116,15 @@ void initLogging()
   // Initialize SD card
   // make sure that the default chip select pin is set to
   // output, even if you don't use it:
-//  pinMode(PIN_CAN_BOARD_SD_CS, OUTPUT);
+  //  pinMode(PIN_CAN_BOARD_SD_CS, OUTPUT);
 
   // see if the card is present and can be initialized:
   g_SD_card_available = false;
   if (!Display()->file_Mount()) {
-    Serial.println(Display()->file_Error());
     Serial.println("SD Card not found: Logging disabled");
+    Serial.println(Display()->file_Error());
   } else {
     g_SD_card_available = true;
-    Serial.print("SD Card found: ... ");
     uniqueLogFileName();
     Serial.println("Logging to " + g_logFileName);
   }
@@ -104,20 +132,18 @@ void initLogging()
 
 String uniqueLogFileName()
 {
-  if (!g_SD_card_available) return "NO LOG  ";
+  if (!g_SD_card_available) return "";
   if (g_logFileName != "") return g_logFileName;
-  
+
   word num = 0;
   byte version = 0;
 
-  // Try to read the last number used to create an incremental numbered filename "MMYYxxxx.DAT"
+  // Try to read the last number used to create an incremental numbered filename
   word dataFile = Display()->file_Open("/PUMADASH.PDC", 'r');
 
   if (dataFile) {
-//    Serial.println("CFG file found");
     version = Display()->file_GetC(dataFile);
     num = Display()->file_GetW(dataFile);
-//    Serial.println(num);
     Display()->file_Close(dataFile);
   }
   g_logFileName = v2s("/%4d", LOGFILE_PREFIX) + v2s("%04d", num);
@@ -127,12 +153,10 @@ String uniqueLogFileName()
   char fname1[25];
   strcpy(fname1, g_logFileName.c_str());
   strcat(fname1, ".PDR");
-//  Serial.println(fname1);
 
   char fname2[25];
   strcpy(fname2, g_logFileName.c_str());
   strcat(fname2, ".PDO");
-//  Serial.println(fname2);
 
   if (Display()->file_Exists(fname1) || Display()->file_Exists(fname2)) {
     if (num < 9999) num++; // if reaching max we'll keep pumping into that file. This should never happen.
@@ -173,7 +197,7 @@ void logRawData(CAN_Frame *message)
           message->m_data[6],
           message->m_data[7]);
 
-#ifdef RAW_MONITORING
+#ifdef OBD_VERBOSE_DEBUG
   Serial.print(buf1);
   Serial.println(buf2);
 #endif
@@ -201,7 +225,7 @@ void logRawData(CAN_Frame *message)
 
 void logObdData(String s)
 {
-#ifdef OBD_MONITORING
+#ifdef OBD_VERBOSE_DEBUG
   Serial.println(s);
 #endif
   if (g_logFileName == "")
@@ -311,12 +335,11 @@ void OBDDataTest()
   Serial.print("OBD data test  : ");
   uint8_t t_pid = 0x0C;
   String t_label = "ObdLabel";
-  String t_format = "%d";
   String t_subLabel = "ObdSubLabel";
   OBD_DATA_CONVERSION t_conversion = BYTE_NO_CONVERSION;
   long t_min = 0;
   long t_max = 100;
-  OBDData tester(t_pid, t_label, t_format, t_subLabel, t_conversion, t_min, t_max);
+  OBDData tester(t_pid, t_label, t_subLabel, t_conversion, 3, OBD_D, t_min, t_max, 0);
 
   FAIL_IF_FALSE(tester.pid() == t_pid, "1.1");
   FAIL_IF_FALSE(tester.label() == t_label, "1.2");
@@ -326,63 +349,66 @@ void OBDDataTest()
   // TODO: need to test color()
 
   // Format & stringlen tests
-  tester.setFormat("%4d");
+  tester.setFormat(4, OBD_D);
   FAIL_IF_FALSE(tester.stringLength() == 4, "2.1");
-  tester.setFormat("%8d");
+  tester.setFormat(8, OBD_D);
   FAIL_IF_FALSE(tester.stringLength() == 8, "2.2");
-  tester.setFormat("%03d");
+  tester.setFormat(3, OBD_D);
   FAIL_IF_FALSE(tester.stringLength() == 3, "2.3");
-  tester.setFormat("%05.1d");
+  tester.setFormat(5, OBD_F1);
   FAIL_IF_FALSE(tester.stringLength() == 7, "2.4");
-  tester.setFormat("%08.2x");
+  tester.setFormat(8, OBD_F2);
   FAIL_IF_FALSE(tester.stringLength() == 11, "2.5");
-  tester.setFormat("%4.1x");
+  tester.setFormat(4, OBD_F1);
   FAIL_IF_FALSE(tester.stringLength() == 6, "2.6");
+  tester.setFormat(3, OBD_F1);
+  FAIL_IF_FALSE(tester.stringLength() == 5, "2.7");
 
   // Test data conversions. I'm splitting that up into two steps first. 1) from a long value to int, byte, word and string and then 2) from CAN_Frame to long.
-  //  tester.setFormat("%d");
-  tester.setFormat("%li");
   tester.setValue(0);
   FAIL_IF_FALSE(tester.toInt() == 0, "3.1");
   FAIL_IF_FALSE(tester.toWord() == 0, "3.2");
   FAIL_IF_FALSE(tester.toLong() == 0, "3.3");
-  //  FAIL_IF_FALSE(tester.toFloat() == 0.0, "3.4");
-  FAIL_IF_FALSE(tester.toString() == "0", "3.5");
+  tester.setFormat(1, OBD_D);
+  FAIL_IF_FALSE(tester.toString() == "0", "3.4");
+  tester.setFormat(2, OBD_D);
+  FAIL_IF_FALSE(tester.toString() == " 0", "3.5");
+  tester.setFormat(3, OBD_D);
+  FAIL_IF_FALSE(tester.toString() == "  0", "3.6");
 
   tester.setValue(1);
   FAIL_IF_FALSE(tester.toInt() == 1, "4.1");
   FAIL_IF_FALSE(tester.toWord() == 1, "4.2");
   FAIL_IF_FALSE(tester.toLong() == 1, "4.3");
-  //  FAIL_IF_FALSE(tester.toFloat() == 1.0, "4.4");
-  FAIL_IF_FALSE(tester.toString() == "1", "4.5");
+  tester.setFormat(3, OBD_D);
+  FAIL_IF_FALSE(tester.toString() == "  1", "4.5");
 
   tester.setValue(-1);
   FAIL_IF_FALSE(tester.toInt() == -1, "5.1");
   FAIL_IF_FALSE(tester.toWord() == 65535, "5.2");
   FAIL_IF_FALSE(tester.toLong() == -1, "5.3");
-  //  FAIL_IF_FALSE(tester.toFloat() == -1.0, "5.4");
-  FAIL_IF_FALSE(tester.toString() == "-1", "5.5");
+  tester.setFormat(3, OBD_D);
+  FAIL_IF_FALSE(tester.toString() == " -1", "5.5");
 
   tester.setValue(255);
   FAIL_IF_FALSE(tester.toInt() == 255, "6.1");
   FAIL_IF_FALSE(tester.toWord() == 255, "6.2");
   FAIL_IF_FALSE(tester.toLong() == 255, "6.3");
-  //  FAIL_IF_FALSE(tester.toFloat() == 255.0, "6.4");
+  tester.setFormat(3, OBD_D);
   FAIL_IF_FALSE(tester.toString() == "255", "6.5");
 
   tester.setValue(256);
   FAIL_IF_FALSE(tester.toInt() == 256, "7.1");
   FAIL_IF_FALSE(tester.toWord() == 256, "7.2");
   FAIL_IF_FALSE(tester.toLong() == 256, "7.3");
-  //  FAIL_IF_FALSE(tester.toFloat() == 256.0, "7.4");
+  tester.setFormat(3, OBD_D);
   FAIL_IF_FALSE(tester.toString() == "256", "7.5");
 
-  //  tester.setFormat("%u");
   tester.setValue(65535);
   FAIL_IF_FALSE(tester.toInt() == -1, "8.1");
   FAIL_IF_FALSE(tester.toWord() == 65535, "8.2");
   FAIL_IF_FALSE(tester.toLong() == 65535, "8.3");
-  //  FAIL_IF_FALSE(tester.toFloat() == 65535.0, "8.4");
+  tester.setFormat(3, OBD_D);
   FAIL_IF_FALSE(tester.toString() == "65535", "8.5");
 
   tester.setValue(0XFFFF);
@@ -393,25 +419,37 @@ void OBDDataTest()
   FAIL_IF_FALSE(tester.toInt() == 1, "8.8");
   FAIL_IF_FALSE(tester.toWord() == 1, "8.9");
   FAIL_IF_FALSE(tester.toLong() == -65535, "8.10");
-  //  FAIL_IF_FALSE(tester.toFloat() == -65535.0, "8.11");
-  //  tester.setFormat("%li");
+  tester.setFormat(6, OBD_D);
   FAIL_IF_FALSE(tester.toString() == "-65535", "8.12");
 
   tester.setValue(0XFFFFFFFF);
   FAIL_IF_FALSE(tester.toInt() == -1, "9.1");
   FAIL_IF_FALSE(tester.toWord() == 0XFFFF, "9.2");
   FAIL_IF_FALSE(tester.toLong() == long(0XFFFFFFFF), "9.3");
-  //  FAIL_IF_FALSE(tester.toFloat() == 65535.0, "9.4");
-  tester.setFormat("%lu");
-  FAIL_IF_FALSE(tester.toString() == "4294967295", "9.5");
-  tester.setFormat("0X%lX");
+  tester.setFormat(3, OBD_D);
+  FAIL_IF_FALSE(tester.toString() == " -1", "9.5");
+  tester.setFormat(3, OBD_H);
   FAIL_IF_FALSE(tester.toString() == "0XFFFFFFFF", "9.6");
+
+  tester.setValue(0XFFFFFFFE);
+  tester.setFormat(3, OBD_D);
+  FAIL_IF_FALSE(tester.toString() == " -2", "9.7");
+
+  tester.setValue(200);
+  tester.setFormat(1, OBD_F1);
+  tester.setDataConversion(WORD_DIV100);
+  FAIL_IF_FALSE(tester.toString() == "2.0", "10.1");
+
+  tester.setFormat(2, OBD_F1);
+  tester.setDataConversion(WORD_DIV1000);
+  FAIL_IF_FALSE(tester.toString() == " 0.2", "10.2");
 
   Serial.println("PASS");
 }
 
 void selfTest()
 {
+
   Serial.println("**************************************");
   Serial.println("Start Self Test");
   Serial.flush();

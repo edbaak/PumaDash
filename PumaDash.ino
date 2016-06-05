@@ -38,18 +38,18 @@
 /*
  * DONE List
  * -- Optimize display speed by redrawing static elements only when needed
+ * -- Run final two OBD range support queries
+ * -- Add all supported PID's and show data somewhere
+ * -- Show logfilename in Red if no logging
  * 
  * TODO List
  * -- Make CAN processing super stable
- * ---- Re-enable *.update() calls in loop
  * ---- Re-enable interrupt
  * ---- Try interrupts with enable/disable interrupts
  * -- Try reducing the reset delay time
  * -- Try running the self-test sooner
- * -- Run final two OBD range support queries
  * -- Improve min/max with color mechanism
  * -- Show logfilename in Red if logging errors
- * -- Add all supported PID's and show data somewhere
  * -- Drive Defender without a console, to see that it works
  * -- Take console measurements
  * -- One or two resistors in accelerator pedal?
@@ -81,7 +81,7 @@ PumaOBD g_obd;                            // On Board Diagnostics for the Vehicl
 
 void setup() {
   // Start with resetting the Display. Then do activities that don't require the display so that we use the recommended 5 seconds delay more usefully.
-  g_display1.reset(0); 
+  g_display1.reset(); 
 
   // Initiate Serial comms so we can send debug info to the Serial Monitor (when connected)
   Serial.begin(DISPLAY_SPEED);  

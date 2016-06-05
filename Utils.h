@@ -35,23 +35,24 @@
 class CAN_Frame;
 
 // Operational settings
-#define LOGFILE_PREFIX 1606       // Prefix for SD card logging file names, i.e. 16050001.OBD
-#define DISPLAY_SPEED 115200      // The baudrate at which we're running the 4D display
-#define DISPLAY_RESET_MS 5000     // Wait time after a display reset
-#define MAX_RX_FIFO 12            // FIFO buffer that stores received CAN messages, so that the MCP2515 can be emptied and available for the next message
-#define PUMA_DEFAULT_SCREEN 1     // Define the default screen. We can change this by tapping the touchscreen
+#define LOGFILE_PREFIX 1606         // Prefix for SD card logging file names, i.e. 16050001.OBD
+#define DISPLAY_SPEED 115200        // The baudrate at which we're running the 4D display
+#define DISPLAY_RESET_MS 5000       // Wait time after a display reset
+#define MAX_RX_FIFO 12              // FIFO buffer that stores received CAN messages, so that the MCP2515 can be emptied and available for the next message
+#define PUMA_DEFAULT_SCREEN 1       // Define the default screen. We can change this by tapping the touchscreen
+#define SELF_TEST                   // Runs a self-test at start-up
 
 // Debugging modes
-#define LOOPBACK_MODE           // CAN loopback mode. Messages transmitted are looped back to the CAN receiver, which helps with debugging.
-//#define PID_DISCOVERY_MODE      // To discover new unknown PIDS, enable RECORD_UNKNOWN_PIDS. NOTE: This will only work if RX Masking/Filtering is switched off
-#define MAX_UNKNOWN_PIDS 25     // Max number of unhandled PID's that we keep track of
-#define SELF_TEST
-//#define RAW_MONITORING            // Shows RAW OBD data on the Serial Monitor
-//#define OBD_MONITORING            // Shows processed OBD data on the Serial Monitor
-//#define OBD_DEBUG
-//#define DISPLAY_DEBUG1          // Creates debugging stacktrace for important functions in Display class
-#define TOUCH_DEBUG
+//#define LOOPBACK_MODE               // CAN loopback mode. Messages transmitted are looped back to the CAN receiver, which helps with debugging.
+//#define OBD_VERBOSE_DEBUG           // Shows processed OBD data on the Serial Monitor
+//#define OBD_DEBUG                   // Creates debugging stacktrace for OBD functions
+//#define DISPLAY_DEBUG               // Creates debugging stacktrace for important functions in Display class
+//#define TOUCH_DEBUG                 // Creates debugging stacktrace for touch functions
 
+//#define PID_DISCOVERY_MODE          // To discover new unknown PIDS, enable RECORD_UNKNOWN_PIDS.
+#ifdef PID_DISCOVERY_MODE
+  #define MAX_UNKNOWN_PIDS 25       // Max number of unhandled PID's that we keep track of
+#endif
 
 // Puma dashboard specific UI defines
 #define PUMA_LABEL_SIZE 1             // Font size for labels and subLabels
@@ -64,6 +65,13 @@ class CAN_Frame;
 #define PUMA_WARNING_COLOR YELLOW     // FG color for data that is in a warning operating zone
 #define PUMA_NORMAL_COLOR LIGHTGREEN  // FG color for data that is in the normal/safe operating zone
 #define RPM_RADIUS 100                // Size of the Rpm dial
+
+// Puma Dashboard touch event processing parameters
+#define TOUCH_DEBOUNCE_TIME 100       // Number of ms delay before a consider a 'pressed' a new touch instead of a bouncing finger
+#define MINIMUM_TOUCH_DURATION 40     // Minimum time in ms before a touch press is considered a 'tap'.
+#define SWIPE_DIVIDER 5               // Scales back a swipe
+#define SWIPE_THRESHOLD 5             // Minimum of displacement in x or y direction before a touch is considered a swipe
+
 
 // PUMA Dash specific PID's, i.e. not part of the OBD2 standard and unknown to the vehicle ECU.
 // These PID's are 'extensions' to the OBD standard and are NOT transmitted on the CAN bus
@@ -113,6 +121,19 @@ String v2s(String format, int value);
 String v2s(String format, byte value);
 String v2s(String format, word value);
 String v2s(String format, unsigned long value);
+
+class StopWatch
+{
+  public:
+    StopWatch();
+    
+    void start();
+    unsigned long elapsed();
+    bool notStarted();
+
+  private:
+    unsigned long m_start;
+};
 
 String uniqueLogFileName();
 void initLogging();

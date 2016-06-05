@@ -11,11 +11,11 @@
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
 
-  WARNING: Modifying a vehicle's dashboard and instrument panel 
-  may require vehicle engineering and re-certification according 
+  WARNING: Modifying a vehicle's dashboard and instrument panel
+  may require vehicle engineering and re-certification according
   to local laws and regulations, such as the Australian Design
-  Rules (ADR) and Vehicle Standards. This code does not make any 
-  claim to meet any such standard. 
+  Rules (ADR) and Vehicle Standards. This code does not make any
+  claim to meet any such standard.
 
   You should have received a copy of the GNU General Public License
   along with this code; if not, write to the Free Software
@@ -44,7 +44,7 @@
 
 #define PID_SUPPORTED_PID_01_20         0x00 // X Bit pattern on PUMA == "1001 1000 0011 1011 1010 0000 0001 0111"
 
-#define PID_MON_STATUS_SINCE_DTC_CLR 	  0x01 // 1 Monitor status since DTC cleared
+#define PID_MON_STATUS_SINCE_DTC_CLEARED 0x01 // 1 Monitor status since DTC cleared
 #define PID_FREEZE_DTC					        0x02 // 0 
 #define PID_FUEL_SYSTEM_STATUS			    0x03 // 0
 #define PID_CALCULATED_ENGINE_LOAD		  0x04 // 1
@@ -164,71 +164,54 @@
 #define PID_EMISSION_REQ				        0x5F // 0 Emission req to which engine is designed
 #define PID_SUPPORTED_PID_61_80         0x60 // 1 Bit Pattern on PUMA == "00, 80, 00, 00"
 
-//0000 0
-//0001 1
-//0010 2
-//0011 3
-//0100 4
-//0101 5
-//0110 6
-//0111 7
-//1000 8
-//1001 9
-//1010 A
-//1011 B
-//1100 C
-//1101 D
-//1110 E
-//1111 F
+#define PID_ENGINE_TORQUE_DEMANDED 		  0x61 // 0 Driver's demand engine - percent torque
+#define PID_ENGINE_TORQUE_PERCENTAGE 	  0x62 // 0 Actual engine - percent torque
+#define PID_ENGINE_REF_TORQUE 			    0x63 // 0 Engine reference torque
+#define PID_ENGINE_PERC_TORQUE_DATA		  0x64 // 0 Engine percent torque data
 
-#define PID_ENGINE_TORQUE_DEMANDED 		  0x61 // Driver's demand engine - percent torque
-#define PID_ENGINE_TORQUE_PERCENTAGE 	  0x62 // Actual engine - percent torque
-#define PID_ENGINE_REF_TORQUE 			    0x63 // Engine reference torque
-#define PID_ENGINE_PERC_TORQUE_DATA		  0x64 // Engine percent torque data
+#define PID_AUX_INPUT_OUTPUT_SUPPORTED	0x65 // 0 
+#define PID_MASS_AIR_FLOW_SENSOR		    0x66 // 0 
+#define PID_ENGINE_COOLANT_TEMPERATURE	0x67 // 0 
+#define PID_INTAKE_AIR_TEMP_SENSOR		  0x68 // 0 
 
-#define PID_AUX_INPUT_OUTPUT_SUPPORTED	0x65
-#define PID_MASS_AIR_FLOW_SENSOR		    0x66
-#define PID_ENGINE_COOLANT_TEMPERATURE	0x67
-#define PID_INTAKE_AIR_TEMP_SENSOR		  0x68
+#define PID_COMMANDED_EGR_AND_EGR_ERR	  0x69 // 1
+#define PID_DIESEL_INTAKE_AIR_FLOW_CTRL	0x6A // 0 Commanded Diesel intake air flow control
+#define PID_EGR_TEMPERATURE				      0x6B // 0 
+#define PID_COMM_THROTTLE_ACT_CTRL_POS	0x6C // 0 Commanded throttle actuator control and relative throttle position
 
-#define PID_COMMANDED_EGR_AND_EGR_ERR	  0x69
-#define PID_DIESEL_INTAKE_AIR_FLOW_CTRL	0x6A // Commanded Diesel intake air flow control
-#define PID_EGR_TEMPERATURE				      0x6B
-#define PID_COMM_THROTTLE_ACT_CTRL_POS	0x6C // Commanded throttle actuator control and relative throttle position
+#define PID_FUEL_PRESS_CTRL_SYSTEM		  0x6D // 0 
+#define PID_INJECTION_PRESS_CTRL_SYSTEM	0x6E // 0 
+#define PID_TURBO_INLET_PRESSURE		    0x6F // 0 
+#define PID_BOOST_PRESSURE_CTRL			    0x70 // 0 
 
-#define PID_FUEL_PRESS_CTRL_SYSTEM		  0x6D
-#define PID_INJECTION_PRESS_CTRL_SYSTEM	0x6E
-#define PID_TURBO_INLET_PRESSURE		    0x6F
-#define PID_BOOST_PRESSURE_CTRL			    0x70
+#define PID_VAR_GEOMETRY_CTRL			      0x71 // 0 
+#define PID_WASTEGATE_CTRL				      0x72 // 0 
+#define PID_EXHAUST_PRESSURE			      0x73 // 0 
+#define PID_TURBO_RPM					          0x74 // 0 
 
-#define PID_VAR_GEOMETRY_CTRL			      0x71
-#define PID_WASTEGATE_CTRL				      0x72
-#define PID_EXHAUST_PRESSURE			      0x73
-#define PID_TURBO_RPM					          0x74
+#define PID_TURBO_TEMP1					        0x75 // 0 
+#define PID_TURBO_TEMP2					        0x76 // 0 
+#define PID_CHARGE_AIR_COOLER_TEMP		  0x77 // 0 
+#define PID_EGT_BANK1					          0x78 // 0 Exhaust Gas Temperature Bank 1
 
-#define PID_TURBO_TEMP1					        0x75
-#define PID_TURBO_TEMP2					        0x76
-#define PID_CHARGE_AIR_COOLER_TEMP		  0x77
-#define PID_EGT_BANK1					          0x78 // Exhaust Gas Temperature Bank 1
+#define PID_EGT_BANK2					          0x79 // 0 Exhaust Gas Temperature Bank 2
+#define PID_DIESEL_PART_FILTER1			    0x7A // 0 Diesel Particulate Filter
+#define PID_DIESEL_PART_FILTER2			    0x7B // 0 Diesel Particulate Filter
+#define PID_DIESEL_PART_FILTER_TEMP		  0x7C // 0 Diesel Particulate Filter
 
-#define PID_EGT_BANK2					          0x79 // Exhaust Gas Temperature Bank 2
-#define PID_DIESEL_PART_FILTER1			    0x7A // Diesel Particulate Filter
-#define PID_DIESEL_PART_FILTER2			    0x7B // Diesel Particulate Filter
-#define PID_DIESEL_PART_FILTER_TEMP		  0x7C // Diesel Particulate Filter
+#define PID_NOX_NTE_CONTROL_STATUS		  0x7D // 0 
+#define PID_PM_NTE_CONTROL_STATUS		    0x7E // 0 
+#define PID_ENGINE_RUN_TIME				      0x7F // 0 
+#define PID_SUPPORTED_PID_81_A0         0x80 // 0 Bit Pattern on PUMA == "Not supported"
 
-#define PID_NOX_NTE_CONTROL_STATUS		  0x7D
-#define PID_PM_NTE_CONTROL_STATUS		    0x7E
-#define PID_ENGINE_RUN_TIME				      0x7F
-#define PID_SUPPORTED_PID_81_A0         0x80 // Bit Pattern on PUMA == ""
+#define PID_ENG_RUN_TME_AUX_EMISS_CTRL1 0x81 // 0 Engine Run Time Auxiliary Emission Control
+#define PID_ENG_RUN_TME_AUX_EMISS_CTRL2 0x82 // 0 Engine Run Time Auxiliary Emission Control
+#define PID_NOX_SENSOR					        0x83 // 0 
+#define PID_MANIFOLD_SURFACE_TEMP		    0x84 // 0 
 
-#define PID_ENG_RUN_TME_AUX_EMISS_CTRL1 0x81 // Engine Run Time Auxiliary Emission Control
-#define PID_ENG_RUN_TME_AUX_EMISS_CTRL2 0x82 // Engine Run Time Auxiliary Emission Control
-#define PID_NOX_SENSOR					        0x83
-#define PID_MANIFOLD_SURFACE_TEMP		    0x84
-
-#define PID_NOX_REAGENT_SYSTEM			    0x85
-#define PID_PARTICULATE_MATTER_SENSOR	  0x86
-#define PID_INTAKE_MANIFOLD_ABS_PRESS	  0x87
+#define PID_NOX_REAGENT_SYSTEM			    0x85 // 0 
+#define PID_PARTICULATE_MATTER_SENSOR	  0x86 // 0 
+#define PID_INTAKE_MANIFOLD_ABS_PRESS	  0x87 // 0 
 
 //***************************************************************
 // Currently NOT supported modes:
@@ -266,25 +249,43 @@
 // At this stage the meaning of these ID's is unknown.
 // ***************************************************************
 
-//  9A, 
-//  DC, 
-//  DD, 
-//  DF, 
-//  E0, 
-//  E1, 
-// 16E, 
-// 193, 
-// 226, 
-// 1B8, 
-// 2B8, 
-// 2DD, 
+//  9A,
+//  DC,
+//  DD,
+//  DF,
+//  E0,
+//  E1,
+// 16E,
+// 193,
+// 226,
+// 1B8,
+// 2B8,
+// 2DD,
 // 326
-// 34B, 
-// 394, 
-// 400, 
-// 405, 
-// 4C0, 
-// 5C0, 
+// 34B,
+// 394,
+// 400,
+// 405,
+// 4C0,
+// 5C0,
+
+typedef enum OBDCOLOR_RANGE {
+  LESS,
+  MORE
+} OBDCOLOR_RANGE;
+
+class OBDColorRange
+{
+  public:
+    OBDColorRange(OBDCOLOR_RANGE range, long threshold, word color, void *next = 0);
+    word color(long value);
+
+  private:
+    bool m_lessThan;
+    long m_threshold;
+    word m_color;
+    OBDColorRange *m_next;
+};
 
 typedef enum OBD_DATA_CONVERSION {
   BYTE_NO_CONVERSION,
@@ -292,32 +293,46 @@ typedef enum OBD_DATA_CONVERSION {
   WORD_NO_CONVERSION,
   WORD_DIV4,
   WORD_DIV20,
+  WORD_DIV100,
+  WORD_DIV1000,
+  WORD_TIMES10,
   INT_MINUS40,
   INT_NO_CONVERSION,
+  INT_TIMES100_DIV128_MINUS100,
   BYTE_TIMES10,
   BYTE_TIMES3,
   ULONG_NO_CONVERSION
 } OBD_DATA_CONVERSION;
 
+typedef enum OBD_PRECISION {
+  OBD_F0, // Float, precision 0
+  OBD_F1, // Float, precision 1
+  OBD_F2, // Float, precision 2
+  OBD_F3, // Float, precision 3
+  OBD_D,  // Unsigned or Signed (Decimal)
+  OBD_H   // Hex printout
+} OBD_PRECISION;
+
 class OBDData
 {
   public:
     OBDData();
-    OBDData(uint8_t pid, String label, String format, String subLabel, OBD_DATA_CONVERSION conversion, long min, long max);
+    OBDData(uint8_t pid, String label, String subLabel, OBD_DATA_CONVERSION conversion, byte stringWidth, OBD_PRECISION stringPrecision, long min, long max, OBDColorRange *colorRange);
     virtual ~OBDData();
 
     uint8_t pid();
     String label();
     String subLabel();
     word color();
-    
+
     OBD_DATA_CONVERSION dataConversion();
-    
+    void setDataConversion(OBD_DATA_CONVERSION conversion);
+
     void setValue(uint32_t timeStamp, uint8_t *data);
 #ifdef SELF_TEST
     void setValue(long value);
 #endif
-    void setFormat(String format);
+    void setFormat(byte width, OBD_PRECISION stringPrecision);
 
     String toString();
     byte stringLength();
@@ -337,8 +352,10 @@ class OBDData
     uint8_t m_pid;
     String m_label;
     String m_subLabel;
-    String m_format;
+    byte m_stringWidth;
+    OBD_PRECISION m_stringPrecision;
     OBD_DATA_CONVERSION m_conversion;
+    OBDColorRange *m_colorRange;
     long m_value;
     long m_minValue;
     long m_maxValue;
@@ -375,18 +392,18 @@ class PumaOBD
 
     OBDData *m_speed;
     OBDData *m_rpm;
-    
+
   private:
     PumaCAN m_CAN;
     CAN_Frame m_rxFIFO[MAX_RX_FIFO];
     byte m_rxFIFO_write;
     byte m_rxFIFO_read;
     byte m_rxFIFO_count;
-    byte m_pid_range_request;
-    unsigned long m_rpm_timer;
-    unsigned long m_speed_timer;
-    unsigned long m_slow_timer;
-    
+
+    StopWatch m_rpm_timer;
+    StopWatch m_speed_timer;
+    StopWatch m_slow_timer;
+
 #ifdef PID_DISCOVERY_MODE
     void addUnhandledPID(uint16_t pid);
     void printUnhandledPIDS();

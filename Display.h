@@ -65,9 +65,10 @@ class BaseScreen
 
     word maxWidth();
     word maxHeight();
+    String screenName();
 
     void processTouchEvents();
-    bool displayTapped(word &x, word &y);
+    bool displayTapped(word &x, word &y, word &tapTime);
     bool swipedUpOrDown(int &steps);
     bool swipedLeftOrRight(int &steps);
     void resetSwiped();
@@ -76,6 +77,7 @@ class BaseScreen
     void printPrepare(word x, word y, int color, byte fontSize);
 
   protected:
+    String m_screenName;
     SensorWidget *m_first_sensor_widget;
     word display_max_x;
     word display_max_y;
@@ -95,12 +97,14 @@ class BaseScreen
     word bottom_divider;
 
   protected:
-  typedef enum SWIPE_MODE {
-    SWIPE_UNKNOWN,
-    SWIPE_DETECTED,
-    SWIPE_LR,
-    SWIPE_UD
-  } SWIPE_MODE;
+    typedef enum SWIPE_MODE {
+      NO_SWIPE,
+      SWIPE_DETECTED,
+      SWIPE_LR,
+      SWIPE_UD,
+      SWIPE_IGNORE
+    } SWIPE_MODE;
+
     SWIPE_MODE m_swipe_mode;
     word m_touch_x_start;
     word m_touch_x1;
@@ -108,12 +112,12 @@ class BaseScreen
     word m_touch_y_start;
     word m_touch_y1;
     word m_touch_y2;
-    bool m_display_tapped;
+    word m_touch_duration;
     bool m_display_swiped;
-    long m_touch_move_x;
-    long m_touch_move_y;
-    unsigned long m_touch_start;
-    unsigned long m_touch_end;
+    long m_touch_swipe_x;
+    long m_touch_swipe_y;
+    StopWatch m_touch_start_time;
+    StopWatch m_last_touch_time;
 };
 
 class Screen0 : public BaseScreen
@@ -149,7 +153,7 @@ class PumaDisplay : public Diablo_Serial_4DLib
     void setup();
     void processTouchEvents();
     void updateStatusbar();
-    void reset(word ms = DISPLAY_RESET_MS);
+    void reset();
 
     void printLabel(String label, word x, word y, int color, byte fontSize = 1);
     void printSubLabel(String subLabel, word x, word y, int color, byte fontSize = 1);
@@ -164,8 +168,10 @@ class PumaDisplay : public Diablo_Serial_4DLib
     bool g_init_display;
     byte g_active_screen; // The screen currently shown on the display, i.e. m_screen0, m_screen1 or m_screen2
     BaseScreen *activeScreen();
-    unsigned long m_static_refresh_timer;
     int m_displayContrast;
+
+    StopWatch m_static_refresh_timer;
+    StopWatch m_loop_timer;
 
     Screen0 m_screen0;    // Visual elements of the 'Left' display
     Screen1 m_screen1;    // Visual elements of the 'Center' display

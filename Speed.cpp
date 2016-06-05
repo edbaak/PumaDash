@@ -24,6 +24,7 @@
 */
 
 #include "Utils.h"
+#include "Display.h"
 #include "Speed.h"
 
 #if (ARDUINO >= 100)
@@ -40,9 +41,9 @@ CruiseCtrl::CruiseCtrl()
   minAllowedSpeed = 5.0;
   maxAllowedSpeed = 100.0;
 
-  m_CC_Speed = new OBDData(PID_PUMA_CC_SPEED, "Target Speed", "%3d", "Km/h", BYTE_NO_CONVERSION, 0, 110);
-  m_CC_Mode = new OBDData(PID_PUMA_CC_MODE, "Mode", "%3d", "", BYTE_NO_CONVERSION, 0, 2);
-  m_CC_Accelerator = new OBDData(PID_PUMA_CC_ACCELERATOR, "Accelerator", "%3d", "%", BYTE_NO_CONVERSION, 0, 100);
+  m_CC_Speed = new OBDData(PID_PUMA_CC_SPEED, "Target Speed", "Km/h", BYTE_NO_CONVERSION, 3, OBD_D, 0, 110, 0);
+  m_CC_Mode = new OBDData(PID_PUMA_CC_MODE, "Mode", "", BYTE_NO_CONVERSION, 3, OBD_D, 0, 2, 0);
+  m_CC_Accelerator = new OBDData(PID_PUMA_CC_ACCELERATOR, "Accelerator", "%", BYTE_NO_CONVERSION, 3, OBD_D, 0, 100, 0);
 }
 
 void CruiseCtrl::switchOnCruiseControlRelay(bool on)

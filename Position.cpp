@@ -24,14 +24,16 @@
 */
 
 #include "Utils.h"
-#include "Position.h"
 #include "Display.h"
+#include "Position.h"
 
 Position::Position()
 {
-  gps_Compass = new OBDData(PID_PUMA_HEADING, "Heading", "%03d", "", WORD_NO_CONVERSION, 0, 360);
-  gps_Pitch = new OBDData(PID_PUMA_PITCH, "Pitch", "%2i", "", INT_NO_CONVERSION, -40, 40);
-  gps_Roll = new OBDData(PID_PUMA_ROLL, "Roll", "%2i", "", INT_NO_CONVERSION, -40, 40);
+  OBDColorRange *_pitchAndRollRange = new OBDColorRange(LESS, -30, RED, new OBDColorRange(LESS, 30, PUMA_NORMAL_COLOR, 0));
+
+  gps_Compass = new OBDData(PID_PUMA_HEADING, "Heading", "", WORD_NO_CONVERSION, 3, OBD_D, 0, 360, 0);
+  gps_Pitch = new OBDData(PID_PUMA_PITCH, "Pitch", "", INT_NO_CONVERSION, 3, OBD_D, -40, 40, _pitchAndRollRange);
+  gps_Roll = new OBDData(PID_PUMA_ROLL, "Roll", "", INT_NO_CONVERSION, 3, OBD_D, -40, 40, _pitchAndRollRange);
 }
 
 void Position::update()

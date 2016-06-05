@@ -25,10 +25,10 @@
 
 #include <Arduino.h>
 #include "Utils.h"
+#include "Display.h"
 #include "OBD.h"
 #include "CAN.h"
 //#include <Diablo_Const4D.h>
-#include "Display.h"
 
 
 #ifdef LOOPBACK_MODE
@@ -38,9 +38,11 @@
 #endif
 
 #ifdef OBD_DEBUG
-  #define OBD_PRINTLN(s) Serial.println(s); Serial.flush();
+#define OBD_PRINTLN(s) Serial.println(s); Serial.flush();
+#define OBD_PRINT(s) Serial.print(s); Serial.flush();
 #else
-  #define OBD_PRINTLN(s) {}
+#define OBD_PRINTLN(s) {}
+#define OBD_PRINT(s) {}
 #endif
 
 
@@ -54,72 +56,74 @@ PumaOBD::PumaOBD()
   m_rxFIFO_read = 0;
   m_rxFIFO_count = 0;
 
+  OBDColorRange *_speedRange = new OBDColorRange(LESS, 100, PUMA_NORMAL_COLOR);
+  OBDColorRange *_engineTempRange = new OBDColorRange(LESS, 60, PUMA_WARNING_COLOR, new OBDColorRange(LESS, 100, PUMA_NORMAL_COLOR));
+  OBDColorRange *_torquePowerRange = new OBDColorRange(LESS, 10, PUMA_WARNING_COLOR, new OBDColorRange(LESS, 80, PUMA_NORMAL_COLOR));
+  OBDColorRange *_rpmRange = new OBDColorRange(LESS, 1200, PUMA_WARNING_COLOR, new OBDColorRange(LESS, 3500, PUMA_NORMAL_COLOR));
+
+  OBDColorRange *_tankRange = new OBDColorRange(LESS, 25, RED, new OBDColorRange(LESS, 50, PUMA_WARNING_COLOR, new OBDColorRange(MORE, 0, PUMA_NORMAL_COLOR)));
+  OBDColorRange *_airPressureRange = new OBDColorRange(LESS, 970, PUMA_WARNING_COLOR, new OBDColorRange(LESS, 1010, PUMA_NORMAL_COLOR));
+
+  OBDColorRange *_airTemperatureRange = new OBDColorRange(LESS, 35, PUMA_NORMAL_COLOR, new OBDColorRange(LESS, 45, PUMA_WARNING_COLOR));
+
   // Speed and Rpm are handled separately since I want to update them at a higher frequency
-  m_rpm = new OBDData(PID_RPM, "", "%4d", "Rpm", WORD_DIV4, 800, 3000);
-  m_speed = new OBDData(PID_SPEED, "", "%3d", "Km/h", BYTE_NO_CONVERSION, 0, 115);
+  // All other sensor data is thrown in a linked list and updates happen in a round robin
+  m_rpm = new OBDData(PID_RPM, "", "Rpm", WORD_DIV4, 4, OBD_D, 0, 4500, _rpmRange); // 0x0C
+  m_speed = new OBDData(PID_SPEED, "", "Km/h", BYTE_NO_CONVERSION, 3, OBD_D, 0, 115, _speedRange); // 0x0D
 
-  // All other data is thrown in a linked list and updates happen in a round robin
-  addDataObject(new OBDData(PID_COOLANT_TEMP, "Coolant", "%3d", "C", INT_MINUS40, -0, 98));
-  addDataObject(new OBDData(PID_INTAKE_AIR_TEMP, "Intake Air", "%3d", "C", INT_MINUS40, 10, 40));
-  addDataObject(new OBDData(PID_AMBIENT_AIR_TEMP, "Ambient Air", "%3d", "C", INT_MINUS40, 10, 40));
-  addDataObject(new OBDData(PID_BAROMETRIC_PRESSURE, "Air", "%4d", "mBar", BYTE_TIMES10, 950, 1150));
-  addDataObject(new OBDData(PID_FUEL_LEVEL, "Tank Level", "%3d", "%", BYTE_PERCENTAGE, 10, 25));
+  // Center Screen -> Temperatures
+  addDataObject(new OBDData(PID_COOLANT_TEMP, "Coolant", "C", INT_MINUS40, 3, OBD_D, -0, 98, _engineTempRange)); // 0x05
+  //  addDataObject(new OBDData(PID_INTAKE_AIR_TEMP, "Intake Air", "C", INT_MINUS40, 3, OBD_D, 10, 40, _airTemperatureRange)); // 0x0F
+  addDataObject(new OBDData(PID_AMBIENT_AIR_TEMP, "Ambient Air", "C", INT_MINUS40, 3, OBD_D, 10, 40, _airTemperatureRange)); //0x46
+  addDataObject(new OBDData(PID_ENGINE_OIL_TEMP, "Engine Oil", "C", INT_MINUS40, 3, OBD_D, 5, 100, _engineTempRange)); // 0x5C
 
-  // CONFIRMED SUPPORTED PID's
+  // Center Screen -> Pressure
+  addDataObject(new OBDData(PID_BAROMETRIC_PRESSURE, "Air", "mBar", BYTE_TIMES10, 4, OBD_D, 950, 1150, _airPressureRange)); // 0x33
+  addDataObject(new OBDData(PID_FUEL_RAIL_GAUGE_PRESSURE, "Fuel Rail", "kPa", WORD_TIMES10, 4, OBD_D, 0, 5000, 0)); // 0x23
+  addDataObject(new OBDData(PID_INTAKE_MANIFOLD_PRESSURE, "Intake Manifold", "kPa", BYTE_NO_CONVERSION, 3, OBD_D, 0, 255, 0)); // 0x0B
 
-  // Big screen
-  //  addDataObject(new OBDByteValue(PID_CALCULATED_ENGINE_LOAD, "Engine Load", BYTE_PERCENTAGE (word * 100 / 255)
-  //  addDataObject(new OBDWordValue(PID_MAF_AIR_FLOW_RATE, WORD_DIV100 // grams/sec
-  //  addDataObject(new OBDWordValue(PID_RUNTIME_SINCE_ENG_START, WORD_NO_CONVERSION: // second
-  //  PID_INTAKE_MANIFOLD_PRESSURE
-  //  PID_FUEL_RAIL_GAUGE_PRESSURE    0x23 // 1
+  // Center Screen -> Engine & Drivetrain
+  addDataObject(new OBDData(PID_CALCULATED_ENGINE_LOAD, "Engine Load", "%", BYTE_PERCENTAGE, 3, OBD_D, 0, 100, _torquePowerRange)); // 0x04
+  addDataObject(new OBDData(PID_MAF_AIR_FLOW_RATE, "MAF Air Flow", "grams/sec", WORD_DIV100, 3, OBD_F1, 0, 655, 0));  // 0x10
 
-  // Cruise control screen
-  //  addDataObject(new OBDByteValue(PID_THROTTLE_POSITION, BYTE_PERCENTAGE (word * 100 / 255)
+  // Center Screen -> Fuel
+  addDataObject(new OBDData(PID_FUEL_LEVEL, "Tank Level", "%", BYTE_PERCENTAGE, 3, OBD_D, 10, 25, _tankRange)); // 0x2F
 
-  // Show in diagnostics screen
-  //  addDataObject(new OBDData(PID_EGR_ERROR, INT_MINUS128_TIMES100_DIV128
-  //  addDataObject(new OBDWordValue(PID_DISTANCE_WITH_MIL_ON, WORD_NO_CONVERSION: // km
-  //  PID_MON_STATUS_SINCE_DTC_CLR
-  //  PID_WARMS_UPS_SINCE_DTC_CLEARED 0x30 // 1
-  //  addDataObject(new OBDWordValue(PID_DISTANCE_SINCE_DTC_CLEARED, WORD_NO_CONVERSION: // km
-  //  addDataObject(new OBDByteValue(PID_COMMANDED_EGR, BYTE_PERCENTAGE (word * 100 / 255)
+  // Center Screen -> Distance
 
-  // Don't know what to do with these
-  //  PID_OBD_STANDARD
-  //  PID_AUX_INPUT_STATUS
-  //  PID_O2_SENSORS_PRESENT_2_BANKS
-  //  PID_OXYGEN_SENSOR_1B            0x24 // 1
-  //  addDataObject(new OBDData(PID_CATALYST_TEMP_B1S1, LONG_DIV10_MINUS40
-  //  addDataObject(new OBDData(PID_CATALYST_TEMP_B1S2, LONG_DIV10_MINUS40
+  // Right Screen -> Speed
+  addDataObject(new OBDData(PID_THROTTLE_POSITION, "Throttle Position", "%", BYTE_PERCENTAGE, 3, OBD_D, 0, 100, 0)); // 0x11
+  //  addDataObject(new OBDData(PID_ACC_PEDAL_POS_D, "Acc Pedal D", "%", BYTE_PERCENTAGE, 3, OBD_D, 0, 100)); // 0x49
+  //  addDataObject(new OBDData(PID_ACC_PEDAL_POS_E, "Acc Pedal E", "%", BYTE_PERCENTAGE, 3, OBD_D, 0, 100)); // 0x4A
+  //  addDataObject(new OBDData(PID_COMMANDED_THROTTLE_ACTUATOR,  "Throttle Actuator", "%", BYTE_PERCENTAGE, 3, OBD_D, 0, 100)); // 0x4C
 
-  // UNCONFIRMED PID's
+  // Right Screen -> Diagnostics
+  // Start capturing the MIL data only when we have a MIL
+  addDataObject(new OBDData(PID_DISTANCE_WITH_MIL_ON, "Dist since MIL", "Km", WORD_NO_CONVERSION, 5, OBD_D, 0, 65535, 0)); // 0x21
+  addDataObject(new OBDData(PID_RUN_TIME_WITH_MIL_ON, "Time since MIL", "Min", WORD_NO_CONVERSION, 5, OBD_D, 0, 65535, 0)); // 0x4D
 
-  //  addDataObject(new OBDData(PID_ENGINE_FUEL_RATE, "Fuel Rate", "%3.1f", "L/hr", WORD_DIV20, 0, 30)); // L/h
-  //  addDataObject(new OBDData(PID_ENGINE_OIL_TEMP, "Engine Oil", "%3d", "C", INT_MINUS40, 0, 150));
-  //  addDataObject(new OBDFloatValue(PID_CONTROL_MODULE_VOLTAGE, "Battery Voltage", WORD_DIV1000 // V
-  //  addDataObject(new OBDByteValue(PID_ABSOLUTE_ENGINE_LOAD, "Abs Engine Load", BYTE_PERCENTAGE (word * 100 / 255)
-  //  addDataObject(new OBDData(PID_ENGINE_TORQUE_DEMANDED, "Torque Demanded", INT_MINUS125 // %
-  //  addDataObject(new OBDData(PID_ENGINE_TORQUE_PERCENTAGE, "Torque Percentage", INT_MINUS125 // %
-  //  addDataObject(new OBDWordValue(PID_EVAP_SYS_VAPOR_PRESSURE, SHIFT_RIGHT_2 // kPa
-  //  addDataObject(new OBDByteValue(PID_COMMANDED_EVAPORATIVE_PURGE, BYTE_PERCENTAGE (word * 100 / 255)
-  //  addDataObject(new OBDByteValue(PID_RELATIVE_THROTTLE_POS, BYTE_PERCENTAGE (word * 100 / 255)
-  //  addDataObject(new OBDByteValue(PID_ABSOLUTE_THROTTLE_POS_B, BYTE_PERCENTAGE (word * 100 / 255)
-  //  addDataObject(new OBDByteValue(PID_ABSOLUTE_THROTTLE_POS_C, BYTE_PERCENTAGE (word * 100 / 255)
-  //  addDataObject(new OBDByteValue(PID_ACC_PEDAL_POS_D, BYTE_PERCENTAGE (word * 100 / 255)
-  //  addDataObject(new OBDByteValue(PID_ACC_PEDAL_POS_E, BYTE_PERCENTAGE (word * 100 / 255)
-  //  addDataObject(new OBDByteValue(PID_ACC_PEDAL_POS_F, BYTE_PERCENTAGE (word * 100 / 255)
-  //  addDataObject(new OBDByteValue(PID_COMMANDED_THROTTLE_ACTUATOR, BYTE_PERCENTAGE (word * 100 / 255)
-  //  addDataObject(new OBDByteValue(PID_ETHANOL_FUEL, BYTE_PERCENTAGE (word * 100 / 255)
-  //  addDataObject(new OBDByteValue(PID_HYBRID_BATT_REMAINING_LIFE, BYTE_PERCENTAGE (word * 100 / 255)
-  //  addDataObject(new OBDWordValue(PID_RUN_TIME_WITH_MIL_ON, WORD_NO_CONVERSION: // minute
-  //  addDataObject(new OBDWordValue(PID_TIME_SINCE_DTC_CLEARED, WORD_NO_CONVERSION: // minute
-  //  addDataObject(new OBDWordValue(PID_FUEL_RAIL_PRESSURE, WORD_NO_CONVERSION: // kPa
-  //  addDataObject(new OBDWordValue(PID_ENGINE_REF_TORQUE, WORD_NO_CONVERSION: // Nm
-  //  addDataObject(new OBDData(PID_FUEL_INJECTION_TIMING, LONG_MINUS26880_DIV128
-  //  addDataObject(new OBDData(PID_CATALYST_TEMP_B2S1, LONG_DIV10_MINUS40
-  //  addDataObject(new OBDData(PID_CATALYST_TEMP_B2S2, LONG_DIV10_MINUS40
-  //  addDataObject(new OBDData(PID_AIR_FUEL_EQUIV_RATIO, LONG_TIMES200_DIV65536: // 0~200
+  // Start capturing the DTC cleared counters only when we actually have cleared the DTC codes
+  addDataObject(new OBDData(PID_WARMS_UPS_SINCE_DTC_CLEARED, "Warm ups", "", BYTE_NO_CONVERSION, 3, OBD_D, 0, 255, 0)); // 0x30
+  addDataObject(new OBDData(PID_DISTANCE_SINCE_DTC_CLEARED, "Dist since DTC", "Km", WORD_NO_CONVERSION, 5, OBD_D, 0, 65535, 0)); //0x31
+  addDataObject(new OBDData(PID_TIME_SINCE_DTC_CLEARED, "Time since DTC", "Min", WORD_NO_CONVERSION, 5, OBD_D, 0, 65535, 0)); // 0x4E
+  // PID_MON_STATUS_SINCE_DTC_CLEARED    // 0x01 --- Bit Encoded
+
+  // PID_MONITOR_STATUS_THIS_DRIVE   0x41 -- Bit encoded
+  //addDataObject(new OBDFloatValue(PID_CONTROL_MODULE_VOLTAGE, "Battery Voltage", "V", WORD_DIV1000, 2, OBD_F1, 0, 65.535)); // 0x42
+
+  // PID's that are supported by the PUMA, but that I'm not using
+  // addDataObject(new OBDData(PID_COMMANDED_EGR, "Commanded EGR", "%", BYTE_PERCENTAGE, 3, OBD_D, 0, 100)); // 0x2C
+  // addDataObject(new OBDData(PID_EGR_ERROR, "EGR Error", "%", INT_TIMES100_DIV128_MINUS100, 3, OBD_D, -100, 100)); // 0x2D
+  // PID_COMMANDED_EGR_AND_EGR_ERR   0x69
+
+  // addDataObject(new OBDData(PID_CATALYST_TEMP_B1S1, LONG_DIV10_MINUS40 // 0x3C
+  // addDataObject(new OBDData(PID_CATALYST_TEMP_B1S2, LONG_DIV10_MINUS40 // 0x3E
+  // PID_RUNTIME_SINCE_ENG_START     0x1F
+  // PID_O2_SENSORS_PRESENT_2_BANKS  0x13
+  // PID_OBD_STANDARD                0x1C
+  // PID_AUX_INPUT_STATUS            0x1E
+  // PID_OXYGEN_SENSOR_1B            0x24
+  // PID_MAX_VALUE_FUEL_AIR_EQ       0x4F
 
 #ifdef PID_DISCOVERY_MODE
   for (word i = 0; i < MAX_UNKNOWN_PIDS; i++)
@@ -172,10 +176,9 @@ OBDData *PumaOBD::nextDataObject()
 
 void PumaOBD::setup()
 {
-  m_pid_range_request = 0; // Define a few retries to get PID range information.
-  m_rpm_timer = 0;
-  m_speed_timer = 0;
-  m_slow_timer = 0;
+  m_rpm_timer.start();
+  m_speed_timer.start();
+  m_slow_timer.start();
 
   // Switch Pin 10-13 to INPUT mode so they are high impedance, floating. That way we can hardwire Pins 50-53 onto them, so that we can use the CAN-Board on a Mega.
   // Connect pin 53 to 10 == CS (Chip Select)
@@ -192,18 +195,17 @@ void PumaOBD::setup()
   pinMode(PIN_MEGA_SPI_CS, OUTPUT);
   pinMode(PIN_MP2515_RX_INTERRUPT, INPUT);
 
-#ifdef PID_DISCOVERY_MODE
-  Serial.println("WARNING: Running in PID Discovery mode!");
-#endif
-
   m_CAN.begin(PIN_MEGA_SPI_CS, PumaCAN::MCP_STD, PumaCAN::CAN_500KBPS, PumaCAN::MCP_16MHZ);
   m_CAN.setMode(LOOPBACK_OR_NORMAL);
 
-  // TODO: Add to PID_DISCOVERY_MODE?
+#ifdef PID_DISCOVERY_MODE
+  OBD_PRINTLN("WARNING: Running in PID Discovery mode!");
+#else
   m_CAN.setMask(PumaCAN::MASK0, false, 0x07FF0000);
   m_CAN.setMask(PumaCAN::MASK1, false, 0x07FF0000);
   m_CAN.setFilter(PumaCAN::FILT0, false, 0x07E80000);
   m_CAN.setFilter(PumaCAN::FILT2, false, 0x07E80000);
+#endif
 }
 
 void PumaOBD::requestObdUpdates()
@@ -213,29 +215,21 @@ void PumaOBD::requestObdUpdates()
   // We only ask for MAX 2 elements at a time, because the MCP2515 can only handle two sets of data.
   // To ensure that every data element gets a chance we rotate through the list in a round robin fashion
   // Speed and Rpm are handled separately, with a higher frequency
-  unsigned long cur_time = millis();
 
-  if (cur_time - m_speed_timer > 333) { // Update SPEED 3x per second
-    m_speed_timer = cur_time;
+  if (m_speed_timer.elapsed() > 333) { // Update SPEED 3x per second
+    m_speed_timer.start();
     requestSensorData(m_speed);
-  } else if (cur_time - m_rpm_timer > 200) { // Update RPM's 5x per second
-    m_rpm_timer = cur_time;
+  } else if (m_rpm_timer.elapsed() > 200) { // Update RPM's 5x per second
+    m_rpm_timer.start();
     requestSensorData(m_rpm);
   }
-  
-  if (m_pid_range_request > 0) {
-    if (cur_time - m_slow_timer > 6000) { // Wait for min 6 seconds before trying the pid range request again.
-      m_slow_timer = cur_time;
-      m_pid_range_request--;
-      Serial.println("----- PID Range request -----");
-      requestSupportedPIDRange(PID_SUPPORTED_PID_81_A0);
-    }
-  } else if (cur_time - m_slow_timer > 500) { // Update *one* sensor every 500 ms, i.e. if we have 10 sensors then every sensor gets an update every 5 seconds
-    m_slow_timer = cur_time;
+
+  if (m_slow_timer.elapsed() > 500) { // Update *one* sensor every 500 ms, i.e. if we have 10 sensors then every sensor gets an update every 5 seconds
+    m_slow_timer.start();
     // Query one element from the low priority list
     requestSensorData(nextDataObject());
   }
-  
+
   OBD_PRINTLN("<< requestObdUpdates");
 }
 
@@ -286,7 +280,7 @@ void PumaOBD::readRxBuffers()
   OBD_PRINTLN(">> readRXBuffers");
   while (m_CAN.available() && (m_rxFIFO_count < MAX_RX_FIFO)) { // One or more messages available, and FIFO buffer not full?
     // LED2 indicates CAN bus RX Interrupt activity. A flashing led is 'good'. It means we have incoming data, and are not stuck in a dead-lock somewhere.
-    // The Led should be on for only a very short period, so visually this will be a fast flashing led with a low light intensity. 
+    // The Led should be on for only a very short period, so visually this will be a fast flashing led with a low light intensity.
     digitalWrite(PIN_CAN_BOARD_LED2, HIGH);
     m_rxFIFO[m_rxFIFO_write] = m_CAN.read();
     m_rxFIFO[m_rxFIFO_write].m_timeStamp = millis();
@@ -336,29 +330,31 @@ void PumaOBD::update()
 
 void PumaOBD::processMessage(CAN_Frame *message)
 {
-  OBD_PRINTLN(">>>> processMessage");
+  if (message == 0) return;
+
+  OBD_PRINTLN(">>> processMessage");
   if (message->m_id == PID_REPLY) {
     uint16_t pid = message->m_data[2];
     uint8_t *data = &message->m_data[3];
 
-    if (pid == PID_SUPPORTED_PID_01_20 ||
-        pid == PID_SUPPORTED_PID_21_40 ||
-        pid == PID_SUPPORTED_PID_41_60 ||
-        pid == PID_SUPPORTED_PID_61_80) {
-      Serial.println(">>>>>> --- PID Range reply ---");
-      m_pid_range_request = 0;
-      m_slow_timer = 0; // reset the timer so we request for the first sensor data a.s.a.p
-    } else {
-      OBDData *object = dataObject(pid);
-      if (object) {
-        object->setValue(message->m_timeStamp, data);
-        logObdData(v2s("%6d", message->m_timeStamp) +
-                   v2s(" %04X ", pid) +
-                   object->toString());
-      }
+    OBD_PRINT(">>>> update dataObject: ");
+#ifdef OBD_DEBUG
+    Serial.println(pid, HEX);
+    Serial.flush();
+#endif
+    OBDData *object = dataObject(pid);
+    if (object != 0 && message != 0) {
+      OBD_PRINTLN(">>>> setValue");
+      object->setValue(message->m_timeStamp, data);
+      OBD_PRINTLN("<<<< setValue");
+      OBD_PRINTLN(">>>> logObdData");
+      logObdData(v2s("%6d", message->m_timeStamp) +
+                 v2s(" %04X ", pid) +
+                 object->toString());
     }
+    OBD_PRINTLN("<<<< update dataObject");
   }
-  OBD_PRINTLN("<<<< processMessage");
+  OBD_PRINTLN("<<< processMessage");
 }
 
 #ifdef PID_DISCOVERY_MODE
@@ -412,11 +408,12 @@ OBDData::~OBDData()
 {
 }
 
-OBDData::OBDData(uint8_t pid, String label, String format, String subLabel, OBD_DATA_CONVERSION conversion, long min, long max)
+OBDData::OBDData(uint8_t pid, String label, String subLabel, OBD_DATA_CONVERSION conversion, byte stringWidth, OBD_PRECISION stringPrecision, long min, long max, OBDColorRange *colorRange)
 {
   m_pid = pid;
   m_label = label;
-  m_format = format;
+  m_stringWidth = stringWidth;
+  m_stringPrecision = stringPrecision;
   m_subLabel = subLabel;
   m_conversion = conversion;
   m_timeStamp = 0;
@@ -424,8 +421,9 @@ OBDData::OBDData(uint8_t pid, String label, String format, String subLabel, OBD_
   m_value = -200; // set an arbitrary negative value so that we update the display even if the initial value is '0'.
   m_minValue = min;
   m_maxValue = max;
+  m_colorRange = colorRange;
 #ifdef LOOPBACK_MODE
-  m_simValue = 0;
+  m_simValue = min - (min * 0.1);
   m_simIncrease = true;
 #endif
 }
@@ -447,17 +445,8 @@ String OBDData::subLabel()
 
 word OBDData::color()
 {
-  if (m_minValue < m_maxValue) {
-    if (m_value < m_minValue)
-      return PUMA_WARNING_COLOR;
-    if (m_value > m_maxValue)
-      return PUMA_ALARM_COLOR;
-  } else {
-    if (m_value < m_minValue)
-      return PUMA_ALARM_COLOR;
-    if (m_value < m_maxValue)
-      return PUMA_WARNING_COLOR;
-  }
+  if (m_colorRange != 0)
+    return m_colorRange->color(m_value);
   return PUMA_NORMAL_COLOR;
 }
 
@@ -466,71 +455,60 @@ OBD_DATA_CONVERSION OBDData::dataConversion()
   return m_conversion;
 }
 
+void OBDData::setDataConversion(OBD_DATA_CONVERSION conversion)
+{
+  m_conversion = conversion;
+}
+
+void OBDData::setFormat(byte width, OBD_PRECISION stringPrecision)
+{
+  m_stringWidth = width;
+  m_stringPrecision = stringPrecision;
+}
+
 // This returns the expected string length returned by toString, if the specified format could be applied correctly.
 byte OBDData::stringLength()
 {
-  byte decimals = 0;
-  byte fraction = 0;
-  byte dot_pos = 0;
-  if (m_format.length() < 2 || m_format[0] != '%')
-    return 3;
-
-  char l = m_format[1];
-  dot_pos = 2;
-
-  if (l == '0' && m_format.length() > 2) {
-    l = m_format[2];
-    dot_pos = 3;
-  }
-
-  switch (l) {
-    case '1': decimals = 1; break;
-    case '2': decimals = 2; break;
-    case '3': decimals = 3; break;
-    case '4': decimals = 4; break;
-    case '5': decimals = 5; break;
-    case '6': decimals = 6; break;
-    case '7': decimals = 7; break;
-    case '8': decimals = 8; break;
-    case '9': decimals = 9; break;
-    default: decimals = 3; break;
-  }
-
-  if (m_format.length() > 4 && m_format[dot_pos] == '.') {
-    l = m_format[dot_pos + 1];
-
-    switch (l) {
-      case '1': fraction = 2; break;
-      case '2': fraction = 3; break;
-      case '3': fraction = 4; break;
-      case '4': fraction = 5; break;
-      case '5': fraction = 6; break;
-      case '6': fraction = 7; break;
-      case '7': fraction = 8; break;
-      case '8': fraction = 9; break;
-      case '9': fraction = 10; break;
-      default: fraction = 1; break;
-    }
-  }
-
-  return decimals + fraction;
+  byte ret = m_stringWidth;
+  if (m_stringPrecision < OBD_D)
+    ret += (int)m_stringPrecision + 1; // one extra for the 'dot'
+  return ret;
 }
 
 String OBDData::toString()
 {
-  char buf[30];
-  if (m_conversion == WORD_DIV20) {
-    float tmp = m_value;
-    tmp /= 20;
-    sprintf(buf, m_format.c_str(), tmp);
-  } else if (m_conversion == ULONG_NO_CONVERSION) {
-    unsigned long tmp = m_value;
-    sprintf(buf, "0X%08lX", tmp);
+  String ret;
+  byte len = stringLength();
+
+  if (m_stringPrecision < OBD_D) {
+    float f = 0.0;
+    if (m_conversion == WORD_DIV20) {
+      f = m_value;
+      f /= 20;
+    } else if (m_conversion == WORD_DIV100) {
+      f = m_value;
+      f /= 100;
+    } else if (m_conversion == WORD_DIV1000) {
+      f = m_value;
+      f /= 1000;
+    } else {
+      f = m_value;
+    }
+
+    ret = String(f, int(m_stringPrecision));
+  } else if (m_stringPrecision == OBD_H) {
+    ret = String(m_value, HEX);
+    while (ret.length() < len)
+      ret = "0" + ret;
+    ret = "0X" + ret;
+    ret.toUpperCase();
   } else {
-    sprintf(buf, m_format.c_str(), m_value);
+    ret = String(m_value);
   }
 
-  return String(buf);
+  while (ret.length() < len)
+    ret = " " + ret;
+  return ret;
 }
 
 byte OBDData::toByte()
@@ -565,6 +543,8 @@ void OBDData::setValue(long value)
 
 void OBDData::setValue(uint32_t timeStamp, uint8_t *data)
 {
+  OBD_PRINTLN(">>>>>> entering setValue");
+
   m_timeStamp = timeStamp;
 
   long old_value = m_value;
@@ -573,11 +553,15 @@ void OBDData::setValue(uint32_t timeStamp, uint8_t *data)
   byte repeat = 0;
   if (m_conversion == WORD_NO_CONVERSION ||
       m_conversion == WORD_DIV4 ||
-      m_conversion == WORD_DIV20) {
+      m_conversion == WORD_DIV20 ||
+      m_conversion == WORD_DIV100 ||
+      m_conversion == WORD_DIV1000 ||
+      m_conversion == WORD_TIMES10) {
     repeat = 1;
   } else if (m_conversion == ULONG_NO_CONVERSION) {
     repeat = 3;
-  } else if (m_conversion == INT_NO_CONVERSION) {
+  } else if (m_conversion == INT_NO_CONVERSION ||
+             m_conversion == INT_TIMES100_DIV128_MINUS100) {
     m_value = int8_t(*data);
   }
 
@@ -593,6 +577,9 @@ void OBDData::setValue(uint32_t timeStamp, uint8_t *data)
     case INT_MINUS40:
       m_value -= 40;
       break;
+    case INT_TIMES100_DIV128_MINUS100:
+      m_value = ((m_value * 100) / 128) - 100;
+      break;
     case BYTE_TIMES10:
       m_value *= 10;
       break;
@@ -600,29 +587,32 @@ void OBDData::setValue(uint32_t timeStamp, uint8_t *data)
       m_value *= 3;
       break;
     case BYTE_PERCENTAGE:
-      m_value = m_value * 100 / 255;
+      m_value = (m_value * 100) / 255;
       break;
     case BYTE_NO_CONVERSION:
       break;
     case WORD_NO_CONVERSION:
       break;
+    case WORD_TIMES10:
+      m_value *= 10;
+      break;
     case WORD_DIV4:
       m_value /= 4;
       break;
     case WORD_DIV20:
-      //      m_value /= 20;
+    case WORD_DIV100:
+    case WORD_DIV1000:
+      // Do the conversion later when converting to a string
       break;
     case ULONG_NO_CONVERSION:
       break;
   }
 
-  if (old_value != m_value)
+  if (old_value != m_value) {
+    OBD_PRINTLN("------- calling updateSensorWidget()");
     Display()->updateSensorWidget(this);
-}
-
-void OBDData::setFormat(String format)
-{
-  m_format = format;
+  }
+  OBD_PRINTLN("<<<<<< setValue");
 }
 
 #ifdef LOOPBACK_MODE
@@ -661,6 +651,10 @@ void OBDData::simulateData(CAN_Frame *message)
       message->m_data[0] = 3;
       message->m_data[3] = int8_t(m_simValue);
       break;
+    case INT_TIMES100_DIV128_MINUS100:
+      message->m_data[0] = 3;
+      message->m_data[3] = uint8_t(((m_simValue + 100) * 128) / 100);
+      break;
     case INT_MINUS40:
       message->m_data[0] = 3;
       message->m_data[3] = uint8_t(m_simValue + 40);
@@ -686,6 +680,12 @@ void OBDData::simulateData(CAN_Frame *message)
       message->m_data[3] = uint8_t(m_simValue >> 8 & 0xFF);
       message->m_data[4] = uint8_t(m_simValue & 0xFF);
       break;
+    case WORD_TIMES10:
+      message->m_data[0] = 4;
+      tmp = m_simValue / 10;
+      message->m_data[3] = uint8_t(tmp >> 8);
+      message->m_data[4] = uint8_t(tmp & 0xFF);
+      break;
     case WORD_DIV4:
       message->m_data[0] = 4;
       tmp = m_simValue * 4;
@@ -695,6 +695,18 @@ void OBDData::simulateData(CAN_Frame *message)
     case WORD_DIV20:
       message->m_data[0] = 4;
       tmp = m_simValue * 20;
+      message->m_data[3] = uint8_t(tmp >> 8);
+      message->m_data[4] = uint8_t(tmp & 0xFF);
+      break;
+    case WORD_DIV100:
+      message->m_data[0] = 4;
+      tmp = m_simValue * 100;
+      message->m_data[3] = uint8_t(tmp >> 8);
+      message->m_data[4] = uint8_t(tmp & 0xFF);
+      break;
+    case WORD_DIV1000:
+      message->m_data[0] = 4;
+      tmp = m_simValue * 1000;
       message->m_data[3] = uint8_t(tmp >> 8);
       message->m_data[4] = uint8_t(tmp & 0xFF);
       break;
@@ -713,6 +725,30 @@ void OBDData::simulateData(CAN_Frame *message)
   }
 }
 #endif
+
+//********************************************************************************
+//                              OBDColorRange
+//********************************************************************************
+
+OBDColorRange::OBDColorRange(OBDCOLOR_RANGE range, long threshold, word color, void *next)
+{
+  m_lessThan = (range == LESS);
+  m_threshold = threshold;
+  m_color = color;
+  m_next = (OBDColorRange*)next;
+}
+
+word OBDColorRange::color(long value)
+{
+  if (m_lessThan) {
+    if (value <= m_threshold)
+      return m_color;
+    else if (m_next)
+      return m_next->color(value);
+  }
+
+  return PUMA_ALARM_COLOR;
+}
 
 
 
