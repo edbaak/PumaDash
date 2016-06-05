@@ -41,6 +41,7 @@
  * -- Run final two OBD range support queries
  * -- Add all supported PID's and show data somewhere
  * -- Show logfilename in Red if no logging
+ * -- Improve min/max with color mechanism
  * 
  * TODO List
  * -- Make CAN processing super stable
@@ -48,7 +49,6 @@
  * ---- Try interrupts with enable/disable interrupts
  * -- Try reducing the reset delay time
  * -- Try running the self-test sooner
- * -- Improve min/max with color mechanism
  * -- Show logfilename in Red if logging errors
  * -- Drive Defender without a console, to see that it works
  * -- Take console measurements
