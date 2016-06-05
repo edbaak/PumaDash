@@ -745,9 +745,12 @@ word OBDColorRange::color(long value)
       return m_color;
     else if (m_next)
       return m_next->color(value);
+    else
+      return PUMA_ALARM_COLOR;  
   }
 
-  return PUMA_ALARM_COLOR;
+  // For the 'Else' case we just return the specified color.
+  return m_color;
 }
 
 
