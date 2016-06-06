@@ -56,7 +56,7 @@ class BaseScreen
 
     void addSensorWidget(SensorWidget *sensor);
     SensorWidget *findSensorWidget(word pid);
-    void updateSensorWidget(OBDData *sensor);
+    void updateSensorWidget(OBDBaseData *sensor);
     void requestStaticRefresh();
 
     void printLabel(String label, word x, word y, int color, byte fontSize = 1);
@@ -159,7 +159,7 @@ class PumaDisplay : public Diablo_Serial_4DLib
     void printSubLabel(String subLabel, word x, word y, int color, byte fontSize = 1);
     void printValue(String value, byte textLength, word x, word y, int color, byte fontSize);
 
-    void updateSensorWidget(OBDData *sensor);
+    void updateSensorWidget(OBDBaseData *sensor);
 
     word fontWidth(byte fontSize);
     word fontHeight(byte fontSize);

@@ -210,7 +210,7 @@ void PumaDisplay::updateStatusbar()
   DISPLAY_PRINTLN("<< PumaDisplay::updateStatusBar()");
 }
 
-void PumaDisplay::updateSensorWidget(OBDData * sensor)
+void PumaDisplay::updateSensorWidget(OBDBaseData *sensor)
 {
   activeScreen()->updateSensorWidget(sensor);
 }
@@ -334,7 +334,7 @@ SensorWidget *BaseScreen::findSensorWidget(word pid)
   return 0;
 }
 
-void BaseScreen::updateSensorWidget(OBDData * sensor)
+void BaseScreen::updateSensorWidget(OBDBaseData * sensor)
 {
   SensorWidget *tmp = findSensorWidget(sensor->pid());
   if (tmp) {

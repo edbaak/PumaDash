@@ -112,7 +112,7 @@ void SensorWidget::requestStaticRefresh()
   m_staticRefreshRequested = true;
 }
 
-void SensorWidget::update(OBDData *sensor)
+void SensorWidget::update(OBDBaseData *sensor)
 {
   if (sensor == 0) return;
 
@@ -187,7 +187,7 @@ void RpmDialWidget::drawRpmDial()
   Display()->printLabel("6", x_pos[6] + 9, y_pos[6] - 5, PUMA_LABEL_COLOR, 2);
 }
 
-void RpmDialWidget::update(OBDData *sensor)
+void RpmDialWidget::update(OBDBaseData *sensor)
 {
   if (sensor == 0)
     updateRpm(0, PUMA_ALARM_COLOR);
@@ -236,7 +236,7 @@ PitchAndRollWidget::PitchAndRollWidget(word pid, byte fontSize, word x, word y, 
   m_interleave = interleave;
 }
 
-void PitchAndRollWidget::update(OBDData *sensor)
+void PitchAndRollWidget::update(OBDBaseData *sensor)
 {
   if (sensor == 0)
     updateAngle(0);
@@ -324,7 +324,7 @@ CompassWidget::CompassWidget(word pid, byte fontSize, word x, word y) : SensorWi
 {
 }
 
-void CompassWidget::update(OBDData *sensor)
+void CompassWidget::update(OBDBaseData *sensor)
 {
   if (sensor == 0)
     updateHeading(0);
@@ -382,7 +382,7 @@ TpmsWidget::TpmsWidget(word pid, TPMS_MODE mode, byte fontSize, word x, word y) 
   m_mode = mode;
 }
 
-void TpmsWidget::update(OBDData *sensor)
+void TpmsWidget::update(OBDBaseData *sensor)
 {
   if (m_mode == TPMS_PRESSURE) {
     if (sensor == 0)
@@ -430,7 +430,7 @@ ListWidget::ListWidget(String title, word pid, byte fontSize, word x1, word y1, 
   m_y2 = y2;
 }
 
-void ListWidget::update(OBDData *sensor)
+void ListWidget::update(OBDBaseData *sensor)
 {
   Serial.println("Update list widget");
   if (m_staticRefreshRequested) {

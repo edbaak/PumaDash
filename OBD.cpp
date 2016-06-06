@@ -81,7 +81,7 @@ PumaOBD::PumaOBD(SpeedControl *speedControl)
 
   // Center Screen -> Pressure
   addDataObject(new OBDData(PID_BAROMETRIC_PRESSURE, "Air", "mBar", BYTE_TIMES10, 4, OBD_D, 950, 1150, _airPressureRange)); // 0x33
-  addDataObject(new OBDData(PID_FUEL_RAIL_GAUGE_PRESSURE, "Fuel Rail", "kPa", WORD_TIMES10, 4, OBD_D, 0, 5000, 0)); // 0x23
+  addDataObject(new OBDData(PID_FUEL_RAIL_GAUGE_PRESSURE, "Fuel Rail", "MPa", WORD_DIV100, 4, OBD_D, 0, 5000, 0)); // 0x23
   addDataObject(new OBDData(PID_INTAKE_MANIFOLD_PRESSURE, "Intake Manifold", "kPa", BYTE_NO_CONVERSION, 3, OBD_D, 0, 255, 0)); // 0x0B
 
   // Center Screen -> Engine & Drivetrain

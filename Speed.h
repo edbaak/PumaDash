@@ -60,7 +60,7 @@ class SpeedData : public OBDBaseData
     virtual ~SpeedData();
 
     void update();
-    void setValue(unsigned long distance);
+    void setValue(word speed);
     word toWord();
     String toString();
     word color();
@@ -78,10 +78,12 @@ class TotalDistanceData : public OBDBaseData
     void setValue(unsigned long distance);
     void increment();
     String toString();
+    unsigned long value();
     word color();
 
   private:
     unsigned long m_totalDistance;
+    word m_color;
 };
 
 class SpeedControl

@@ -48,6 +48,7 @@ class CAN_Frame;
 //#define OBD_DEBUG                   // Creates debugging stacktrace for OBD functions
 //#define DISPLAY_DEBUG               // Creates debugging stacktrace for important functions in Display class
 //#define TOUCH_DEBUG                 // Creates debugging stacktrace for touch functions
+#define SPEED_DEBUG                   // Debugging stacktrace for Speed functions
 
 //#define PID_DISCOVERY_MODE          // To discover new unknown PIDS, enable RECORD_UNKNOWN_PIDS.
 #ifdef PID_DISCOVERY_MODE

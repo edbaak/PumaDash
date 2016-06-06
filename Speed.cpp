@@ -33,12 +33,21 @@
 #include "WProgram.h" // for Arduino 23
 #endif
 
+#ifdef SPEED_DEBUG
+#define SPEED_PRINTLN(s) Serial.println(s); Serial.flush();
+#define SPEED_PRINT(s) Serial.print(s); Serial.flush();
+#else
+#define SPEED_PRINTLN(s) {}
+#define SPEED_PRINT(s) {}
+#endif
+
+
 //************************************************************************************
 //                                  SpeedData
 //************************************************************************************
 
-SpeedData::SpeedData(uint8_t pid, String label, String subLabel, byte stringWidth, OBD_PRECISION stringPrecision, OBDColorRange *colorRange) : 
-    OBDBaseData(pid, label, subLabel, WORD_NO_CONVERSION, stringWidth, stringPrecision, colorRange)
+SpeedData::SpeedData(uint8_t pid, String label, String subLabel, byte stringWidth, OBD_PRECISION stringPrecision, OBDColorRange *colorRange) :
+  OBDBaseData(pid, label, subLabel, WORD_NO_CONVERSION, stringWidth, stringPrecision, colorRange)
 {
   m_value = 0;
 }
@@ -51,7 +60,7 @@ void SpeedData::update()
 {
 }
 
-void SpeedData::setValue(unsigned long distance)
+void SpeedData::setValue(word speed)
 {
 }
 
@@ -64,7 +73,7 @@ String SpeedData::toString()
 {
   return "";
 }
-  
+
 word SpeedData::color()
 {
   return WHITE;
@@ -75,31 +84,42 @@ word SpeedData::color()
 //************************************************************************************
 
 TotalDistanceData::TotalDistanceData(uint8_t pid, String label, String subLabel, byte stringWidth, OBD_PRECISION stringPrecision, word color) :
-    OBDBaseData(pid, label, subLabel, ULONG_NO_CONVERSION, stringWidth, stringPrecision, 0)
+  OBDBaseData(pid, label, subLabel, ULONG_NO_CONVERSION, stringWidth, stringPrecision, 0)
 {
   m_totalDistance = 0;
+  m_color = color;
 }
 
 TotalDistanceData::~TotalDistanceData()
 {
 }
 
-void TotalDistanceData::setValue(unsigned long distance)
-{
-}
-
 void TotalDistanceData::increment()
 {
+  m_totalDistance++;
+//  SPEED_PRINT("increment: ");
+//  SPEED_PRINTLN(m_totalDistance);
+  Display()->updateSensorWidget(this);
 }
 
 String TotalDistanceData::toString()
 {
-  return "";
+  return String(m_totalDistance);
 }
 
 word TotalDistanceData::color()
 {
-  return WHITE;
+  return m_color;
+}
+
+void TotalDistanceData::setValue(unsigned long distance)
+{
+  m_totalDistance = distance;
+}
+
+unsigned long TotalDistanceData::value()
+{
+  return m_totalDistance;
 }
 
 //************************************************************************************
@@ -120,8 +140,46 @@ SpeedControl::SpeedControl()
   m_CC_Speed = new OBDData(PID_PUMA_CC_SPEED, "Target Speed", "Km/h", BYTE_NO_CONVERSION, 3, OBD_D, 0, 110, 0);
   m_CC_Mode = new OBDData(PID_PUMA_CC_MODE, "Mode", "", BYTE_NO_CONVERSION, 3, OBD_D, 0, 2, 0);
   m_CC_Accelerator = new OBDData(PID_PUMA_CC_ACCELERATOR, "Accelerator", "%", BYTE_NO_CONVERSION, 3, OBD_D, 0, 100, 0);
-  m_totalDistance = new TotalDistanceData(PID_PUMA_ODO, "Total Distance", "Km", ULONG_NO_CONVERSION, 7, OBD_D, 0, 50000, 0);
+
+  m_totalDistance = new TotalDistanceData(PID_PUMA_ODO, "Total", "Km", 4, OBD_D, PUMA_NORMAL_COLOR);
 }
+
+void SpeedControl::updateSpeed(word speed)
+{
+  m_cur_speed = speed;
+
+  static unsigned long m_previous_speed = 0;
+  float average_speed = (m_cur_speed + m_previous_speed) / 2.0;
+
+  //  100 m * 360 ms / 3600 (sec) == 10 m in 360 ms. 
+  float meters_travelled = (average_speed * m_distance_timer.elapsed()) / 3600.0; // (meters travelled in elapsed time)
+//  SPEED_PRINT("Meters travelled: ");
+//  SPEED_PRINTLN(meters_travelled);
+
+  m_distance_timer.start();
+  m_odo_counter += meters_travelled;
+
+  while (m_odo_counter > 100.0) {
+    m_odo_counter -= 100.0;
+    m_totalDistance->increment(); // counts in resolution of 100 meter.
+  }
+
+  m_previous_speed = m_cur_speed;
+}
+
+void SpeedControl::update()
+{
+#ifdef LOOPBACK_MODE
+  m_CC_Speed->simulateData(0);
+  m_CC_Mode->simulateData(0);
+  m_CC_Accelerator->simulateData(0);
+#endif
+  // TODO: measure analog speed.
+}
+
+// *************************************************************************************************
+// *************************************************************************************************
+//                                              Experimental stuff
 
 void SpeedControl::switchOnCruiseControlRelay(bool on)
 {
@@ -136,39 +194,6 @@ void SpeedControl::setAccelleration(int accelleration) {
     analogWrite(PIN_SIMULATED_ACCELARATOR_SENSOR, accelleration);
   }
 }
-
-void SpeedControl::updateSpeed(word speed)
-{
-  m_cur_speed = speed;
-}
-
-void SpeedControl::update()
-{
-#ifdef LOOPBACK_MODE
-  m_CC_Speed->simulateData(0);
-  m_CC_Mode->simulateData(0);
-  m_CC_Accelerator->simulateData(0);
-#endif
-  // TODO: measure analog speed.
-
-  // Get an average speed over 1 second interval
-  static unsigned long m_previous_speed = 0;
-  unsigned long average_speed = (m_cur_speed + m_previous_speed) / 2;
-  float D = (average_speed * m_distance_timer.elapsed()) / 3600.0; // (meters travelled in elapsed time)
-  m_odo_counter += D;
-
-  while (m_odo_counter > 10.0) {
-    m_odo_counter -= 10.0;
-    m_totalDistance->increment(); // counts in resolution of 10 meter.
-  }
-
-  m_previous_speed = m_cur_speed;
-  m_distance_timer.start();
-}
-
-// *************************************************************************************************
-// *************************************************************************************************
-//                                              Experimental stuff
 
 /*
   if (!odbValid) {

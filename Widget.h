@@ -90,7 +90,7 @@ class SensorWidget
 {
   public:
     SensorWidget(word pid, byte fontSize, word x, word y);
-    virtual void update(OBDData *sensor);
+    virtual void update(OBDBaseData *sensor);
     void requestStaticRefresh();
 
   protected:
@@ -110,7 +110,7 @@ class RpmDialWidget : public SensorWidget
     RpmDialWidget(word pid, byte fontSize, word x, word y, word radius);
     void drawRpmDial();
     void updateRpm(word rpm, word color);
-    virtual void update(OBDData *sensor);
+    virtual void update(OBDBaseData *sensor);
 
   private:
     word m_radius;
@@ -121,7 +121,7 @@ class PitchAndRollWidget : public SensorWidget
   public:
     PitchAndRollWidget(word pid, byte fontSize, word x, word y, bool pitchMode, byte interleave);
     void updateAngle(int angle);
-    virtual void update(OBDData *sensor);
+    virtual void update(OBDBaseData *sensor);
 
   private:
     bool m_pitchMode;
@@ -133,7 +133,7 @@ class CompassWidget : public SensorWidget
   public:
     CompassWidget(word pid, byte fontSize, word x, word y);
     void updateHeading(word heading);
-    virtual void update(OBDData *sensor);
+    virtual void update(OBDBaseData *sensor);
 };
 
 typedef enum TPMS_MODE {
@@ -145,7 +145,7 @@ class TpmsWidget : public SensorWidget
 {
   public:
     TpmsWidget(word pid, TPMS_MODE mode, byte fontSize, word x, word y);
-    virtual void update(OBDData *sensor);
+    virtual void update(OBDBaseData *sensor);
 
   protected:
     void updatePressure(String pressure, word color);
@@ -160,7 +160,7 @@ class ListWidget : public SensorWidget
   public:
     ListWidget(String title, word pid, byte fontSize, word x1, word y1, word x2, word y2);
     void appendLine(String line);
-    virtual void update(OBDData *sensor);
+    virtual void update(OBDBaseData *sensor);
 
   private:
     String m_title;

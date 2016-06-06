@@ -245,6 +245,8 @@ class SpeedControl;
 // numbers, i.e. 0x7E9, 0x7EA, etc
 #define PID_REPLY			0x7E8
 
+#define KPA_TO_PSI 0.145037        // Conversion factor from kPa to PSI or Divide by 6.894759
+
 
 // ***************************************************************
 // The following undocumented 0xID's are emitted regularly by the Puma ECU
@@ -359,7 +361,7 @@ class OBDData : public OBDBaseData
     OBDData(uint8_t pid, String label, String subLabel, OBD_DATA_CONVERSION conversion, byte stringWidth, OBD_PRECISION stringPrecision, long min, long max, OBDColorRange *colorRange);
     virtual ~OBDData();
 
-    void setValue(uint32_t timeStamp, uint8_t *data);
+    virtual void setValue(uint32_t timeStamp, uint8_t *data);
 #ifdef SELF_TEST
     void setValue(long value);
 #endif

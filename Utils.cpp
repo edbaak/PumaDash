@@ -444,6 +444,11 @@ void OBDDataTest()
   tester.setDataConversion(WORD_DIV1000);
   FAIL_IF_FALSE(tester.toString() == " 0.2", "10.2");
 
+  unsigned long l = 5000000;
+  FAIL_IF_FALSE(String(l) == "5000000", "10.3");
+  l = 50000000;
+  FAIL_IF_FALSE(String(l) == "50000000", "10.4");
+  
   Serial.println("PASS");
 }
 
