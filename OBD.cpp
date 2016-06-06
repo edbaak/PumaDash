@@ -28,7 +28,7 @@
 #include "Display.h"
 #include "OBD.h"
 #include "CAN.h"
-//#include <Diablo_Const4D.h>
+#include "Speed.h"
 
 
 #ifdef LOOPBACK_MODE
@@ -46,7 +46,7 @@
 #endif
 
 
-PumaOBD::PumaOBD()
+PumaOBD::PumaOBD(SpeedControl *speedControl)
 {
   m_firstData = 0;
   m_lastData = 0;
@@ -55,6 +55,8 @@ PumaOBD::PumaOBD()
   m_rxFIFO_write = 0;
   m_rxFIFO_read = 0;
   m_rxFIFO_count = 0;
+
+  m_speedControl = speedControl;
 
   OBDColorRange *_speedRange = new OBDColorRange(LESS, 100, PUMA_NORMAL_COLOR);
   OBDColorRange *_engineTempRange = new OBDColorRange(LESS, 60, PUMA_WARNING_COLOR, new OBDColorRange(LESS, 100, PUMA_NORMAL_COLOR));
@@ -138,7 +140,7 @@ void PumaOBD::addDataObject(OBDData *object)
   if (m_firstData == 0) {
     m_firstData = object;
   } else {
-    m_lastData->m_next = object;
+    m_lastData->m_nextDataObject = object;
   }
   m_lastData = object;
   if (m_curData == 0) m_curData = object;
@@ -153,7 +155,7 @@ OBDData *PumaOBD::dataObject(uint8_t PID)
   while (tmp) {
     if (tmp->pid() == PID)
       return tmp;
-    tmp = tmp->m_next;
+    tmp = (OBDData*)tmp->m_nextDataObject;
   }
 
   return &m_invalidPID;
@@ -162,13 +164,13 @@ OBDData *PumaOBD::dataObject(uint8_t PID)
 // DANGER: This function can return a NULL pointer!
 OBDData *PumaOBD::nextDataObject()
 {
-  OBDData *tmp = m_curData;
+  OBDBaseData *tmp = m_curData;
   if (tmp) {
-    tmp = tmp->m_next;
+    tmp = tmp->m_nextDataObject;
     if (tmp == 0)
       tmp = m_firstData;
-    m_curData = tmp;
-    return tmp;
+    m_curData = (OBDData*)tmp;
+    return m_curData;
   }
 
   return 0;
@@ -351,6 +353,8 @@ void PumaOBD::processMessage(CAN_Frame *message)
       logObdData(v2s("%6d", message->m_timeStamp) +
                  v2s(" %04X ", pid) +
                  object->toString());
+      if (pid == PID_SPEED) 
+        m_speedControl->updateSpeed(m_speed->toWord());
     }
     OBD_PRINTLN("<<<< update dataObject");
   }
@@ -393,23 +397,26 @@ void PumaOBD::printUnhandledPIDS()
 #endif
 
 //*************************************************************************************
+//                                      OBDBaseData
+//*************************************************************************************
 
-OBDData::OBDData()
+OBDBaseData::OBDBaseData()
 {
+  m_nextDataObject = 0;
   m_pid = 0;
   m_timeStamp = 0;
   m_label = "";
   m_subLabel = "";
   m_conversion = BYTE_NO_CONVERSION;
-  m_next = 0;
 }
 
-OBDData::~OBDData()
+OBDBaseData::~OBDBaseData()
 {
 }
 
-OBDData::OBDData(uint8_t pid, String label, String subLabel, OBD_DATA_CONVERSION conversion, byte stringWidth, OBD_PRECISION stringPrecision, long min, long max, OBDColorRange *colorRange)
+OBDBaseData::OBDBaseData(uint8_t pid, String label, String subLabel, OBD_DATA_CONVERSION conversion, byte stringWidth, OBD_PRECISION stringPrecision, OBDColorRange *colorRange)
 {
+  m_nextDataObject = 0;
   m_pid = pid;
   m_label = label;
   m_stringWidth = stringWidth;
@@ -417,30 +424,101 @@ OBDData::OBDData(uint8_t pid, String label, String subLabel, OBD_DATA_CONVERSION
   m_subLabel = subLabel;
   m_conversion = conversion;
   m_timeStamp = 0;
-  m_next = 0;
-  m_value = -200; // set an arbitrary negative value so that we update the display even if the initial value is '0'.
-  m_minValue = min;
-  m_maxValue = max;
   m_colorRange = colorRange;
-#ifdef LOOPBACK_MODE
-  m_simValue = min - (min * 0.1);
-  m_simIncrease = true;
-#endif
 }
 
-uint8_t OBDData::pid()
+uint8_t OBDBaseData::pid()
 {
   return m_pid;
 }
 
-String OBDData::label()
+String OBDBaseData::label()
 {
   return m_label;
 }
 
-String OBDData::subLabel()
+String OBDBaseData::subLabel()
 {
   return m_subLabel;
+}
+
+OBD_DATA_CONVERSION OBDBaseData::dataConversion()
+{
+  return m_conversion;
+}
+
+void OBDBaseData::setDataConversion(OBD_DATA_CONVERSION conversion)
+{
+  m_conversion = conversion;
+}
+
+void OBDBaseData::setFormat(byte width, OBD_PRECISION stringPrecision)
+{
+  m_stringWidth = width;
+  m_stringPrecision = stringPrecision;
+}
+
+// This returns the expected string length returned by toString, if the specified format could be applied correctly.
+byte OBDBaseData::stringLength()
+{
+  byte ret = m_stringWidth;
+  if (m_stringPrecision < OBD_D)
+    ret += (int)m_stringPrecision + 1; // one extra for the 'dot'
+  return ret;
+}
+
+String OBDBaseData::toString()
+{
+  return ""; 
+}
+
+byte OBDBaseData::toByte()
+{
+  return 0;
+}
+
+word OBDBaseData::toWord()
+{
+  return 0;
+}
+
+int OBDBaseData::toInt()
+{
+  return 0;
+}
+
+long OBDBaseData::toLong()
+{
+  return 0;
+}
+
+word OBDBaseData::color()
+{
+  return PUMA_ALARM_COLOR;
+}
+
+//*************************************************************************************
+//                                      OBDData
+//*************************************************************************************
+
+OBDData::OBDData() : OBDBaseData()
+{
+}
+
+OBDData::~OBDData()
+{
+}
+
+OBDData::OBDData(uint8_t pid, String label, String subLabel, OBD_DATA_CONVERSION conversion, byte stringWidth, OBD_PRECISION stringPrecision, long min, long max, OBDColorRange *colorRange) : 
+      OBDBaseData(pid, label, subLabel, conversion, stringWidth, stringPrecision, colorRange)
+{
+  m_value = -200; // set an arbitrary negative value so that we update the display even if the initial value is '0'.
+  m_minValue = min;
+  m_maxValue = max;
+#ifdef LOOPBACK_MODE
+  m_simValue = min - (min * 0.1);
+  m_simIncrease = true;
+#endif
 }
 
 word OBDData::color()
@@ -448,31 +526,6 @@ word OBDData::color()
   if (m_colorRange != 0)
     return m_colorRange->color(m_value);
   return PUMA_NORMAL_COLOR;
-}
-
-OBD_DATA_CONVERSION OBDData::dataConversion()
-{
-  return m_conversion;
-}
-
-void OBDData::setDataConversion(OBD_DATA_CONVERSION conversion)
-{
-  m_conversion = conversion;
-}
-
-void OBDData::setFormat(byte width, OBD_PRECISION stringPrecision)
-{
-  m_stringWidth = width;
-  m_stringPrecision = stringPrecision;
-}
-
-// This returns the expected string length returned by toString, if the specified format could be applied correctly.
-byte OBDData::stringLength()
-{
-  byte ret = m_stringWidth;
-  if (m_stringPrecision < OBD_D)
-    ret += (int)m_stringPrecision + 1; // one extra for the 'dot'
-  return ret;
 }
 
 String OBDData::toString()

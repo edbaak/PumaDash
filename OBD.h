@@ -37,6 +37,8 @@
 #include <SPI.h>
 #include "CAN.h"
 
+class SpeedControl;
+
 // ***************************************************************
 // Mode 01h = Show Current data
 // Mode 02h = Show Freeze frame data
@@ -313,41 +315,33 @@ typedef enum OBD_PRECISION {
   OBD_H   // Hex printout
 } OBD_PRECISION;
 
-class OBDData
+class OBDBaseData
 {
   public:
-    OBDData();
-    OBDData(uint8_t pid, String label, String subLabel, OBD_DATA_CONVERSION conversion, byte stringWidth, OBD_PRECISION stringPrecision, long min, long max, OBDColorRange *colorRange);
-    virtual ~OBDData();
+    OBDBaseData();
+    OBDBaseData(uint8_t pid, String label, String subLabel, OBD_DATA_CONVERSION conversion, byte stringWidth, OBD_PRECISION stringPrecision, OBDColorRange *colorRange );
+    virtual ~OBDBaseData();
 
     uint8_t pid();
     String label();
     String subLabel();
-    word color();
+    byte stringLength();
+
+    virtual String toString();
+    virtual byte toByte();
+    virtual word toWord();
+    virtual int toInt();
+    virtual long toLong();
+    virtual word color();
 
     OBD_DATA_CONVERSION dataConversion();
     void setDataConversion(OBD_DATA_CONVERSION conversion);
-
-    void setValue(uint32_t timeStamp, uint8_t *data);
-#ifdef SELF_TEST
-    void setValue(long value);
-#endif
     void setFormat(byte width, OBD_PRECISION stringPrecision);
-
-    String toString();
-    byte stringLength();
-    byte toByte();
-    word toWord();
-    int toInt();
-    long toLong();
-
-#ifdef LOOPBACK_MODE
-    void simulateData(CAN_Frame *message);
-#endif
-
-  protected:
+    
+protected:
     friend class PumaOBD;
-    OBDData *m_next;
+    OBDBaseData *m_nextDataObject;
+
     uint32_t m_timeStamp;
     uint8_t m_pid;
     String m_label;
@@ -356,6 +350,32 @@ class OBDData
     OBD_PRECISION m_stringPrecision;
     OBD_DATA_CONVERSION m_conversion;
     OBDColorRange *m_colorRange;
+};
+
+class OBDData : public OBDBaseData
+{
+  public:
+    OBDData();
+    OBDData(uint8_t pid, String label, String subLabel, OBD_DATA_CONVERSION conversion, byte stringWidth, OBD_PRECISION stringPrecision, long min, long max, OBDColorRange *colorRange);
+    virtual ~OBDData();
+
+    void setValue(uint32_t timeStamp, uint8_t *data);
+#ifdef SELF_TEST
+    void setValue(long value);
+#endif
+
+    virtual String toString();
+    virtual byte toByte();
+    virtual word toWord();
+    virtual int toInt();
+    virtual long toLong();
+    virtual word color();
+
+#ifdef LOOPBACK_MODE
+    void simulateData(CAN_Frame *message);
+#endif
+
+  protected:
     long m_value;
     long m_minValue;
     long m_maxValue;
@@ -368,7 +388,7 @@ class OBDData
 class PumaOBD
 {
   public:
-    PumaOBD();
+    PumaOBD(SpeedControl *speedControl);
     void setup();
     void update();
     void requestObdUpdates();
@@ -403,6 +423,8 @@ class PumaOBD
     StopWatch m_rpm_timer;
     StopWatch m_speed_timer;
     StopWatch m_slow_timer;
+
+    SpeedControl *m_speedControl;
 
 #ifdef PID_DISCOVERY_MODE
     void addUnhandledPID(uint16_t pid);

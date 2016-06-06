@@ -47,8 +47,10 @@
  * -- Make CAN processing super stable
  * ---- Re-enable interrupt
  * ---- Try interrupts with enable/disable interrupts
+ * -- Find pin on dashboard for analog speed and analog rpm
+ * -- Make breakout connector
+ * -- measure analog speed/rpm
  * -- Try reducing the reset delay time
- * -- Try running the self-test sooner
  * -- Show logfilename in Red if logging errors
  * -- Drive Defender without a console, to see that it works
  * -- Take console measurements
@@ -76,8 +78,8 @@ PumaDisplay g_display1(&DISPLAY_SERIAL1);  // Puma display driver. We need to cr
 //PumaDisplay g_display3(&DISPLAY_SERIAL3);  // And again for the third display.
 Position g_position;                      // GPS position & pitch and roll of vehicle
 Tpms g_tpms;                              // Tire Pressure Monitoring
-CruiseCtrl g_speed;                       // Speed Control and deals with gearbox ratios etc to calculate gear shifts
-PumaOBD g_obd;                            // On Board Diagnostics for the Vehicle
+SpeedControl g_speed;                     // Speed Control and deals with gearbox ratios etc to calculate gear shifts
+PumaOBD g_obd(&g_speed);                  // On Board Diagnostics for the Vehicle
 
 void setup() {
   // Start with resetting the Display. Then do activities that don't require the display so that we use the recommended 5 seconds delay more usefully.

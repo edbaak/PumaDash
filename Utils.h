@@ -65,6 +65,7 @@ class CAN_Frame;
 #define PUMA_WARNING_COLOR YELLOW     // FG color for data that is in a warning operating zone
 #define PUMA_NORMAL_COLOR LIGHTGREEN  // FG color for data that is in the normal/safe operating zone
 #define RPM_RADIUS 100                // Size of the Rpm dial
+#define PUMA_DEBOUNCE_INTERVAL 1      // Delay (in ms) used to debounce buttons
 
 // Puma Dashboard touch event processing parameters
 #define TOUCH_DEBOUNCE_TIME 100       // Number of ms delay before a consider a 'pressed' a new touch instead of a bouncing finger
@@ -115,6 +116,16 @@ class CAN_Frame;
 #define PIN_MEGA_SPI_MOSI 51     // Connect Pin 51 to 11 to use with CAN BOARD
 #define PIN_MEGA_SPI_SCK 52      // Connect Pin 52 to 13 to use with CAN BOARD
 #define PIN_MEGA_SPI_CS 53       // Connect pin 53 to 10 to use with CAN BOARD
+
+#define PIN_BRAKE_PEDAL 1
+#define PIN_CLUTCH_PEDAL 2
+#define PIN_INCREASE_SPEED_SWITCH 3
+#define PIN_DECREASE_SPEED_SWITCH 4
+#define PIN_ENABLE_SPEED_CONTROL_SWITCH 5
+#define PIN_LOW_RANGE_GEAR_SELECTED_SWITCH 6
+#define PIN_ACTUAL_ACCELARATOR_SENSOR 7
+#define PIN_SIMULATED_ACCELARATOR_SENSOR 8
+
 
 // Helper functions that don't belong in a class and aren't that important.
 String v2s(String format, int value);
