@@ -151,30 +151,37 @@ class PumaFile
 {
   public:
     PumaFile();
-    PumaFile(String fileName);
     ~PumaFile();
 
     static bool erase(String fileName);
+    static bool exists(String fileName);
 
-    bool open(char mode, String fileName = "");
+    typedef enum PUMA_FILE_MODE {
+      READ = 'r',
+      WRITE = 'w',
+      APPEND = 'a'
+    } PUMA_FILE_MODE;
+
+    bool open(String fileName, PUMA_FILE_MODE mode, bool eraseIfExists = true);
     void close();
 
-    bool available();
+    unsigned long bytesAvailable();
     unsigned long size();
 
     String readString();
-    bool writeString(String s);
+    bool print(String s);
+    bool println(String s);
 
     byte readByte();
     bool writeByte(byte b);
 
     word readWord();
     bool writeWord(word w);
-    
-  protected:
+
     unsigned long pointer();
 
   private:
+    unsigned long m_bytesAvailable;
     String m_fileName;
     word m_handle;
 };

@@ -84,196 +84,23 @@ bool StopWatch::notStarted()
   return m_start == 0;
 }
 
-//***************************************************************************
-//                                Logging
-//***************************************************************************
-
-/*
-    word file_Mount();  // Initializes SD card
-    void file_Unmount(); // Shuts down SD card
-    word file_Exists(char *  Filename);  // Returns 1 if specified file exists
-    word file_Size(word  Handle, word *  HiWord, word *  LoWord); // Returns the size of a file
-    word file_Tell(word  Handle, word *  HiWord, word *  LoWord); // Returns current file pointer position
-    word file_Erase(char *  Filename); // Returns 1 if success
-    word file_Open(char *  Filename, char  Mode); // Returns handle if file exists. Mode == 'a', 'r' or 'w'.
-    word file_Close(word  Handle); // Closes the file
-    word file_Error(); // Returns last error code.
-    word file_FindFirstRet(char *  Filename, char *  StringIn);  // StringIn returns the name of file that matches search criteria. Retvalue is string length. Return string is NOT null terminated.
-    word file_FindNextRet(char *  StringIn); // StringIn returns the next filename that matches the search criteria
-    char file_GetC(word  Handle); // Returns char that was read from file
-    word file_GetS(char *  StringIn, word  Size, word  Handle);  // Returns line of text that was read from file (or max Size). Returns bytes read.
-    word file_GetW(word  Handle); // Returns word that was read from file
-    word file_PutC(char  Character, word  Handle); // Writes a character to file. Returns bytes written.
-    word file_PutS(char *  StringOut, word  Handle); // Writes a null term string to file. Returns bytes written.
-    word file_PutW(word  Word, word  Handle); // Writes a word to file. Returns bytes written.
-*/
-
-void initLogging()
-{
-  // Start with an empty string so we always start on a new line.
-  Serial.println("");
-
-  // Initialize SD card
-  // make sure that the default chip select pin is set to
-  // output, even if you don't use it:
-  //  pinMode(PIN_CAN_BOARD_SD_CS, OUTPUT);
-
-  // see if the card is present and can be initialized:
-  g_SD_card_available = false;
-  if (!Display()->file_Mount()) {
-    Serial.println("SD Card not found: Logging disabled");
-    Serial.println(Display()->file_Error());
-  } else {
-    g_SD_card_available = true;
-    uniqueLogFileName();
-    Serial.println("Logging to " + g_logFileName);
-  }
-}
-
-String uniqueLogFileName()
-{
-  if (!g_SD_card_available) return "";
-  if (g_logFileName != "") return g_logFileName;
-
-  word num = 0;
-  byte version = 0;
-
-  // Try to read the last number used to create an incremental numbered filename
-  word dataFile = Display()->file_Open("/PUMADASH.PDC", 'r');
-
-  if (dataFile) {
-    version = Display()->file_GetC(dataFile);
-    num = Display()->file_GetW(dataFile);
-    Display()->file_Close(dataFile);
-  }
-  g_logFileName = v2s("/%4d", LOGFILE_PREFIX) + v2s("%04d", num);
-
-  // If the file already exists i.e. we have indeed done some logging, we want to increment
-  // the number and save it for next round
-  char fname1[25];
-  strcpy(fname1, g_logFileName.c_str());
-  strcat(fname1, ".PDR");
-
-  char fname2[25];
-  strcpy(fname2, g_logFileName.c_str());
-  strcat(fname2, ".PDO");
-
-  if (Display()->file_Exists(fname1) || Display()->file_Exists(fname2)) {
-    if (num < 9999) num++; // if reaching max we'll keep pumping into that file. This should never happen.
-    g_logFileName = v2s("/%4d", LOGFILE_PREFIX) + v2s("%04d", num);
-  }
-
-  Display()->file_Erase("/PUMADASH.PDC");
-  dataFile = Display()->file_Open("/PUMADASH.PDC", 'w');
-
-  if (dataFile) {
-    byte newVersion = 1; // bump the version when changing the file layout
-    Display()->file_PutC(newVersion, dataFile);
-    Display()->file_PutW(num, dataFile);
-    Display()->file_Close(dataFile);
-  }
-  return g_logFileName;
-}
-
-void logRawData(CAN_Frame *message)
-{
-  if (message == 0)
-    return;
-
-  char buf1[150];
-  sprintf(buf1, "%08lu, %04X, ",
-          message->m_timeStamp,
-          message->m_id);
-
-  char buf2[150];
-  sprintf(buf2, "%u, %02X, %02X, %02X, %02X, %02X, %02X, %02X, %02X",
-          message->m_length,
-          message->m_data[0],
-          message->m_data[1],
-          message->m_data[2],
-          message->m_data[3],
-          message->m_data[4],
-          message->m_data[5],
-          message->m_data[6],
-          message->m_data[7]);
-
-#ifdef OBD_VERBOSE_DEBUG
-  Serial.print(buf1);
-  Serial.println(buf2);
-#endif
-
-  if (g_logFileName == "")
-    return;
-
-  PumaFile log;
-  if (log.open('a', g_logFileName + ".PDR")) {
-    log.writeString(buf1);
-    log.writeString(buf2);
-    log.writeString("\r");
-    log.close();
-  }
-  /*
-    char fname[25];
-    strcpy(fname, g_logFileName.c_str());
-    strcat(fname, ".PDR");
-    word dataFile = Display()->file_Open(fname, 'a');
-    if (dataFile) {
-      Display()->file_PutS(buf1, dataFile);
-      Display()->file_PutS(buf2, dataFile);
-      Display()->file_PutS("\r", dataFile);
-      Display()->file_Close(dataFile);
-    } else {
-      Serial.println("Error opening SD file for RAW logging");
-      char modelStr[50];
-      Display()->sys_GetModel(modelStr);
-      Serial.print("Display: ");
-      Serial.println(modelStr);
-    }
-  */
-}
-
-void logObdData(String s)
-{
-#ifdef OBD_VERBOSE_DEBUG
-  Serial.println(s);
-#endif
-  if (g_logFileName == "")
-    return;
-
-  char fname[25];
-  strcpy(fname, g_logFileName.c_str());
-  strcat(fname, ".PDO");
-  word dataFile = Display()->file_Open(fname, 'a');
-
-  if (dataFile) {
-    char buf[100];
-    strcpy(buf, s.c_str()); // TODO: This is ugly
-    Display()->file_PutS(buf, dataFile);
-    Display()->file_PutS("\r", dataFile);
-    Display()->file_Close(dataFile);
-  } else {
-    Serial.println("Error opening SD file for OBD logging");
-    char modelStr[50];
-    Display()->sys_GetModel(modelStr);
-    Serial.print("Display: ");
-    Serial.println(modelStr);
-  }
-}
-
 //******************************************************************************************************
 //                                      PumaFile
 //******************************************************************************************************
+
+/*
+  word file_Mount();  // Initializes SD card
+  void file_Unmount(); // Shuts down SD card
+  word file_Error(); // Returns last error code.
+  word file_FindFirstRet(char *  Filename, char *  StringIn);  // StringIn returns the name of file that matches search criteria. Retvalue is string length. Return string is NOT null terminated.
+  word file_FindNextRet(char *  StringIn); // StringIn returns the next filename that matches the search criteria
+*/
 
 PumaFile::PumaFile()
 {
   m_fileName = "";
   m_handle = 0;
-}
-
-PumaFile::PumaFile(String fileName)
-{
-  m_fileName = fileName;
-  m_handle = 0;
+  m_bytesAvailable = 0;
 }
 
 PumaFile::~PumaFile()
@@ -281,7 +108,7 @@ PumaFile::~PumaFile()
   close();
 }
 
-bool PumaFile::open(char mode, String fileName)
+bool PumaFile::open(String fileName, PUMA_FILE_MODE mode, bool eraseIfExists)
 {
   if (fileName != "") m_fileName = fileName;
   if (m_fileName == "") return false;
@@ -290,6 +117,16 @@ bool PumaFile::open(char mode, String fileName)
   strcpy(fname, fileName.c_str());
 
   m_handle = Display()->file_Open(fname, mode);
+  if (m_handle == 0 && mode == WRITE && eraseIfExists && exists(fileName)) {
+    erase(fileName);
+    m_handle = Display()->file_Open(fname, mode);
+  }
+
+  if (m_handle && mode == READ)
+    m_bytesAvailable = size();
+  else
+    m_bytesAvailable = 0;
+
   return m_handle != 0;
 }
 
@@ -298,23 +135,33 @@ void PumaFile::close()
   if (m_handle == 0) return;
   Display()->file_Close(m_handle);
   m_handle = 0;
+  m_bytesAvailable = 0;
 }
 
-bool PumaFile::available()
+unsigned long PumaFile::bytesAvailable()
 {
-  return (pointer() < size());
+  return m_bytesAvailable;
 }
 
 #define MAX_STRING_BUF 255
 String PumaFile::readString()
 {
   if (m_handle == 0) return "";
-  char buf[MAX_STRING_BUF];
-  Display()->file_GetS(buf, MAX_STRING_BUF, m_handle);
+  char buf[MAX_STRING_BUF + 1];
+  //  Display()->file_GetS(buf, MAX_STRING_BUF, m_handle);
+  word i = 0;
+  char c = 0;
+  while (i < MAX_STRING_BUF && c != '\r' && m_bytesAvailable > 0) {
+    c = Display()->file_GetC(m_handle);
+    buf[i] = c;
+    i++;
+  }
+  buf[i - 1] = 0;
+
   return String(buf);
 }
 
-bool PumaFile::writeString(String s)
+bool PumaFile::print(String s)
 {
   char buf[100];
   strcpy(buf, s.c_str()); // TODO: This is ugly
@@ -322,30 +169,40 @@ bool PumaFile::writeString(String s)
   return true; // TODO: error checking?
 }
 
+bool PumaFile::println(String s)
+{
+  return print(s + "\r");
+}
+
 byte PumaFile::readByte()
 {
-  
+  if (m_handle == 0) return 0;
+  m_bytesAvailable--;
+  return (byte)Display()->file_GetC(m_handle);
 }
 
 bool PumaFile::writeByte(byte b)
 {
-  
+  Display()->file_PutC(b, m_handle);
+  return true; // TODO: error checking?
 }
 
 word PumaFile::readWord()
 {
-  
+  if (m_handle == 0) return 0;
+  m_bytesAvailable -= 2;
+  return (word)Display()->file_GetW(m_handle);
 }
 
 bool PumaFile::writeWord(word w)
 {
-  
+  Display()->file_PutW(w, m_handle);
+  return true; // TODO: error checking?
 }
 
 unsigned long PumaFile::size()
 {
-  if (m_handle == 0)
-    return 0;
+  if (m_handle == 0) return 0;
   word lo, hi;
   unsigned long ret;
   if (Display()->file_Size(m_handle, &hi, &lo)) {
@@ -375,7 +232,220 @@ bool PumaFile::erase(String fileName)
 {
   char buf[MAX_FILE_NAME_LENGTH];
   strcpy(buf, fileName.c_str()); // TODO: can I get away without this uglyness?
-  Display()->file_Erase(buf);
+  return Display()->file_Erase(buf);
+}
+
+bool PumaFile::exists(String fileName)
+{
+  char buf[MAX_FILE_NAME_LENGTH];
+  strcpy(buf, fileName.c_str()); // TODO: can I get away without this uglyness?
+  return Display()->file_Exists(buf);
+}
+
+//***************************************************************************
+//                                Logging
+//***************************************************************************
+
+void initLogging()
+{
+  // Start with an empty string so we always start on a new line.
+  Serial.println("");
+
+  // Initialize SD card
+  // make sure that the default chip select pin is set to
+  // output, even if you don't use it:
+  //  pinMode(PIN_CAN_BOARD_SD_CS, OUTPUT);
+
+  // see if the card is present and can be initialized:
+  g_SD_card_available = false;
+  if (!Display()->file_Mount()) {
+    Serial.println("SD Card not found: Logging disabled");
+    Serial.println(Display()->file_Error());
+  } else {
+    g_SD_card_available = true;
+    uniqueLogFileName();
+    Serial.println("Logging to " + g_logFileName);
+  }
+}
+
+String uniqueLogFileName()
+{
+  if (!g_SD_card_available) return "";
+  if (g_logFileName != "") return g_logFileName;
+
+  word num = 0;
+  word prefix = LOGFILE_PREFIX;
+  byte version = 0;
+
+  // Try to read the last number used to create an incremental numbered filename
+  PumaFile cfgFile;
+  if (cfgFile.open("/PUMADASH.PDC", PumaFile::READ)) {
+    version = cfgFile.readByte();
+    num = cfgFile.readWord();
+    if (version >= 2)
+      prefix = cfgFile.readWord();
+    cfgFile.close();
+  }
+  g_logFileName = v2s("/%4d", LOGFILE_PREFIX) + v2s("%04d", num);
+
+  // If the file already exists i.e. we have indeed done some logging, we want to increment
+  // the number and save it for next round
+  if (PumaFile::exists(g_logFileName + ".PDR") || PumaFile::exists(g_logFileName + ".PDO")) {
+    if (num < 9999) num++; // if reaching max we'll keep pumping into that file. This should never happen.
+    g_logFileName = v2s("/%4d", LOGFILE_PREFIX) + v2s("%04d", num);
+  }
+
+  if (cfgFile.open("/PUMADASH.PDC", PumaFile::WRITE)) {
+    byte newVersion = 2; // bump the version when changing the file layout
+    cfgFile.writeByte(newVersion);
+    cfgFile.writeWord(num);
+    cfgFile.writeWord(prefix);
+    cfgFile.close();
+  }
+  return g_logFileName;
+}
+
+void logRawData(CAN_Frame *message)
+{
+  if (message == 0)
+    return;
+
+  char buf1[150];
+  sprintf(buf1, "%08lu, %04X, ",
+          message->m_timeStamp,
+          message->m_id);
+
+  char buf2[150];
+  sprintf(buf2, "%u, %02X%02X%02X%02X%02X%02X%02X%02X",
+          message->m_length,
+          message->m_data[0],
+          message->m_data[1],
+          message->m_data[2],
+          message->m_data[3],
+          message->m_data[4],
+          message->m_data[5],
+          message->m_data[6],
+          message->m_data[7]);
+
+#ifdef OBD_VERBOSE_DEBUG
+  Serial.print(buf1);
+  Serial.println(buf2);
+#endif
+
+  if (g_logFileName == "")
+    return;
+
+  PumaFile log;
+  if (log.open(g_logFileName + ".PDR", PumaFile::APPEND)) {
+    log.print(buf1);
+    log.println(buf2);
+    log.close();
+  } else {
+    Serial.println("Error opening SD file for RAW logging");
+  }
+}
+
+byte hexToByte(char c)
+{
+  switch (c) {
+    case '0': return 0;
+    case '1': return 1;
+    case '2': return 2;
+    case '3': return 3;
+    case '4': return 4;
+    case '5': return 5;
+    case '6': return 6;
+    case '7': return 7;
+    case '8': return 8;
+    case '9': return 9;
+    case 'a': return 10;
+    case 'b': return 11;
+    case 'c': return 12;
+    case 'd': return 13;
+    case 'e': return 14;
+    case 'f': return 15;
+    case 'A': return 10;
+    case 'B': return 11;
+    case 'C': return 12;
+    case 'D': return 13;
+    case 'E': return 14;
+    case 'F': return 15;
+  }
+  return 0;
+}
+
+unsigned long strToUlong(String s)
+{
+  unsigned long tmp = 0;
+  int i = 0;
+  while (i < s.length() && isDigit(s[i])) {
+    tmp *= 10;
+    tmp += hexToByte(s[i]);
+    i++;
+  }
+  return tmp;
+}
+
+void readRawData(String fileName)
+{
+  PumaFile logFile;
+  if (logFile.open(fileName, PumaFile::READ)) {
+    if (logFile.bytesAvailable()) {
+      //      String tmp = logFile.readString();
+      String tmp = "00030135, 07E8, 8, 03410D05000000AB";
+      String timeStamp = "";
+      CAN_Frame message;
+      if (tmp.length() == 35 && tmp[8] == ',' && tmp[14] == ',' && tmp[17] == ',') {
+        for (int i = 0; i < 8; i++) timeStamp += tmp[i];
+        message.m_timeStamp = strToUlong(timeStamp);
+
+        word id = 0;
+        for (int i = 10; i < 14; i++) {
+          id = id << 4;
+          id += hexToByte(tmp[i]);
+        }
+        message.m_id = id;
+        message.m_length = hexToByte(tmp[16]);
+
+        int i = 19;
+        for (int j = 0; j < 8; j++) {
+          message.m_data[j] = hexToByte(tmp[i]);
+          message.m_data[j] = (message.m_data[j] << 4) + hexToByte(tmp[i + 1]);
+          i += 2;
+        }
+      }
+      Serial.println("--------------------");
+      Serial.println(message.m_timeStamp);
+      Serial.println(message.m_id, HEX);
+      Serial.println(message.m_length);
+      Serial.println(message.m_data[0], HEX);
+      Serial.println(message.m_data[1], HEX);
+      Serial.println(message.m_data[2], HEX);
+      Serial.println(message.m_data[3], HEX);
+      Serial.println(message.m_data[4], HEX);
+      Serial.println(message.m_data[5], HEX);
+      Serial.println(message.m_data[6], HEX);
+      Serial.println(message.m_data[7], HEX);
+      Serial.println("Done");
+    }
+  }
+}
+
+void logObdData(String s)
+{
+#ifdef OBD_VERBOSE_DEBUG
+  Serial.println(s);
+#endif
+  if (g_logFileName == "")
+    return;
+
+  PumaFile log;
+  if (log.open(g_logFileName + ".PDO", PumaFile::APPEND)) {
+    log.println(s);
+    log.close();
+  } else {
+    Serial.println("Error opening SD file for OBD logging");
+  }
 }
 
 // *************************************************************************************************
@@ -420,31 +490,32 @@ void sdCardTest()
   PumaFile::erase("/SELFTEST.XYZ");
 
   PumaFile test;
-  FAIL_IF_FALSE(test.open('w', "/SELFTEST.XYZ"), "SD open failed");
+  FAIL_IF_FALSE(test.open("/SELFTEST.XYZ", PumaFile::WRITE), "SD open failed");
 
-  test.writeString("line ");
-  test.writeString("1\r");
-  test.writeString("line 2\r");
-  test.writeString("The Quick Brown Fox Jumps Over\r");
+  test.print("line ");
+  test.println("1");
+  test.println("line 2");
+  test.println("The Quick Brown Fox Jumps Over");
   test.writeByte(int(-1));
   test.writeByte(255);
+  test.writeWord(0xFFFF);
   test.close();
 
-  byte ref_file[50] =
-  { 0x6C, 0x69, 0x6E, 0x65, 0x20, 0x31, 0xD, 0x6C, 0x69,
-    0x6E, 0x65, 0x20, 0x32, 0xD, 0x54, 0x68, 0x65, 0x20,
-    0x51, 0x75, 0x69, 0x63, 0x6B, 0x20, 0x42, 0x72, 0x6F, 0x77,
-    0x6E, 0x20, 0x46, 0x6F, 0x78, 0x20, 0x4A, 0x75, 0x6D, 0x70,
-    0x73, 0x20, 0x4F, 0x76, 0x65, 0x72, 0xD, 0xFF, 0xFF
+#define FILE_SIZE 49
+  byte ref_file[FILE_SIZE] =
+  { 0x6C, 0x69, 0x6E, 0x65, 0x20, 0x31, 0x0D, 0x6C, 0x69, 0x6E,
+    0x65, 0x20, 0x32, 0x0D, 0x54, 0x68, 0x65, 0x20, 0x51, 0x75,
+    0x69, 0x63, 0x6B, 0x20, 0x42, 0x72, 0x6F, 0x77, 0x6E, 0x20,
+    0x46, 0x6F, 0x78, 0x20, 0x4A, 0x75, 0x6D, 0x70, 0x73, 0x20,
+    0x4F, 0x76, 0x65, 0x72, 0x0D, 0xFF, 0xFF, 0xFF, 0xFF
   };
 
-  if (test.open('r', "/SELFTEST.XYZ")) {
-    FAIL_IF_TRUE(test.size() != 47, "File::size() failed");
+  if (test.open("/SELFTEST.XYZ", PumaFile::READ)) {
+    FAIL_IF_TRUE(test.size() != FILE_SIZE, "File::size() failed");
 
-    byte b;
     int i = 0;
-    while (test.available()) {
-      FAIL_IF_TRUE(i >= 47, "Reading past file size");
+    while (test.bytesAvailable()) {
+      FAIL_IF_TRUE(i >= FILE_SIZE, "Reading past file size");
       FAIL_IF_TRUE(ref_file[i++] != test.readByte(), "File::read() failed");
     }
   }
@@ -585,6 +656,8 @@ void selfTest()
   OBDDataTest();
   Serial.println("Self Test Done ");
   Serial.println("**************************************");
+
+//  readRawData("/16060185.PDR");
 }
 
 #endif // SELF_TEST
