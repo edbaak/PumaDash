@@ -272,7 +272,7 @@ bool PumaCAN::setMask(CAN_MASK maskNo, uint8_t ext, uint32_t ulData)
 
   if (!mcp2515_setCANCTRL_Mode(m_curMode)) {
 #if CAN_DEBUG
-    Serial.println("Entering Previous Mode Failure...\r\nSetting Mask Failure");
+    Serial.println("Entering Previous Mode Failure...\nSetting Mask Failure");
 #endif
     return false;
   }
@@ -331,7 +331,8 @@ bool PumaCAN::setFilter(CAN_FILTER filterNo, uint8_t ext, uint32_t ulData)
 
   if (!mcp2515_setCANCTRL_Mode(m_curMode)) {
 #if CAN_DEBUG
-    Serial.println("Entering Previous Mode Failure...\r\nSetting Filter Failure");
+    Serial.println("Entering Previous Mode Failure...");
+    Serial.println("Setting Filter Failure");
 #endif
     return false;
   }
@@ -846,25 +847,25 @@ bool PumaCAN::mcp2515_init(const uint8_t canIDMode, const CAN_SPEED canSpeed, co
 
   if (!mcp2515_setCANCTRL_Mode(MCP_CONFIG)) {
 #if CAN_DEBUG
-    Serial.print("Entering Configuration Mode Failure...\r\n");
+    Serial.println("Entering Configuration Mode Failure...");
 #endif
     return false;
   }
   
 #if CAN_DEBUG
-  Serial.print("Entering Configuration Mode Successful!!!\r\n");
+  Serial.println("Entering Configuration Mode Successful!!!");
 #endif
 
   /* set baudrate                 */
   if (!mcp2515_configRate(canSpeed, canClock)) {
 #if CAN_DEBUG
-    Serial.print("Setting Baudrate Failure...\r\n");
+    Serial.println("Setting Baudrate Failure...");
 #endif
     return false;
   }
   
 #if CAN_DEBUG
-  Serial.print("Setting Baudrate Successful!!!\r\n");
+  Serial.println("Setting Baudrate Successful!!!");
 #endif
 
     /* init canbuffers              */
@@ -909,7 +910,7 @@ bool PumaCAN::mcp2515_init(const uint8_t canIDMode, const CAN_SPEED canSpeed, co
 
       default:
 #if CAN_DEBUG
-        Serial.print("`Setting ID Mode Failure...\r\n");
+        Serial.println("`Setting ID Mode Failure...");
 #endif
         return false;
         break;
@@ -918,7 +919,7 @@ bool PumaCAN::mcp2515_init(const uint8_t canIDMode, const CAN_SPEED canSpeed, co
 
     if (!mcp2515_setCANCTRL_Mode(m_curMode)) {
 #if CAN_DEBUG
-      Serial.print("Returning to Previous Mode Failure...\r\n");
+      Serial.println("Returning to Previous Mode Failure...");
 #endif
       return false;
 

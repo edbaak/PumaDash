@@ -171,7 +171,7 @@ bool PumaFile::print(String s)
 
 bool PumaFile::println(String s)
 {
-  return print(s + "\r");
+  return print(s + "\n");
 }
 
 byte PumaFile::readByte()
