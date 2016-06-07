@@ -60,6 +60,7 @@
  * -- Order two displays and extension board (plus electronic components) 
  * -- Order USB port
  * -- Order GPS plus motion sensors
+ * -- Switch back to original CAN library, and use as-is?
  */
  
 // Puma code
@@ -82,7 +83,7 @@ SpeedControl g_speed;                     // Speed Control and deals with gearbo
 PumaOBD g_obd(&g_speed);                  // On Board Diagnostics for the Vehicle
 
 void setup() {
-  // Start with resetting the Display. Then do activities that don't require the display so that we use the recommended 5 seconds delay more usefully.
+  // Start with resetting the Display.
   g_display1.reset(); 
 
   // Initiate Serial comms so we can send debug info to the Serial Monitor (when connected)

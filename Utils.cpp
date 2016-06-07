@@ -89,24 +89,24 @@ bool StopWatch::notStarted()
 //***************************************************************************
 
 /*
- *  word file_Mount();  // Initializes SD card
- *  void file_Unmount(); // Shuts down SD card
- *  word file_Exists(char *  Filename);  // Returns 1 if specified file exists
- *  word file_Size(word  Handle, word *  HiWord, word *  LoWord); // Returns the size of a file
- *  word file_Tell(word  Handle, word *  HiWord, word *  LoWord); // Returns current file pointer position
- *  word file_Erase(char *  Filename); // Returns 1 if success
- *  word file_Open(char *  Filename, char  Mode); // Returns handle if file exists. Mode == 'a', 'r' or 'w'.
- *  word file_Close(word  Handle); // Closes the file
- *  word file_Error(); // Returns last error code.
- *  word file_FindFirstRet(char *  Filename, char *  StringIn);  // StringIn returns the name of file that matches search criteria. Retvalue is string length. Return string is NOT null terminated.
- *  word file_FindNextRet(char *  StringIn); // StringIn returns the next filename that matches the search criteria
- *  char file_GetC(word  Handle); // Returns char that was read from file
- *  word file_GetS(char *  StringIn, word  Size, word  Handle);  // Returns line of text that was read from file (or max Size). Returns bytes read.
- *  word file_GetW(word  Handle); // Returns word that was read from file
- *  word file_PutC(char  Character, word  Handle); // Writes a character to file. Returns bytes written.
- *  word file_PutS(char *  StringOut, word  Handle); // Writes a null term string to file. Returns bytes written.
- *  word file_PutW(word  Word, word  Handle); // Writes a word to file. Returns bytes written.
- */
+    word file_Mount();  // Initializes SD card
+    void file_Unmount(); // Shuts down SD card
+    word file_Exists(char *  Filename);  // Returns 1 if specified file exists
+    word file_Size(word  Handle, word *  HiWord, word *  LoWord); // Returns the size of a file
+    word file_Tell(word  Handle, word *  HiWord, word *  LoWord); // Returns current file pointer position
+    word file_Erase(char *  Filename); // Returns 1 if success
+    word file_Open(char *  Filename, char  Mode); // Returns handle if file exists. Mode == 'a', 'r' or 'w'.
+    word file_Close(word  Handle); // Closes the file
+    word file_Error(); // Returns last error code.
+    word file_FindFirstRet(char *  Filename, char *  StringIn);  // StringIn returns the name of file that matches search criteria. Retvalue is string length. Return string is NOT null terminated.
+    word file_FindNextRet(char *  StringIn); // StringIn returns the next filename that matches the search criteria
+    char file_GetC(word  Handle); // Returns char that was read from file
+    word file_GetS(char *  StringIn, word  Size, word  Handle);  // Returns line of text that was read from file (or max Size). Returns bytes read.
+    word file_GetW(word  Handle); // Returns word that was read from file
+    word file_PutC(char  Character, word  Handle); // Writes a character to file. Returns bytes written.
+    word file_PutS(char *  StringOut, word  Handle); // Writes a null term string to file. Returns bytes written.
+    word file_PutW(word  Word, word  Handle); // Writes a word to file. Returns bytes written.
+*/
 
 void initLogging()
 {
@@ -186,7 +186,7 @@ void logRawData(CAN_Frame *message)
           message->m_id);
 
   char buf2[150];
-  sprintf(buf2, "%u,  %02X, %02X, %02X, %02X, %02X, %02X, %02X, %02X",
+  sprintf(buf2, "%u, %02X, %02X, %02X, %02X, %02X, %02X, %02X, %02X",
           message->m_length,
           message->m_data[0],
           message->m_data[1],
@@ -205,22 +205,31 @@ void logRawData(CAN_Frame *message)
   if (g_logFileName == "")
     return;
 
-  char fname[25];
-  strcpy(fname, g_logFileName.c_str());
-  strcat(fname, ".PDR");
-  word dataFile = Display()->file_Open(fname, 'a');
-  if (dataFile) {
-    Display()->file_PutS(buf1, dataFile);
-    Display()->file_PutS(buf2, dataFile);
-    Display()->file_PutS("\r", dataFile);
-    Display()->file_Close(dataFile);
-  } else {
-    Serial.println("Error opening SD file for RAW logging");
-    char modelStr[50];
-    Display()->sys_GetModel(modelStr);
-    Serial.print("Display: ");
-    Serial.println(modelStr);
+  PumaFile log;
+  if (log.open('a', g_logFileName + ".PDR")) {
+    log.writeString(buf1);
+    log.writeString(buf2);
+    log.writeString("\r");
+    log.close();
   }
+  /*
+    char fname[25];
+    strcpy(fname, g_logFileName.c_str());
+    strcat(fname, ".PDR");
+    word dataFile = Display()->file_Open(fname, 'a');
+    if (dataFile) {
+      Display()->file_PutS(buf1, dataFile);
+      Display()->file_PutS(buf2, dataFile);
+      Display()->file_PutS("\r", dataFile);
+      Display()->file_Close(dataFile);
+    } else {
+      Serial.println("Error opening SD file for RAW logging");
+      char modelStr[50];
+      Display()->sys_GetModel(modelStr);
+      Serial.print("Display: ");
+      Serial.println(modelStr);
+    }
+  */
 }
 
 void logObdData(String s)
@@ -251,9 +260,127 @@ void logObdData(String s)
   }
 }
 
+//******************************************************************************************************
+//                                      PumaFile
+//******************************************************************************************************
+
+PumaFile::PumaFile()
+{
+  m_fileName = "";
+  m_handle = 0;
+}
+
+PumaFile::PumaFile(String fileName)
+{
+  m_fileName = fileName;
+  m_handle = 0;
+}
+
+PumaFile::~PumaFile()
+{
+  close();
+}
+
+bool PumaFile::open(char mode, String fileName)
+{
+  if (fileName != "") m_fileName = fileName;
+  if (m_fileName == "") return false;
+
+  char fname[50];
+  strcpy(fname, fileName.c_str());
+
+  m_handle = Display()->file_Open(fname, mode);
+  return m_handle != 0;
+}
+
+void PumaFile::close()
+{
+  if (m_handle == 0) return;
+  Display()->file_Close(m_handle);
+  m_handle = 0;
+}
+
+bool PumaFile::available()
+{
+  return (pointer() < size());
+}
+
+#define MAX_STRING_BUF 255
+String PumaFile::readString()
+{
+  if (m_handle == 0) return "";
+  char buf[MAX_STRING_BUF];
+  Display()->file_GetS(buf, MAX_STRING_BUF, m_handle);
+  return String(buf);
+}
+
+bool PumaFile::writeString(String s)
+{
+  char buf[100];
+  strcpy(buf, s.c_str()); // TODO: This is ugly
+  Display()->file_PutS(buf, m_handle);
+  return true; // TODO: error checking?
+}
+
+byte PumaFile::readByte()
+{
+  
+}
+
+bool PumaFile::writeByte(byte b)
+{
+  
+}
+
+word PumaFile::readWord()
+{
+  
+}
+
+bool PumaFile::writeWord(word w)
+{
+  
+}
+
+unsigned long PumaFile::size()
+{
+  if (m_handle == 0)
+    return 0;
+  word lo, hi;
+  unsigned long ret;
+  if (Display()->file_Size(m_handle, &hi, &lo)) {
+    ret = hi;
+    ret = ret << 16;
+    ret = ret + lo;
+  }
+  return ret;
+}
+
+unsigned long PumaFile::pointer()
+{
+  if (m_handle == 0)
+    return 0;
+  word lo, hi;
+  unsigned long ret = 0;
+  if (Display()->file_Tell(m_handle, &hi, &lo)) {
+    ret = hi;
+    ret = ret << 16;
+    ret = ret + lo;
+  }
+  return ret;
+}
+
+#define MAX_FILE_NAME_LENGTH 100
+bool PumaFile::erase(String fileName)
+{
+  char buf[MAX_FILE_NAME_LENGTH];
+  strcpy(buf, fileName.c_str()); // TODO: can I get away without this uglyness?
+  Display()->file_Erase(buf);
+}
 
 // *************************************************************************************************
 //                                  SELF TEST
+// *************************************************************************************************
 
 #ifdef SELF_TEST
 
@@ -290,29 +417,18 @@ void sdCardTest()
 
   // This should not be needed, but in case a previous test round failed we may have to clean up
   // some test artifacts.
-  Display()->file_Erase("/SELFTEST.XYZ");
+  PumaFile::erase("/SELFTEST.XYZ");
 
-  word dataFile = Display()->file_Open("/SELFTEST.XYZ", 'w');
-  FAIL_IF_FALSE(dataFile, "SD open failed");
+  PumaFile test;
+  FAIL_IF_FALSE(test.open('w', "/SELFTEST.XYZ"), "SD open failed");
 
-  Display()->file_PutS("line ", dataFile);
-  Display()->file_PutS("1\r", dataFile);
-  Display()->file_PutS("line 2\r", dataFile);
-  Display()->file_PutS("The Quick Brown Fox Jumps Over\r", dataFile);
-  Display()->file_PutC(int(-1), dataFile);
-  Display()->file_PutC(byte(255), dataFile);
-  Display()->file_Close(dataFile);
-
-  dataFile = Display()->file_Open("/SELFTEST.XYZ", 'r');
-  word lo, hi;
-  Display()->file_Size(dataFile, &hi, &lo);
-  FAIL_IF_TRUE(lo != 47, "File::size() failed");
-
-  byte buf[300];
-  int count = 0;
-  for (int i = 0; i < lo; i++) {
-    buf[count++] = Display()->file_GetC(dataFile);
-  }
+  test.writeString("line ");
+  test.writeString("1\r");
+  test.writeString("line 2\r");
+  test.writeString("The Quick Brown Fox Jumps Over\r");
+  test.writeByte(int(-1));
+  test.writeByte(255);
+  test.close();
 
   byte ref_file[50] =
   { 0x6C, 0x69, 0x6E, 0x65, 0x20, 0x31, 0xD, 0x6C, 0x69,
@@ -322,11 +438,17 @@ void sdCardTest()
     0x73, 0x20, 0x4F, 0x76, 0x65, 0x72, 0xD, 0xFF, 0xFF
   };
 
-  for (int i = 0; i < lo; i++) {
-    FAIL_IF_TRUE(buf[i] != ref_file[i], "File::read() failed");
-  }
+  if (test.open('r', "/SELFTEST.XYZ")) {
+    FAIL_IF_TRUE(test.size() != 47, "File::size() failed");
 
-  FAIL_IF_FALSE(Display()->file_Erase("/SELFTEST.XYZ"), "SD remove failed");
+    byte b;
+    int i = 0;
+    while (test.available()) {
+      FAIL_IF_TRUE(i >= 47, "Reading past file size");
+      FAIL_IF_TRUE(ref_file[i++] != test.readByte(), "File::read() failed");
+    }
+  }
+  FAIL_IF_FALSE(PumaFile::erase("/SELFTEST.XYZ"), "SD remove failed");
   Serial.println("PASS");
 }
 
@@ -448,7 +570,7 @@ void OBDDataTest()
   FAIL_IF_FALSE(String(l) == "5000000", "10.3");
   l = 50000000;
   FAIL_IF_FALSE(String(l) == "50000000", "10.4");
-  
+
   Serial.println("PASS");
 }
 

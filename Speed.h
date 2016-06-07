@@ -36,7 +36,6 @@
   // Hi: 1.211
   // Lo: 3.32
   // Diff Ratio: 3.54
-
 */
 
 #ifndef SpeedControl_h
@@ -100,9 +99,6 @@ class SpeedControl
     // this info comes from the accelerator pedal
     int actualAccelleratorPosition;
 
-    // this info comes from ODB2 and is the actual vehicle speed
-    float actualSpeed;
-
     // these two values determine min and max values for the actual accelerator position of the pedal, and can be used to calibrate the pedal
     int maxAcceleratorPosition;
     int minAcceleratorPosition;
@@ -133,7 +129,7 @@ class SpeedControl
     StopWatch m_distance_timer;
     float m_odo_counter;
     TotalDistanceData *m_totalDistance; // Save in CFG !!! HOW To do this without constantly opening the file? Maybe when speed == 0, or at 1KM intervals?
-    word m_cur_speed;
+    word m_cur_speed;     // the current, actual vehicle speed
 };
 
 #endif

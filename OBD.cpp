@@ -59,13 +59,11 @@ PumaOBD::PumaOBD(SpeedControl *speedControl)
   m_speedControl = speedControl;
 
   OBDColorRange *_speedRange = new OBDColorRange(LESS, 100, PUMA_NORMAL_COLOR);
-  OBDColorRange *_engineTempRange = new OBDColorRange(LESS, 60, PUMA_WARNING_COLOR, new OBDColorRange(LESS, 100, PUMA_NORMAL_COLOR));
+  OBDColorRange *_engineTempRange = new OBDColorRange(LESS, 60, PUMA_WARNING_COLOR, new OBDColorRange(LESS, 105, PUMA_NORMAL_COLOR));
   OBDColorRange *_torquePowerRange = new OBDColorRange(LESS, 10, PUMA_WARNING_COLOR, new OBDColorRange(LESS, 80, PUMA_NORMAL_COLOR));
   OBDColorRange *_rpmRange = new OBDColorRange(LESS, 1200, PUMA_WARNING_COLOR, new OBDColorRange(LESS, 3500, PUMA_NORMAL_COLOR));
-
   OBDColorRange *_tankRange = new OBDColorRange(LESS, 25, RED, new OBDColorRange(LESS, 50, PUMA_WARNING_COLOR, new OBDColorRange(MORE, 0, PUMA_NORMAL_COLOR)));
   OBDColorRange *_airPressureRange = new OBDColorRange(LESS, 970, PUMA_WARNING_COLOR, new OBDColorRange(LESS, 1010, PUMA_NORMAL_COLOR));
-
   OBDColorRange *_airTemperatureRange = new OBDColorRange(LESS, 35, PUMA_NORMAL_COLOR, new OBDColorRange(LESS, 45, PUMA_WARNING_COLOR));
 
   // Speed and Rpm are handled separately since I want to update them at a higher frequency
@@ -75,7 +73,7 @@ PumaOBD::PumaOBD(SpeedControl *speedControl)
 
   // Center Screen -> Temperatures
   addDataObject(new OBDData(PID_COOLANT_TEMP, "Coolant", "C", INT_MINUS40, 3, OBD_D, -0, 98, _engineTempRange)); // 0x05
-  //  addDataObject(new OBDData(PID_INTAKE_AIR_TEMP, "Intake Air", "C", INT_MINUS40, 3, OBD_D, 10, 40, _airTemperatureRange)); // 0x0F
+  //addDataObject(new OBDData(PID_INTAKE_AIR_TEMP, "Intake Air", "C", INT_MINUS40, 3, OBD_D, 10, 40, _airTemperatureRange)); // 0x0F
   addDataObject(new OBDData(PID_AMBIENT_AIR_TEMP, "Ambient Air", "C", INT_MINUS40, 3, OBD_D, 10, 40, _airTemperatureRange)); //0x46
   addDataObject(new OBDData(PID_ENGINE_OIL_TEMP, "Engine Oil", "C", INT_MINUS40, 3, OBD_D, 5, 100, _engineTempRange)); // 0x5C
 
@@ -94,10 +92,6 @@ PumaOBD::PumaOBD(SpeedControl *speedControl)
   // Center Screen -> Distance
 
   // Right Screen -> Speed
-  addDataObject(new OBDData(PID_THROTTLE_POSITION, "Throttle Position", "%", BYTE_PERCENTAGE, 3, OBD_D, 0, 100, 0)); // 0x11
-  //  addDataObject(new OBDData(PID_ACC_PEDAL_POS_D, "Acc Pedal D", "%", BYTE_PERCENTAGE, 3, OBD_D, 0, 100)); // 0x49
-  //  addDataObject(new OBDData(PID_ACC_PEDAL_POS_E, "Acc Pedal E", "%", BYTE_PERCENTAGE, 3, OBD_D, 0, 100)); // 0x4A
-  //  addDataObject(new OBDData(PID_COMMANDED_THROTTLE_ACTUATOR,  "Throttle Actuator", "%", BYTE_PERCENTAGE, 3, OBD_D, 0, 100)); // 0x4C
 
   // Right Screen -> Diagnostics
   // Start capturing the MIL data only when we have a MIL
@@ -105,27 +99,37 @@ PumaOBD::PumaOBD(SpeedControl *speedControl)
   addDataObject(new OBDData(PID_RUN_TIME_WITH_MIL_ON, "Time since MIL", "Min", WORD_NO_CONVERSION, 5, OBD_D, 0, 65535, 0)); // 0x4D
 
   // Start capturing the DTC cleared counters only when we actually have cleared the DTC codes
+  // PID_MON_STATUS_SINCE_DTC_CLEARED    // 0x01 --- Bit Encoded
   addDataObject(new OBDData(PID_WARMS_UPS_SINCE_DTC_CLEARED, "Warm ups", "", BYTE_NO_CONVERSION, 3, OBD_D, 0, 255, 0)); // 0x30
   addDataObject(new OBDData(PID_DISTANCE_SINCE_DTC_CLEARED, "Dist since DTC", "Km", WORD_NO_CONVERSION, 5, OBD_D, 0, 65535, 0)); //0x31
   addDataObject(new OBDData(PID_TIME_SINCE_DTC_CLEARED, "Time since DTC", "Min", WORD_NO_CONVERSION, 5, OBD_D, 0, 65535, 0)); // 0x4E
-  // PID_MON_STATUS_SINCE_DTC_CLEARED    // 0x01 --- Bit Encoded
 
   // PID_MONITOR_STATUS_THIS_DRIVE   0x41 -- Bit encoded
   //addDataObject(new OBDFloatValue(PID_CONTROL_MODULE_VOLTAGE, "Battery Voltage", "V", WORD_DIV1000, 2, OBD_F1, 0, 65.535)); // 0x42
 
-  // PID's that are supported by the PUMA, but that I'm not using
-  // addDataObject(new OBDData(PID_COMMANDED_EGR, "Commanded EGR", "%", BYTE_PERCENTAGE, 3, OBD_D, 0, 100)); // 0x2C
-  // addDataObject(new OBDData(PID_EGR_ERROR, "EGR Error", "%", INT_TIMES100_DIV128_MINUS100, 3, OBD_D, -100, 100)); // 0x2D
+  // -------- PID's that are supported by the PUMA, but that I'm not using ----------
+  
+  // I've tried PID_THROTTLE_POSITION and it seems fixed to 93% for me. So quite useless. 
+  // For the purposes of a cruise control I'd also tend towards using a A/D conversion and directly measure the 
+  // pedal output rather than relying on the ECU.
+  // PID_THROTTLE_POSITION           0x11
+  // PID_ACC_PEDAL_POS_D             0x49
+  // PID_ACC_PEDAL_POS_E             0x4A
+  // PID_COMMANDED_THROTTLE_ACTUATOR 0x4C
+  
+  // PID_COMMANDED_EGR               0x2C
+  // PID_EGR_ERROR                   0x2D
   // PID_COMMANDED_EGR_AND_EGR_ERR   0x69
-
-  // addDataObject(new OBDData(PID_CATALYST_TEMP_B1S1, LONG_DIV10_MINUS40 // 0x3C
-  // addDataObject(new OBDData(PID_CATALYST_TEMP_B1S2, LONG_DIV10_MINUS40 // 0x3E
+  // PID_CATALYST_TEMP_B1S1          0x3C
+  // PID_CATALYST_TEMP_B1S2          0x3E
   // PID_RUNTIME_SINCE_ENG_START     0x1F
   // PID_O2_SENSORS_PRESENT_2_BANKS  0x13
   // PID_OBD_STANDARD                0x1C
   // PID_AUX_INPUT_STATUS            0x1E
   // PID_OXYGEN_SENSOR_1B            0x24
   // PID_MAX_VALUE_FUEL_AIR_EQ       0x4F
+
+  // ---------------------------------------------------------------------------------
 
 #ifdef PID_DISCOVERY_MODE
   for (word i = 0; i < MAX_UNKNOWN_PIDS; i++)

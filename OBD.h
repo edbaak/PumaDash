@@ -40,8 +40,8 @@
 class SpeedControl;
 
 // ***************************************************************
-// Mode 01h = Show Current data
-// Mode 02h = Show Freeze frame data
+// Mode 0x01 = Show Current data
+// Mode 0x02 = Show Freeze frame data
 // ***************************************************************
 
 #define PID_SUPPORTED_PID_01_20         0x00 // X Bit pattern on PUMA == "1001 1000 0011 1011 1010 0000 0001 0111"
@@ -217,24 +217,24 @@ class SpeedControl;
 
 //***************************************************************
 // Currently NOT supported modes:
-// Mode 03h = Show stored diagnostic trouble codes DTC
-// Mode 04h = Clear diagnostic trouble codes and stored values, and switch off the MIL light
-// Mode 05h = Test results, oxygen sensor monitoring (non CAN only)
-// Mode 06h = Test results, other component/system monitoring (Test results, oxygen sensor monitoring for CAN only)
-// Mode 07h = Show pending Diagnostic Trouble Codes (detected during current or last driving cycle)
-// Mode 08h = Control operation of on-board component/system
-// Mode 0Ah = Permanent Diagnostic Trouble Codes (DTCs) (Cleared DTCs)
+// Mode 0x03 = Show stored diagnostic trouble codes DTC
+// Mode 0x04 = Clear diagnostic trouble codes and stored values, and switch off the MIL light
+// Mode 0x05 = Test results, oxygen sensor monitoring (non CAN only)
+// Mode 0x06 = Test results, other component/system monitoring (Test results, oxygen sensor monitoring for CAN only)
+// Mode 0x07 = Show pending Diagnostic Trouble Codes (detected during current or last driving cycle)
+// Mode 0x08 = Control operation of on-board component/system
+// Mode 0x0A = Permanent Diagnostic Trouble Codes (DTCs) (Cleared DTCs)
 // ***************************************************************
 
 // ***************************************************************
-// Mode 09h = Request vehicle information
+// Mode 0x09 = Request vehicle information
 // ***************************************************************
 
 #define PID_MODE9_VIN					    0x03 // Returns VIN number (20 ascii char max)
 #define PID_MODE9_ECU_NAME				0x0A // Returns ECU name (20 ascii char max)
 
 // ***************************************************************
-// The following PID values are used in the OBD protocol
+// The following CAN ID values are used in the OBD protocol
 // ***************************************************************
 
 // To request the value of a specific PID, a PID_REQUEST is done to the CAN bus
@@ -245,7 +245,7 @@ class SpeedControl;
 // numbers, i.e. 0x7E9, 0x7EA, etc
 #define PID_REPLY			0x7E8
 
-#define KPA_TO_PSI 0.145037        // Conversion factor from kPa to PSI or Divide by 6.894759
+#define KPA_TO_PSI 0.145037        // Conversion Multiplication factor from kPa to PSI
 
 
 // ***************************************************************

@@ -11,11 +11,11 @@
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
 
-  WARNING: Modifying a vehicle's dashboard and instrument panel 
-  may require vehicle engineering and re-certification according 
+  WARNING: Modifying a vehicle's dashboard and instrument panel
+  may require vehicle engineering and re-certification according
   to local laws and regulations, such as the Australian Design
-  Rules (ADR) and Vehicle Standards. This code does not make any 
-  claim to meet any such standard. 
+  Rules (ADR) and Vehicle Standards. This code does not make any
+  claim to meet any such standard.
 
   You should have received a copy of the GNU General Public License
   along with this code; if not, write to the Free Software
@@ -52,7 +52,7 @@ class CAN_Frame;
 
 //#define PID_DISCOVERY_MODE          // To discover new unknown PIDS, enable RECORD_UNKNOWN_PIDS.
 #ifdef PID_DISCOVERY_MODE
-  #define MAX_UNKNOWN_PIDS 25       // Max number of unhandled PID's that we keep track of
+#define MAX_UNKNOWN_PIDS 25       // Max number of unhandled PID's that we keep track of
 #endif
 
 // Puma dashboard specific UI defines
@@ -138,7 +138,7 @@ class StopWatch
 {
   public:
     StopWatch();
-    
+
     void start();
     unsigned long elapsed();
     bool notStarted();
@@ -147,11 +147,42 @@ class StopWatch
     unsigned long m_start;
 };
 
+class PumaFile
+{
+  public:
+    PumaFile();
+    PumaFile(String fileName);
+    ~PumaFile();
+
+    static bool erase(String fileName);
+
+    bool open(char mode, String fileName = "");
+    void close();
+
+    bool available();
+    unsigned long size();
+
+    String readString();
+    bool writeString(String s);
+
+    byte readByte();
+    bool writeByte(byte b);
+
+    word readWord();
+    bool writeWord(word w);
+    
+  protected:
+    unsigned long pointer();
+
+  private:
+    String m_fileName;
+    word m_handle;
+};
+
 String uniqueLogFileName();
 void initLogging();
 void logRawData(CAN_Frame *message);
 void logObdData(String s);
-
 void selfTest();
 
 #endif

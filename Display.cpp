@@ -796,11 +796,6 @@ void Screen1::init()
     //    printLabel("Center", right_divider - 120, bottom_divider + 85, PUMA_LABEL_COLOR);
     //    printLabel("Rear", right_divider - 120, bottom_divider + 120, PUMA_LABEL_COLOR);
 
-    addSensorWidget(new SensorWidget(PID_THROTTLE_POSITION,
-                                     PUMA_SENSOR_DATA_FONT_SIZE,
-                                     left_divider + 15,
-                                     220));  // Throttle: 50%
-
     addSensorWidget(new SensorWidget(PID_WARMS_UPS_SINCE_DTC_CLEARED,
                                      2,
                                      left_divider + 180,
