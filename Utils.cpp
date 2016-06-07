@@ -273,33 +273,33 @@ String uniqueLogFileName()
   if (!g_SD_card_available) return "";
   if (g_logFileName != "") return g_logFileName;
 
-  word num = 0;
-  word prefix = LOGFILE_PREFIX;
+  word logfile_index = 0;
+  word logfile_prefix = LOGFILE_PREFIX;
   byte version = 0;
 
   // Try to read the last number used to create an incremental numbered filename
   PumaFile cfgFile;
-  if (cfgFile.open("/PUMADASH.PDC", PumaFile::READ)) {
+  if (cfgFile.open("PUMADASH.PDC", PumaFile::READ) || cfgFile.open("/PUMADASH.PDC", PumaFile::READ)) {
     version = cfgFile.readByte();
-    num = cfgFile.readWord();
+    logfile_index = cfgFile.readWord();
     if (version >= 2)
-      prefix = cfgFile.readWord();
+      logfile_prefix = cfgFile.readWord();
     cfgFile.close();
   }
-  g_logFileName = v2s("/%4d", LOGFILE_PREFIX) + v2s("%04d", num);
+  g_logFileName = v2s("%4d", logfile_prefix) + v2s("%04d", logfile_index);
 
   // If the file already exists i.e. we have indeed done some logging, we want to increment
   // the number and save it for next round
   if (PumaFile::exists(g_logFileName + ".PDR") || PumaFile::exists(g_logFileName + ".PDO")) {
-    if (num < 9999) num++; // if reaching max we'll keep pumping into that file. This should never happen.
-    g_logFileName = v2s("/%4d", LOGFILE_PREFIX) + v2s("%04d", num);
+    if (logfile_index < 9999) logfile_index++; // if reaching max we'll keep pumping into that file. This should never happen.
+    g_logFileName = v2s("%4d", logfile_prefix) + v2s("%04d", logfile_index);
   }
 
-  if (cfgFile.open("/PUMADASH.PDC", PumaFile::WRITE)) {
+  if (cfgFile.open("PUMADASH.PDC", PumaFile::WRITE)) {
     byte newVersion = 2; // bump the version when changing the file layout
     cfgFile.writeByte(newVersion);
-    cfgFile.writeWord(num);
-    cfgFile.writeWord(prefix);
+    cfgFile.writeWord(logfile_index);
+    cfgFile.writeWord(logfile_prefix);
     cfgFile.close();
   }
   return g_logFileName;
@@ -487,10 +487,10 @@ void sdCardTest()
 
   // This should not be needed, but in case a previous test round failed we may have to clean up
   // some test artifacts.
-  PumaFile::erase("/SELFTEST.XYZ");
+  PumaFile::erase("SELFTEST.XYZ");
 
   PumaFile test;
-  FAIL_IF_FALSE(test.open("/SELFTEST.XYZ", PumaFile::WRITE), "SD open failed");
+  FAIL_IF_FALSE(test.open("SELFTEST.XYZ", PumaFile::WRITE), "SD open failed");
 
   test.print("line ");
   test.println("1");
@@ -510,7 +510,7 @@ void sdCardTest()
     0x4F, 0x76, 0x65, 0x72, 0x0D, 0xFF, 0xFF, 0xFF, 0xFF
   };
 
-  if (test.open("/SELFTEST.XYZ", PumaFile::READ)) {
+  if (test.open("SELFTEST.XYZ", PumaFile::READ)) {
     FAIL_IF_TRUE(test.size() != FILE_SIZE, "File::size() failed");
 
     int i = 0;
@@ -519,7 +519,7 @@ void sdCardTest()
       FAIL_IF_TRUE(ref_file[i++] != test.readByte(), "File::read() failed");
     }
   }
-  FAIL_IF_FALSE(PumaFile::erase("/SELFTEST.XYZ"), "SD remove failed");
+  FAIL_IF_FALSE(PumaFile::erase("SELFTEST.XYZ"), "SD remove failed");
   Serial.println("PASS");
 }
 
@@ -657,7 +657,7 @@ void selfTest()
   Serial.println("Self Test Done ");
   Serial.println("**************************************");
 
-//  readRawData("/16060185.PDR");
+//  readRawData("16060185.PDR");
 }
 
 #endif // SELF_TEST
