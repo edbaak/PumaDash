@@ -134,6 +134,35 @@ String v2s(String format, byte value);
 String v2s(String format, word value);
 String v2s(String format, unsigned long value);
 
+class PumaConfig
+{
+  public:
+    PumaConfig();
+    ~PumaConfig();
+    
+    bool init(String fileName);
+    bool save();
+
+    String logFileName();
+
+    unsigned long totalDistanceCounter();
+    void setTotalDistanceCounter(unsigned long distance);
+    void incrementTotalDistanceCounter();
+
+    unsigned long tripDistanceA();
+    void incrementTripDistanceA();
+    void resetTripDistanceA();
+    
+  private:
+    String m_fileName;
+    word m_logFilePrefix;
+    word m_logFileIndex;
+    String m_logFileName;
+    
+    unsigned long m_totalDistance;
+    unsigned long m_tripDistanceA;
+};
+
 class StopWatch
 {
   public:
@@ -178,6 +207,9 @@ class PumaFile
     word readWord();
     bool writeWord(word w);
 
+    void appendLogData(String fileName, String s);
+
+protected:
     unsigned long pointer();
 
   private:
@@ -186,7 +218,8 @@ class PumaFile
     word m_handle;
 };
 
-String uniqueLogFileName();
+PumaConfig *CONFIG();
+
 void initLogging();
 void logRawData(CAN_Frame *message);
 void logObdData(String s);

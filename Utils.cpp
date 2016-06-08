@@ -29,7 +29,11 @@
 #include "CAN.h"
 #include "Widget.h"
 
-String g_logFileName = "";
+PumaConfig *g_config_singleton = 0;
+PumaConfig *CONFIG() {
+  return g_config_singleton;
+};
+
 bool g_SD_card_available = false;
 
 String v2s(String format, int value)
@@ -242,12 +246,40 @@ bool PumaFile::exists(String fileName)
   return Display()->file_Exists(buf);
 }
 
+void PumaFile::appendLogData(String fileName, String s)
+{
+  if (open(fileName, PumaFile::APPEND)) {
+    println(s);
+    close();
+  } else {
+    Serial.println("Error opening file for logging");
+  }
+}
+
 //***************************************************************************
-//                                Logging
+//                                PumaConfig
 //***************************************************************************
 
-void initLogging()
+PumaConfig::PumaConfig()
 {
+  m_fileName = "";
+  m_logFilePrefix = LOGFILE_PREFIX;
+  m_logFileIndex = 0;
+  m_logFileName = "";
+  m_totalDistance = 0;
+  m_tripDistanceA = 0;
+  g_config_singleton = this;
+}
+
+PumaConfig::~PumaConfig()
+{
+  g_config_singleton = 0;
+}
+
+bool PumaConfig::init(String fileName)
+{
+  m_fileName = fileName;
+
   // Start with an empty string so we always start on a new line.
   Serial.println("");
 
@@ -263,47 +295,88 @@ void initLogging()
     Serial.println(Display()->file_Error());
   } else {
     g_SD_card_available = true;
-    uniqueLogFileName();
-    Serial.println("Logging to " + g_logFileName);
+
+    byte version = 0;
+
+    // Try to read the last number used to create an incremental numbered filename
+    PumaFile cfgFile;
+    if (cfgFile.open(m_fileName, PumaFile::READ) || cfgFile.open("/PUMADASH.PDC", PumaFile::READ)) {
+      version = cfgFile.readByte();
+      m_logFileIndex = cfgFile.readWord();
+      if (version >= 2)
+        m_logFilePrefix = cfgFile.readWord();
+      cfgFile.close();
+    }
+
+    m_logFileName = v2s("%4d", m_logFilePrefix) + v2s("%04d", m_logFileIndex);
+
+    // If the file already exists i.e. we have indeed done some logging, we want to increment
+    // the number and save it for next round
+    if (PumaFile::exists(m_logFileName + ".PDR") || PumaFile::exists(m_logFileName + ".PDO")) {
+      if (m_logFileIndex < 9999) {
+        m_logFileIndex++; // if reaching max we'll keep pumping into that file. This should never happen.
+        m_logFileName = v2s("%4d", m_logFilePrefix) + v2s("%04d", m_logFileIndex);
+        save();
+      }
+    }
+    Serial.println("Logging to " + m_logFileName);
   }
 }
 
-String uniqueLogFileName()
+bool PumaConfig::save()
 {
-  if (!g_SD_card_available) return "";
-  if (g_logFileName != "") return g_logFileName;
-
-  word logfile_index = 0;
-  word logfile_prefix = LOGFILE_PREFIX;
-  byte version = 0;
-
-  // Try to read the last number used to create an incremental numbered filename
   PumaFile cfgFile;
-  if (cfgFile.open("PUMADASH.PDC", PumaFile::READ) || cfgFile.open("/PUMADASH.PDC", PumaFile::READ)) {
-    version = cfgFile.readByte();
-    logfile_index = cfgFile.readWord();
-    if (version >= 2)
-      logfile_prefix = cfgFile.readWord();
-    cfgFile.close();
-  }
-  g_logFileName = v2s("%4d", logfile_prefix) + v2s("%04d", logfile_index);
-
-  // If the file already exists i.e. we have indeed done some logging, we want to increment
-  // the number and save it for next round
-  if (PumaFile::exists(g_logFileName + ".PDR") || PumaFile::exists(g_logFileName + ".PDO")) {
-    if (logfile_index < 9999) logfile_index++; // if reaching max we'll keep pumping into that file. This should never happen.
-    g_logFileName = v2s("%4d", logfile_prefix) + v2s("%04d", logfile_index);
-  }
-
-  if (cfgFile.open("PUMADASH.PDC", PumaFile::WRITE)) {
+  if (cfgFile.open(m_fileName, PumaFile::WRITE)) {
     byte newVersion = 2; // bump the version when changing the file layout
     cfgFile.writeByte(newVersion);
-    cfgFile.writeWord(logfile_index);
-    cfgFile.writeWord(logfile_prefix);
+    cfgFile.writeWord(m_logFileIndex);
+    cfgFile.writeWord(m_logFilePrefix);
     cfgFile.close();
   }
-  return g_logFileName;
 }
+
+String PumaConfig::logFileName()
+{
+  return m_logFileName;
+}
+
+unsigned long PumaConfig::totalDistanceCounter()
+{
+  return m_totalDistance;
+}
+
+void PumaConfig::setTotalDistanceCounter(unsigned long distance)
+{
+  m_totalDistance = distance;
+  save();
+}
+
+void PumaConfig::incrementTotalDistanceCounter()
+{
+  m_totalDistance++;
+  save();
+}
+
+unsigned long PumaConfig::tripDistanceA()
+{
+  return m_tripDistanceA;
+}
+
+void PumaConfig::incrementTripDistanceA()
+{
+  m_tripDistanceA++;
+  save();
+}
+
+void PumaConfig::resetTripDistanceA()
+{
+  m_tripDistanceA = 0;
+  save();
+}
+
+//***************************************************************************
+//                                Logging
+//***************************************************************************
 
 void logRawData(CAN_Frame *message)
 {
@@ -332,11 +405,11 @@ void logRawData(CAN_Frame *message)
   Serial.println(buf2);
 #endif
 
-  if (g_logFileName == "")
+  if (CONFIG()->logFileName() == "")
     return;
 
   PumaFile log;
-  if (log.open(g_logFileName + ".PDR", PumaFile::APPEND)) {
+  if (log.open(CONFIG()->logFileName() + ".PDR", PumaFile::APPEND)) {
     log.print(buf1);
     log.println(buf2);
     log.close();
@@ -428,23 +501,6 @@ void readRawData(String fileName)
       Serial.println(message.m_data[7], HEX);
       Serial.println("Done");
     }
-  }
-}
-
-void logObdData(String s)
-{
-#ifdef OBD_VERBOSE_DEBUG
-  Serial.println(s);
-#endif
-  if (g_logFileName == "")
-    return;
-
-  PumaFile log;
-  if (log.open(g_logFileName + ".PDO", PumaFile::APPEND)) {
-    log.println(s);
-    log.close();
-  } else {
-    Serial.println("Error opening SD file for OBD logging");
   }
 }
 
@@ -657,7 +713,7 @@ void selfTest()
   Serial.println("Self Test Done ");
   Serial.println("**************************************");
 
-//  readRawData("16060185.PDR");
+  //  readRawData("16060185.PDR");
 }
 
 #endif // SELF_TEST

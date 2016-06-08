@@ -201,8 +201,8 @@ void PumaDisplay::updateStatusbar()
     activeScreen()->requestStaticRefresh();
 
     // While are are at it, refresh the log file name in the display status bar as well
-    if (uniqueLogFileName().length() > 0)
-      printLabel(uniqueLogFileName(), _logfile_x, y_, PUMA_LABEL_COLOR);
+    if (CONFIG()->logFileName().length() > 0)
+      printLabel(CONFIG()->logFileName(), _logfile_x, y_, PUMA_LABEL_COLOR);
     else
       printLabel("NO LOG", _logfile_x, y_, PUMA_ALARM_COLOR);
   }

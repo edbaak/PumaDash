@@ -81,6 +81,7 @@ Position g_position;                      // GPS position & pitch and roll of ve
 Tpms g_tpms;                              // Tire Pressure Monitoring
 SpeedControl g_speed;                     // Speed Control and deals with gearbox ratios etc to calculate gear shifts
 PumaOBD g_obd(&g_speed);                  // On Board Diagnostics for the Vehicle
+PumaConfig g_config;
 
 void setup() {
   // Start with resetting the Display.
@@ -97,9 +98,9 @@ void setup() {
   g_obd.setup();
   g_display1.setup(); // In here we'll finalize the 5 second display reset delay.
 
-// Setup logging to the SD (USB) medium. Since this depends on the display we can only start logging once we have initialized the display.
-  initLogging();
-
+// Load the config settings. Since this depends on availability of the Display (on which the SD card is mounted) we can only load the config once we have initialized the display.
+  g_config.init("PUMADASH.PDC");
+  
 #ifdef SELF_TEST
   // Run a comprehensive self-test
   selfTest();

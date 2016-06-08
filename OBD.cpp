@@ -108,15 +108,15 @@ PumaOBD::PumaOBD(SpeedControl *speedControl)
   //addDataObject(new OBDFloatValue(PID_CONTROL_MODULE_VOLTAGE, "Battery Voltage", "V", WORD_DIV1000, 2, OBD_F1, 0, 65.535)); // 0x42
 
   // -------- PID's that are supported by the PUMA, but that I'm not using ----------
-  
-  // I've tried PID_THROTTLE_POSITION and it seems fixed to 93% for me. So quite useless. 
-  // For the purposes of a cruise control I'd also tend towards using a A/D conversion and directly measure the 
+
+  // I've tried PID_THROTTLE_POSITION and it seems fixed to 93% for me. So quite useless.
+  // For the purposes of a cruise control I'd also tend towards using a A/D conversion and directly measure the
   // pedal output rather than relying on the ECU.
   // PID_THROTTLE_POSITION           0x11
   // PID_ACC_PEDAL_POS_D             0x49
   // PID_ACC_PEDAL_POS_E             0x4A
   // PID_COMMANDED_THROTTLE_ACTUATOR 0x4C
-  
+
   // PID_COMMANDED_EGR               0x2C
   // PID_EGR_ERROR                   0x2D
   // PID_COMMANDED_EGR_AND_EGR_ERR   0x69
@@ -338,31 +338,32 @@ void PumaOBD::processMessage(CAN_Frame *message)
 {
   if (message == 0) return;
 
-  OBD_PRINTLN(">>> processMessage");
   if (message->m_id == PID_REPLY) {
     uint16_t pid = message->m_data[2];
     uint8_t *data = &message->m_data[3];
 
-    OBD_PRINT(">>>> update dataObject: ");
 #ifdef OBD_DEBUG
     Serial.println(pid, HEX);
     Serial.flush();
 #endif
     OBDData *object = dataObject(pid);
     if (object != 0 && message != 0) {
-      OBD_PRINTLN(">>>> setValue");
       object->setValue(message->m_timeStamp, data);
-      OBD_PRINTLN("<<<< setValue");
-      OBD_PRINTLN(">>>> logObdData");
-      logObdData(v2s("%6d", message->m_timeStamp) +
-                 v2s(" %04X ", pid) +
-                 object->toString());
-      if (pid == PID_SPEED) 
+      String logString = v2s("%6d", message->m_timeStamp) +
+                         v2s(" %04X ", pid) +
+                         object->toString();
+      if (CONFIG()->logFileName() != "") {
+        PumaFile log;
+        log.appendLogData(CONFIG()->logFileName() + ".PDO",
+                          logString);
+      }
+#ifdef OBD_VERBOSE_DEBUG
+      Serial.println(logString);
+#endif
+      if (pid == PID_SPEED)
         m_speedControl->updateSpeed(m_speed->toWord());
     }
-    OBD_PRINTLN("<<<< update dataObject");
   }
-  OBD_PRINTLN("<<< processMessage");
 }
 
 #ifdef PID_DISCOVERY_MODE
@@ -473,7 +474,7 @@ byte OBDBaseData::stringLength()
 
 String OBDBaseData::toString()
 {
-  return ""; 
+  return "";
 }
 
 byte OBDBaseData::toByte()
@@ -513,8 +514,8 @@ OBDData::~OBDData()
 {
 }
 
-OBDData::OBDData(uint8_t pid, String label, String subLabel, OBD_DATA_CONVERSION conversion, byte stringWidth, OBD_PRECISION stringPrecision, long min, long max, OBDColorRange *colorRange) : 
-      OBDBaseData(pid, label, subLabel, conversion, stringWidth, stringPrecision, colorRange)
+OBDData::OBDData(uint8_t pid, String label, String subLabel, OBD_DATA_CONVERSION conversion, byte stringWidth, OBD_PRECISION stringPrecision, long min, long max, OBDColorRange *colorRange) :
+  OBDBaseData(pid, label, subLabel, conversion, stringWidth, stringPrecision, colorRange)
 {
   m_value = -200; // set an arbitrary negative value so that we update the display even if the initial value is '0'.
   m_minValue = min;
@@ -803,7 +804,7 @@ word OBDColorRange::color(long value)
     else if (m_next)
       return m_next->color(value);
     else
-      return PUMA_ALARM_COLOR;  
+      return PUMA_ALARM_COLOR;
   }
 
   // For the 'Else' case we just return the specified color.
